@@ -1,0 +1,25 @@
+# ASSUMPTION: directories match BACKEND_DIR / FRONTEND_DIR in ci.yml. Keep "maven" or "gradle", delete the other.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      spring: { patterns: ["org.springframework*"] }
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      next-react: { patterns: ["next", "react", "react-dom", "@types/react*"] }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: { interval: monthly }

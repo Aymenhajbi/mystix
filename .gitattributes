@@ -1,0 +1,36 @@
+# Mystix - line endings.
+# Windows workstation + EDI payloads: Git must NEVER rewrite line endings of test fixtures.
+# A CRLF/LF change alters SHA-256, MIC and signatures (lesson from the AS2 test).
+
+* text=auto eol=lf
+
+# Windows scripts keep CRLF
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Unix scripts / wrappers keep LF (mvnw fails with CRLF)
+*.sh  text eol=lf
+mvnw  text eol=lf
+gradlew text eol=lf
+
+# EDI / e-invoicing fixtures: byte-for-byte, no normalisation, no diff noise
+# ASSUMPTION: fixtures live under src/test/resources/fixtures - adjust in Lot 0.
+**/fixtures/**      -text
+*.edi               -text
+*.edifact           -text
+*.idoc              -text
+*.x12               -text
+*.as2               binary
+*.p7m               binary
+*.p7s               binary
+*.mdn               binary
+
+# Binaries
+*.jar  binary
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.woff2 binary
+*.pdf  binary
+*.xlsx binary

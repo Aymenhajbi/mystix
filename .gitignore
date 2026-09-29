@@ -1,0 +1,42 @@
+# Mystix - lines to MERGE into the repo .gitignore (do not blindly replace an existing one).
+
+# Secrets & keys - never committed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+tools/as2-test/certs/
+**/certs/private/
+
+# Java
+target/
+build/
+.gradle/
+*.class
+hs_err_pid*
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local data
+*.log
+tmp/

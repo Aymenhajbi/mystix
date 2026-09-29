@@ -1,0 +1,25 @@
+name: Anomalie
+description: Comportement incorrect du runtime, de l'API ou de l'interface
+labels: ["bug"]
+body:
+  - type: input
+    id: ref
+    attributes:
+      label: messageId / correlationId
+      description: Identifiants du message concerné (pas de données client réelles).
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Étape
+      options: [CONNECT, INGEST, DETECT, PARSE, NORMALIZE, VALIDATE, TRANSFORM, ENRICH, GENERATE, VALIDATE_OUTPUT, CLEAR, ROUTE, ACKNOWLEDGE, MONITOR, REPLAY, UI, API, Autre]
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Fixture anonymisée en entrée, sortie obtenue, sortie attendue.
+    validations: { required: true }
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Tenants touchés, documents bloqués, montant bloqué (MAD), risque fiscal.

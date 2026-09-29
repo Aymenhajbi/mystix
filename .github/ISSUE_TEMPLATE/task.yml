@@ -1,0 +1,28 @@
+name: Tâche de lot
+description: Incrément planifié d'un lot de la roadmap
+labels: ["task"]
+body:
+  - type: dropdown
+    id: lot
+    attributes:
+      label: Lot
+      options: ["0 - Audit", "1 - Cœur runtime", "2 - Canonique + GS1", "3 - Portail PME", "4 - File / DLQ / ArtifactStore", "5 - API publique", "6 - Connecteurs (AS2, EANCOM, SFTP)", "7 - Mapping Studio", "8 - Production", "9 - Adaptateur DGI réel"]
+    validations: { required: true }
+  - type: textarea
+    id: goal
+    attributes:
+      label: Objectif
+      description: Ce qui change pour l'utilisateur ou l'exploitation.
+    validations: { required: true }
+  - type: textarea
+    id: plan
+    attributes:
+      label: Plan court
+      description: Fichiers touchés, tests ajoutés, risques. À valider avant de coder.
+  - type: textarea
+    id: done
+    attributes:
+      label: Critères d'acceptation
+      value: |
+        - [ ] 
+        - [ ] Definition of Done respectée (docs/pmo/definition-of-done.md)

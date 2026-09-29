@@ -1,0 +1,138 @@
+# Mystix CI - build, test, lint, secret scan on every PR and push to main.
+# ASSUMPTIONS to confirm in Lot 0 audit (edit the env block below, nothing else):
+#   - backend lives in ./backend with a Maven (mvnw) or Gradle (gradlew) wrapper
+#   - frontend lives in ./frontend with package-lock.json
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  BACKEND_DIR: backend
+  FRONTEND_DIR: frontend
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: mystix
+          POSTGRES_USER: mystix
+          POSTGRES_PASSWORD: ci-only-not-a-secret
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mystix -d mystix"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/mystix
+      SPRING_DATASOURCE_USERNAME: mystix
+      SPRING_DATASOURCE_PASSWORD: ci-only-not-a-secret
+      TZ: Africa/Casablanca
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Cache build tool
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-jvm-${{ hashFiles('**/pom.xml', '**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - name: Build and test
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: |
+          if [ -f mvnw ]; then
+            chmod +x mvnw && ./mvnw -B -ntp verify
+          elif [ -f gradlew ]; then
+            chmod +x gradlew && ./gradlew --no-daemon build
+          else
+            echo "::error::No mvnw or gradlew in $BACKEND_DIR - fix BACKEND_DIR after Lot 0 audit"; exit 1
+          fi
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: |
+            ${{ env.BACKEND_DIR }}/target/surefire-reports
+            ${{ env.BACKEND_DIR }}/target/failsafe-reports
+            ${{ env.BACKEND_DIR }}/build/reports/tests
+          if-no-files-found: ignore
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: ${{ env.FRONTEND_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run typecheck --if-present
+      - run: npm test --if-present
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Gitleaks CLI via container: no licence key needed, works for personal and org repos.
+      - name: Gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" --entrypoint sh ghcr.io/gitleaks/gitleaks:latest -c \
+            "git config --global --add safe.directory /repo && gitleaks git /repo --redact --verbose --exit-code 1"
+
+  guardrails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: No private key or .env committed
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)\.env$|\.(pem|key|p12|pfx|jks|keystore)$|as2-test/certs/' || true)
+          if [ -n "$bad" ]; then echo "::error::Forbidden files tracked:"; echo "$bad"; exit 1; fi
+      - name: Applied migrations are immutable
+        if: github.event_name == 'pull_request'
+        run: |
+          # ASSUMPTION: Flyway/Liquibase migrations under db/migration or db/changelog.
+          changed=$(git diff --name-status origin/${{ github.base_ref }}...HEAD \
+            | grep -E '^(M|D|R)[0-9]*\s+.*(db/migration|db/changelog)/' || true)
+          if [ -n "$changed" ]; then
+            echo "::error::Existing migrations were modified/deleted (add a new migration instead):"
+            echo "$changed"; exit 1
+          fi
+      - name: DGI rules are not hardcoded without TODO(DGI-SPEC)
+        run: |
+          # Informational: lists DGI-related code so reviewers check the TODO(DGI-SPEC) marker.
+          git grep -n -i -E 'dgi|clearance' -- '*.java' '*.ts' '*.tsx' | grep -v 'TODO(DGI-SPEC)' | head -50 || true

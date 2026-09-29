@@ -1,0 +1,80 @@
+# Mystix - local development services (NOT for production).
+# Work queue = PostgreSQL (ADR-0003): no broker service needed.
+# Usage:
+#   docker compose -f docker-compose.dev.yml --env-file .env up -d               # PostgreSQL only
+#   docker compose -f docker-compose.dev.yml --env-file .env --profile storage up -d   # + MinIO (Lot 4)
+#
+# ASSUMPTION (to confirm in Lot 0 audit): the backend reads its datasource from
+# SPRING_DATASOURCE_* env vars or from application-*.yml pointing to localhost:${POSTGRES_PORT}.
+# Secrets are read from .env (never committed). No credential is written in this file.
+
+name: mystix-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mystix-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mystix}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      TZ: Africa/Casablanca
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - mystix-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Lot 4 - ArtifactStore (S3 compatible). Profile "storage".
+  # WARNING: since late 2025 MinIO no longer publishes community Docker images;
+  # the tag below is the last known community release (verify it pulls).
+  # Fallbacks: cgr.dev/chainguard/minio, or another S3-compatible store (see docs/pmo/risks.md R-07).
+  minio:
+    profiles: ["storage"]
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2025-09-07T16-13-09Z}
+    container_name: mystix-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in .env}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - mystix-minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot job: creates the artifacts bucket with versioning + object lock
+  # (object lock can only be enabled at bucket creation).
+  minio-init:
+    profiles: ["storage"]
+    image: ${MINIO_MC_IMAGE:-minio/mc:RELEASE.2025-08-13T08-35-41Z}
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-mystix-artifacts}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      (mc ls local/$${MINIO_BUCKET} >/dev/null 2>&1 || mc mb --with-lock local/$${MINIO_BUCKET}) &&
+      mc version enable local/$${MINIO_BUCKET} &&
+      echo 'bucket ready'
+      "
+    restart: "no"
+
+volumes:
+  mystix-pgdata:
+  mystix-minio:
