@@ -28,5 +28,5 @@ Le mode d'arrondi des montants est aussi un paramètre (`InvoiceCalculator`), pa
 | Ne pas émettre l'ICE | Donnée attendue par les partenaires marocains, placement EN 16931 cohérent |
 
 ## Conséquences
-- La sortie est valide au XSD UBL 2.1 (testé). La conformité aux règles métier EN 16931 (Schematron) **n'est pas encore vérifiée** : prévu.
+- La sortie est valide au XSD UBL 2.1 et conforme aux règles métier EN 16931 (artefacts CEN v1.3.16, aucune erreur ni avertissement sur la fixture de référence), testé le 2026-10-01. Les règles d'une future CIUS marocaine ne sont pas couvertes : `TODO(DGI-SPEC)`.
 - À la publication des spécifications DGI : changer les valeurs de `UblSettings`, ajouter une fixture, sans toucher au canonique.
