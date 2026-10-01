@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -21,7 +22,9 @@ class GlobalExceptionHandler {
     @ExceptionHandler(MystixException.class)
     ResponseEntity<ApiError> handleMystix(MystixException e) {
         log.info("Business error {}: {}", e.errorCode(), e.getMessage());
-        return respond(e.errorCode(), List.of());
+        return ResponseEntity.status(e.errorCode().status())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiError.of(e.errorCode(), e.fieldErrors(), e.ruleViolations()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -55,6 +58,9 @@ class GlobalExceptionHandler {
     }
 
     private static ResponseEntity<ApiError> respond(ErrorCode code, List<ApiError.FieldViolation> violations) {
-        return ResponseEntity.status(code.status()).body(ApiError.of(code, violations));
+        // Errors are always JSON, even when the client asked for the XML output of a successful call.
+        return ResponseEntity.status(code.status())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiError.of(code, violations));
     }
 }

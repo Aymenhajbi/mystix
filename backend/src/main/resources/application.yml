@@ -14,6 +14,18 @@ server:
     include-stacktrace: never
     include-message: never
 
+mystix:
+  invoice:
+    # TODO(DGI-SPEC): rounding mode required by the DGI is not published.
+    rounding-mode: HALF_UP
+    ubl:
+      # TODO(DGI-SPEC): replace with the Moroccan CIUS identifier once published (ADR-0005).
+      customization-id: "urn:cen.eu:en16931:2017"
+      # TODO(DGI-SPEC): no ISO 6523 scheme is known for the ICE; empty = no schemeID attribute.
+      ice-scheme-id:
+      # TODO(DGI-SPEC): TaxScheme ID carrying the Identifiant Fiscal (BT-32).
+      tax-identifier-scheme-id: "TAX"
+
 management:
   endpoints:
     web:

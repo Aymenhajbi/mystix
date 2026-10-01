@@ -42,6 +42,7 @@ Monolithe modulaire. Un package de premier niveau = un module ; un module n'acc�
 | Package | Rôle |
 | --- | --- |
 | `tenant` | Sociétés (`company`), utilisateurs, rôles |
+| `invoice` | API facture : JSON → canonique → UBL 2.1, contrôles XSD et EN 16931 |
 | `message` | Messages, artefacts, machine d'états, historique |
 | `canonical` | Modèle canonique versionné (pur Java, sans Spring) |
 | `format.*` | Parsers, mappers, generators par format (`ubl`, `cii`, `idoc`, `edifact`, `csv`) |
