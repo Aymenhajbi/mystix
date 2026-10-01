@@ -1,0 +1,51 @@
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-3);
+}
+
+.brand {
+  color: var(--color-brand);
+  font-size: 2rem;
+  margin: 0 0 var(--space-2);
+}
+
+.lead {
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-4);
+}
+
+.notice {
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.up {
+  background: var(--color-success);
+}
+
+.down {
+  background: var(--color-danger);
+}
