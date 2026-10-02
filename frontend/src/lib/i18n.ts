@@ -26,6 +26,15 @@ export function formatDate(locale: Locale, isoDate: string) {
   }).format(new Date(isoDate));
 }
 
+/** HH:MM:SS in the business time zone. */
+export function formatTime(locale: Locale, isoDateTime: string) {
+  return new Intl.DateTimeFormat(intlTag(locale), {
+    timeStyle: "medium",
+    numberingSystem: "latn",
+    timeZone: "Africa/Casablanca",
+  }).format(new Date(isoDateTime));
+}
+
 export function formatDateTime(locale: Locale, isoDateTime: string) {
   return new Intl.DateTimeFormat(intlTag(locale), {
     dateStyle: "medium",

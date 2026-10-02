@@ -1,5 +1,7 @@
 package ma.mystix.logs;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -30,11 +32,13 @@ class LogsController {
     private final ProcessingLog logs;
     private final CompanyService companies;
     private final JsonMapper json;
+    private final Clock clock;
 
-    LogsController(ProcessingLog logs, CompanyService companies, JsonMapper json) {
+    LogsController(ProcessingLog logs, CompanyService companies, JsonMapper json, Clock clock) {
         this.logs = logs;
         this.companies = companies;
         this.json = json;
+        this.clock = clock;
     }
 
     /**
@@ -53,6 +57,34 @@ class LogsController {
                        @RequestParam(defaultValue = "200") int limit) {
         companies.get(companyId);
         return logs.list(companyId, level, invoiceId, limit).stream().map(this::view).toList();
+    }
+
+    private static final Duration MAX_WINDOW = Duration.ofDays(31);
+
+    record StatsView(OffsetDateTime since, OffsetDateTime until, List<LogStat> stats) {
+    }
+
+    /**
+     * Counts per event, stage and error code over the last {@code window} (ISO 8601 duration, default PT24H).
+     * Feeds the live flow view; every number comes from the processing log.
+     */
+    @GetMapping(value = "/stats", produces = MediaType.APPLICATION_JSON_VALUE)
+    StatsView stats(@RequestHeader("X-Mystix-Company-Id") UUID companyId,
+                    @RequestParam(defaultValue = "PT24H") String window) {
+        companies.get(companyId);
+        Duration duration;
+        try {
+            duration = Duration.parse(window);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new MystixException(ErrorCode.VALIDATION_FAILED, "window must be an ISO 8601 duration", e);
+        }
+        if (duration.isNegative() || duration.isZero()) {
+            throw new MystixException(ErrorCode.VALIDATION_FAILED, "window must be positive");
+        }
+        Duration capped = duration.compareTo(MAX_WINDOW) > 0 ? MAX_WINDOW : duration;
+        OffsetDateTime until = OffsetDateTime.now(clock);
+        OffsetDateTime since = until.minus(capped);
+        return new StatsView(since, until, logs.stats(companyId, since));
     }
 
     @GetMapping("/{id}/payload")

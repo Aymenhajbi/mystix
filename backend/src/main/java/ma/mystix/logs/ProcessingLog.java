@@ -78,6 +78,11 @@ public class ProcessingLog {
         return repository.list(companyId, minimum, invoiceId, Math.clamp(limit, 1, MAX_LIMIT));
     }
 
+    /** Aggregates for the live flow view, from {@code since} to now. */
+    public List<LogStat> stats(UUID companyId, OffsetDateTime since) {
+        return repository.stats(companyId, since);
+    }
+
     public byte[] payload(UUID companyId, UUID id) {
         return repository.payload(companyId, id).orElse(null);
     }

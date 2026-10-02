@@ -96,6 +96,20 @@ export type LogEntry = {
   payloadSize: number | null;
 };
 
+export type LogStat = {
+  event: LogEvent;
+  stage: string;
+  errorCode: string | null;
+  count: number;
+  lastAt: string;
+};
+
+export type LogStats = { since: string; until: string; stats: LogStat[] };
+
+/** Aggregates of the processing log over an ISO 8601 window (PT1H, PT24H, P7D). */
+export const getLogStats = (window: string) =>
+  companyGet<LogStats>(`/api/v1/logs/stats?window=${encodeURIComponent(window)}`);
+
 /** Upper bound of log lines fetched at once. */
 export const LOG_WINDOW = 500;
 

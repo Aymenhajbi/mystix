@@ -1177,6 +1177,261 @@
   }
 }
 
+/* ---------- live flow ---------- */
+@keyframes flowDown {
+  to {
+    background-position: 0 24px;
+  }
+}
+
+@keyframes bump {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--ok) 0%, transparent);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.flowBar {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+}
+
+.flowBar .filters {
+  margin-inline-start: auto;
+}
+
+.dotPulse {
+  animation: livePulse 1.6s ease-out infinite;
+}
+
+.pipeline {
+  list-style: none;
+  margin: 0;
+  padding: 16px 18px 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pipelineItem {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.connector {
+  align-self: flex-start;
+  margin-inline-start: 38px;
+  width: 2px;
+  height: 22px;
+  background: var(--line-strong);
+}
+
+.connectorLive {
+  background-image: linear-gradient(to bottom, var(--accent) 0 40%, transparent 40% 100%);
+  background-size: 2px 12px;
+  background-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  animation: flowDown 1.2s linear infinite;
+}
+
+.connectorFast {
+  animation-duration: 0.35s;
+}
+
+.stageCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+}
+
+.stageBump {
+  border-color: var(--accent);
+  animation: bump 1.2s ease-out 1;
+}
+
+.stageMono {
+  width: 50px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.stageMonoWarn {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.stageText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stageText b {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.stageText span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.stageNumbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.stageCount {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.stageCount small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.stageBadges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.stageBadges a {
+  text-decoration: none;
+}
+
+.stageTime {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.outcomes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.outcomes > div {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+
+.outcomes > div + div {
+  border-inline-start: 1px solid var(--line);
+}
+
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 6px 18px 12px;
+}
+
+.feed li {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 7px 0;
+  border-block-end: 1px solid var(--line);
+  font-size: 12.5px;
+}
+
+.feed li:last-child {
+  border-block-end: 0;
+}
+
+.feedFresh {
+  animation: slideIn 0.4s ease-out both;
+  background: linear-gradient(to right, var(--accent-soft), transparent 70%);
+}
+
+.feedText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .stageCard {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .stageNumbers {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .outcomes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .outcomes > div + div {
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connectorLive,
+  .stageBump,
+  .dotPulse,
+  .feedFresh {
+    animation: none;
+  }
+}
+
 /* ---------- command palette ---------- */
 .scrim {
   position: fixed;

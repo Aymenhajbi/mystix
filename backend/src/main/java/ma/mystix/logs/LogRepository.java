@@ -87,6 +87,22 @@ class LogRepository {
                 .list();
     }
 
+    /** Counts per (event, stage, error code) since a point in time, with the latest occurrence of each. */
+    List<LogStat> stats(UUID companyId, OffsetDateTime since) {
+        return jdbc.sql("""
+                SELECT event, stage, error_code, count(*) AS n, max(occurred_at) AS last_at
+                FROM processing_log
+                WHERE company_id = :companyId AND occurred_at >= :since
+                GROUP BY event, stage, error_code
+                ORDER BY event, stage, error_code
+                """)
+                .param("companyId", companyId)
+                .param("since", since)
+                .query((rs, n) -> new LogStat(LogEvent.valueOf(rs.getString("event")), rs.getString("stage"),
+                        rs.getString("error_code"), rs.getLong("n"), rs.getObject("last_at", OffsetDateTime.class)))
+                .list();
+    }
+
     Optional<byte[]> payload(UUID companyId, UUID id) {
         return jdbc.sql("SELECT payload FROM processing_log WHERE company_id = :companyId AND id = :id")
                 .param("companyId", companyId)

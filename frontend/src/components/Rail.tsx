@@ -5,13 +5,19 @@ import { usePathname } from "next/navigation";
 import styles from "@/app/[lang]/portal.module.css";
 import { Icon, Monogram } from "./Icons";
 
-type Labels = { main: string; home: string; cockpit: string; invoices: string; logs: string };
+type Labels = { main: string; home: string; cockpit: string; flow: string; invoices: string; logs: string };
 
 /** Icon rail of the Cockpit mockup. Only screens that exist are listed. */
 export function Rail({ lang, labels }: { lang: string; labels: Labels }) {
   const pathname = usePathname() ?? "";
   const items = [
     { href: `/${lang}`, label: labels.cockpit, icon: "cockpit" as const, active: pathname === `/${lang}` },
+    {
+      href: `/${lang}/flow`,
+      label: labels.flow,
+      icon: "flow" as const,
+      active: pathname.startsWith(`/${lang}/flow`),
+    },
     {
       href: `/${lang}/invoices`,
       label: labels.invoices,
@@ -60,6 +66,13 @@ export function MobileNav({ lang, labels }: { lang: string; labels: Labels }) {
         aria-current={pathname === `/${lang}` ? "true" : undefined}
       >
         {labels.cockpit}
+      </Link>
+      <Link
+        href={`/${lang}/flow`}
+        className={styles.filter}
+        aria-current={pathname.startsWith(`/${lang}/flow`) ? "true" : undefined}
+      >
+        {labels.flow}
       </Link>
       <Link
         href={`/${lang}/invoices`}
