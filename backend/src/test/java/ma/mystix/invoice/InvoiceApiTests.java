@@ -27,7 +27,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 
 @Import(TestcontainersConfiguration.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "mystix.clearance.simulated.reject-numbers-matching=FA-SIMREJECT-.*")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InvoiceApiTests {
 
@@ -81,14 +82,27 @@ class InvoiceApiTests {
         assertThat(replay.getHeaders().getFirst("X-Mystix-Invoice-Id")).isEqualTo(id);
         assertThat(replay.getBody()).isEqualTo(first.getBody());
 
+        // Simulated clearance: cleared once, the replay returns the same reference without a new clearance.
+        assertThat(first.getHeaders().getFirst("X-Mystix-Status")).isEqualTo("CLEARED");
+        assertThat(first.getHeaders().getFirst("X-Mystix-Clearance-Simulated")).isEqualTo("true");
+        String reference = first.getHeaders().getFirst("X-Mystix-Clearance-Reference");
+        assertThat(reference).startsWith("SIMULATED-");
+        assertThat(replay.getHeaders().getFirst("X-Mystix-Clearance-Reference")).isEqualTo(reference);
+
         ResponseEntity<Map> stored = http.get().uri("/api/v1/invoices/{id}", id)
                 .header("X-Mystix-Company-Id", sellerCompany.toString())
                 .retrieve().toEntity(Map.class);
         assertThat(stored.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(stored.getBody())
                 .containsEntry("number", REFERENCE_NUMBER)
-                .containsEntry("status", "VALIDATED")
+                .containsEntry("status", "CLEARED")
                 .containsEntry("canonicalVersion", "1.0");
+        assertThat((Map<String, Object>) stored.getBody().get("clearance"))
+                .containsEntry("reference", reference)
+                .containsEntry("simulated", true);
+        assertThat((List<Map<String, Object>>) stored.getBody().get("history"))
+                .extracting(e -> e.get("status"))
+                .containsExactly("VALIDATED", "CLEARED");
         assertThat((List<Map<String, Object>>) stored.getBody().get("artifacts"))
                 .extracting(a -> a.get("kind"))
                 .containsExactly("RAW", "CANONICAL", "OUT");
@@ -102,6 +116,27 @@ class InvoiceApiTests {
                 .filteredOn(a -> "OUT".equals(a.get("kind")))
                 .singleElement()
                 .satisfies(a -> assertThat(a).containsEntry("sha256", Sha256.hex(first.getBody())));
+    }
+
+    @Test
+    void simulatedClearanceRejectionIsStoredAndTraced() {
+        ResponseEntity<byte[]> response = submit(sellerCompany, withNumber("FA-SIMREJECT-1"), byte[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getHeaders().getFirst("X-Mystix-Status")).isEqualTo("CLEARANCE_REJECTED");
+        assertThat(response.getHeaders().getFirst("X-Mystix-Clearance-Simulated")).isEqualTo("true");
+        assertThat(response.getHeaders().getFirst("X-Mystix-Clearance-Reference")).isNull();
+
+        String id = response.getHeaders().getFirst("X-Mystix-Invoice-Id");
+        ResponseEntity<Map> stored = http.get().uri("/api/v1/invoices/{id}", id)
+                .header("X-Mystix-Company-Id", sellerCompany.toString())
+                .retrieve().toEntity(Map.class);
+        assertThat(stored.getBody()).containsEntry("status", "CLEARANCE_REJECTED");
+        assertThat((List<Map<String, Object>>) stored.getBody().get("history"))
+                .last()
+                .satisfies(e -> assertThat(e)
+                        .containsEntry("status", "CLEARANCE_REJECTED")
+                        .hasEntrySatisfying("detail", d -> assertThat((String) d).startsWith("SIMULATED")));
     }
 
     @Test
