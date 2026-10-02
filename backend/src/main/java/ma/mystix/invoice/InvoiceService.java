@@ -13,6 +13,7 @@ import ma.mystix.clearance.ClearanceRequest;
 import ma.mystix.clearance.ClearanceResult;
 import ma.mystix.canonical.Invoice;
 import ma.mystix.canonical.InvoiceCalculator;
+import ma.mystix.canonical.InvoiceTotals;
 import ma.mystix.format.ubl.En16931Validator;
 import ma.mystix.format.ubl.UblInvoiceGenerator;
 import ma.mystix.format.ubl.UblSchemaValidator;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Service;
 public class InvoiceService {
 
     private static final Logger log = LoggerFactory.getLogger(InvoiceService.class);
+    static final int MAX_PAGE_SIZE = 200;
 
     private final CompanyService companies;
     private final InvoiceRepository repository;
@@ -81,10 +83,12 @@ public class InvoiceService {
             return replay(existing.get(), canonicalSha256);
         }
 
-        byte[] ubl = toUbl(invoice);
+        InvoiceTotals totals = calculator.calculate(invoice);
+        byte[] ubl = toUbl(invoice, totals);
         StoredInvoice stored = new StoredInvoice(UUID.randomUUID(), companyId, invoice.number(), invoice.issueDate(),
                 StoredInvoice.STATUS_VALIDATED, CanonicalVersion.CURRENT, canonicalSha256, OffsetDateTime.now(clock),
-                null, null, null);
+                null, null, null, invoice.buyer().name(), invoice.currency().getCurrencyCode(),
+                totals.payableAmount());
         Map<ArtifactKind, byte[]> artifacts = new EnumMap<>(ArtifactKind.class);
         artifacts.put(ArtifactKind.RAW, rawRequest);
         artifacts.put(ArtifactKind.CANONICAL, canonical);
@@ -97,6 +101,12 @@ public class InvoiceService {
                     canonicalSha256);
         }
         return new Submission(clear(stored, ubl), ubl, false);
+    }
+
+    /** Most recent invoices of the company first. */
+    public List<StoredInvoice> list(UUID companyId, int limit) {
+        companies.get(companyId);
+        return repository.list(companyId, Math.clamp(limit, 1, MAX_PAGE_SIZE));
     }
 
     public List<StoredInvoice.StatusEvent> history(UUID companyId, UUID invoiceId) {
@@ -151,8 +161,8 @@ public class InvoiceService {
         return new Submission(existing, artifact(existing.companyId(), existing.id(), ArtifactKind.OUT), true);
     }
 
-    private byte[] toUbl(Invoice invoice) {
-        byte[] ubl = generator.generate(invoice, calculator.calculate(invoice));
+    private byte[] toUbl(Invoice invoice, InvoiceTotals totals) {
+        byte[] ubl = generator.generate(invoice, totals);
 
         List<String> schemaErrors = schemaValidator.validateInvoice(ubl);
         if (!schemaErrors.isEmpty()) {

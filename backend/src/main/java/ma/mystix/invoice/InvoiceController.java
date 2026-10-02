@@ -1,6 +1,8 @@
 package ma.mystix.invoice;
 
+import java.math.RoundingMode;
 import java.net.URI;
+import java.util.Currency;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
@@ -85,20 +88,49 @@ class InvoiceController {
 
     /** Clearance block of the invoice resource. {@code simulated} is always shown, never implied. */
     record ClearanceView(String reference, Boolean simulated, OffsetDateTime at) {
+
+        static ClearanceView from(StoredInvoice i) {
+            return new ClearanceView(i.clearanceReference(), i.clearanceSimulated(), i.clearanceAt());
+        }
     }
 
-    record InvoiceResponse(UUID id, String number, LocalDate issueDate, String status, String canonicalVersion,
-                           OffsetDateTime createdAt, ClearanceView clearance,
-                           List<StoredInvoice.ArtifactInfo> artifacts, List<StoredInvoice.StatusEvent> history) {
+    /** List item. {@code payableAmount} is a decimal string at the currency's precision, null for old invoices. */
+    record InvoiceSummary(UUID id, String number, LocalDate issueDate, String buyerName, String currency,
+                          String payableAmount, String status, ClearanceView clearance, OffsetDateTime createdAt) {
+
+        static InvoiceSummary from(StoredInvoice i) {
+            return new InvoiceSummary(i.id(), i.number(), i.issueDate(), i.buyerName(), i.currency(),
+                    amount(i), i.status(), ClearanceView.from(i), i.createdAt());
+        }
+    }
+
+    record InvoiceResponse(UUID id, String number, LocalDate issueDate, String buyerName, String currency,
+                           String payableAmount, String status, String canonicalVersion, OffsetDateTime createdAt,
+                           ClearanceView clearance, List<StoredInvoice.ArtifactInfo> artifacts,
+                           List<StoredInvoice.StatusEvent> history) {
+    }
+
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    List<InvoiceSummary> list(@RequestHeader(COMPANY_HEADER) UUID companyId,
+                              @RequestParam(defaultValue = "50") int limit) {
+        return service.list(companyId, limit).stream().map(InvoiceSummary::from).toList();
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     InvoiceResponse get(@RequestHeader(COMPANY_HEADER) UUID companyId, @PathVariable UUID id) {
         StoredInvoice invoice = service.get(companyId, id);
-        return new InvoiceResponse(invoice.id(), invoice.number(), invoice.issueDate(), invoice.status(),
-                invoice.canonicalVersion(), invoice.createdAt(),
-                new ClearanceView(invoice.clearanceReference(), invoice.clearanceSimulated(), invoice.clearanceAt()),
+        return new InvoiceResponse(invoice.id(), invoice.number(), invoice.issueDate(), invoice.buyerName(),
+                invoice.currency(), amount(invoice), invoice.status(), invoice.canonicalVersion(),
+                invoice.createdAt(), ClearanceView.from(invoice),
                 service.artifacts(companyId, id), service.history(companyId, id));
+    }
+
+    private static String amount(StoredInvoice invoice) {
+        if (invoice.payableAmount() == null || invoice.currency() == null) {
+            return null;
+        }
+        int digits = Currency.getInstance(invoice.currency()).getDefaultFractionDigits();
+        return invoice.payableAmount().setScale(digits, RoundingMode.UNNECESSARY).toPlainString();
     }
 
     @GetMapping("/{id}/artifacts/{kind}")

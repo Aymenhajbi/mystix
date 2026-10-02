@@ -140,6 +140,34 @@ class InvoiceApiTests {
     }
 
     @Test
+    void listsOnlyTheCompanysInvoicesWithSummaries() {
+        String id = submit(sellerCompany, withNumber("FA-LIST-1"), byte[].class)
+                .getHeaders().getFirst("X-Mystix-Invoice-Id");
+
+        ResponseEntity<List> mine = http.get().uri("/api/v1/invoices?limit=200")
+                .header("X-Mystix-Company-Id", sellerCompany.toString())
+                .retrieve().toEntity(List.class);
+        ResponseEntity<List> theirs = http.get().uri("/api/v1/invoices")
+                .header("X-Mystix-Company-Id", otherCompany.toString())
+                .retrieve().toEntity(List.class);
+
+        assertThat(mine.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat((List<Map<String, Object>>) mine.getBody())
+                .filteredOn(i -> id.equals(i.get("id")))
+                .singleElement()
+                .satisfies(i -> {
+                    assertThat(i)
+                            .containsEntry("number", "FA-LIST-1")
+                            .containsEntry("buyerName", "Client Synthetique SA")
+                            .containsEntry("currency", "MAD")
+                            .containsEntry("payableAmount", "1586.80")
+                            .containsEntry("status", "CLEARED");
+                    assertThat((Map<String, Object>) i.get("clearance")).containsEntry("simulated", true);
+                });
+        assertThat((List<Map<String, Object>>) theirs.getBody()).noneMatch(i -> id.equals(i.get("id")));
+    }
+
+    @Test
     void sameNumberWithDifferentContentIsAConflict() {
         String original = withNumber("FA-CONFLICT-1");
         assertThat(submit(sellerCompany, original, byte[].class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
