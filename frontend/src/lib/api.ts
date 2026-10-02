@@ -53,7 +53,37 @@ export async function fetchBackendHealth(): Promise<BackendHealth> {
   }
 }
 
-export const listInvoices = () => companyGet<InvoiceSummary[]>("/api/v1/invoices?limit=50");
+/** Upper bound of invoices the cockpit aggregates; statistics say so when it is reached. */
+export const INVOICE_WINDOW = 200;
+
+export const listInvoices = () => companyGet<InvoiceSummary[]>(`/api/v1/invoices?limit=${INVOICE_WINDOW}`);
+
+export type Company = { id: string; ice: string; legalName: string; taxIdentifier: string | null };
+
+export const getPortalCompany = () => {
+  const company = portalCompanyId();
+  return company ? companyGet<Company>(`/api/v1/companies/${encodeURIComponent(company)}`) : null;
+};
+
+export type ArtifactKind = "RAW" | "CANONICAL" | "OUT";
+
+/** Stored artefact as text (RAW and CANONICAL are JSON, OUT is UBL XML). */
+export async function fetchArtifactText(id: string, kind: ArtifactKind): Promise<ApiResult<string>> {
+  const company = portalCompanyId();
+  if (!company) return { kind: "no-company" };
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/v1/invoices/${encodeURIComponent(id)}/artifacts/${kind}`, {
+      cache: "no-store",
+      headers: { "X-Mystix-Company-Id": company },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (response.status === 404 || response.status === 400) return { kind: "not-found" };
+    if (!response.ok) return { kind: "unreachable" };
+    return { kind: "ok", data: new TextDecoder("utf-8").decode(await response.arrayBuffer()) };
+  } catch {
+    return { kind: "unreachable" };
+  }
+}
 
 export const getInvoice = (id: string) => companyGet<InvoiceDetail>(`/api/v1/invoices/${encodeURIComponent(id)}`);
 

@@ -1,17 +1,18 @@
 import styles from "@/app/[lang]/portal.module.css";
+import { severityOf, type Severity } from "@/lib/invoiceView";
 
-const tone: Record<string, string> = {
-  CLEARED: styles.success,
-  CLEARANCE_REJECTED: styles.danger,
-  CLEARANCE_ERROR: styles.danger,
-  VALIDATED: styles.warning,
+const sevClass: Record<Severity, string> = {
+  ok: styles["sev-ok"],
+  warn: styles["sev-warn"],
+  err: styles["sev-err"],
+  info: styles["sev-info"],
 };
 
-/** Status shown with text and color: the meaning never depends on color alone. */
+/** Status in text and color: the meaning never depends on color alone. */
 export function StatusBadge({ status, label }: { status: string; label: string }) {
-  return <span className={`${styles.badge} ${tone[status] ?? styles.neutral}`}>{label}</span>;
+  return <span className={`${styles.sev} ${sevClass[severityOf(status)]}`}>{label}</span>;
 }
 
 export function SimulatedBadge({ label }: { label: string }) {
-  return <span className={`${styles.badge} ${styles.simulated}`}>{label}</span>;
+  return <span className={styles.simBadge}>{label}</span>;
 }
