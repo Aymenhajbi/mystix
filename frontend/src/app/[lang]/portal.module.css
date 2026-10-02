@@ -103,6 +103,10 @@
 }
 
 /* ---------- top bar ---------- */
+.tenant:hover {
+  color: var(--accent);
+}
+
 .top {
   display: flex;
   align-items: center;
@@ -130,6 +134,7 @@
 .tenant {
   color: var(--muted);
   font-size: 13px;
+  text-decoration: none;
   padding-inline-start: 12px;
   border-inline-start: 1px solid var(--line-strong);
 }
@@ -1673,6 +1678,263 @@
 @media (prefers-reduced-motion: reduce) {
   .mapRow:hover .wireFlow,
   .wireActive {
+    animation: none;
+  }
+}
+
+/* ---------- client environments and flows ---------- */
+@keyframes routeFlow {
+  to {
+    background-position: 24px 0;
+  }
+}
+
+.notice {
+  margin: 0;
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-weight: 500;
+}
+
+.envGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: 14px;
+}
+
+.envCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.envCard:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.envCardActive {
+  border-color: var(--accent);
+}
+
+.envHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.envMono {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.envName {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.envName b {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.envName span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.envStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.envStats > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface-2);
+  border-radius: 9px;
+  padding: 8px 10px;
+}
+
+.envStats small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.envStats b {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.flowList {
+  list-style: none;
+  margin: 0;
+  padding: 12px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.flowCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.flowCard:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.flowCardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.flowCardHead b {
+  font-size: 15px;
+}
+
+.route {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 0;
+}
+
+.routeChip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.routeChip small {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.routeChipMap {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+  background: var(--accent-soft);
+}
+
+.routeLink {
+  width: 44px;
+  height: 2px;
+  background: var(--line-strong);
+}
+
+.routeLinkLive {
+  background-image: linear-gradient(to right, var(--accent) 0 45%, transparent 45% 100%);
+  background-size: 12px 2px;
+  background-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  animation: routeFlow 1s linear infinite;
+}
+
+:global([dir="rtl"]) .routeLinkLive {
+  animation-direction: reverse;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 18px;
+}
+
+.formWide {
+  max-width: 760px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.field input,
+.field select {
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.field select:disabled {
+  opacity: 0.7;
+}
+
+.formNote {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routeLinkLive {
     animation: none;
   }
 }

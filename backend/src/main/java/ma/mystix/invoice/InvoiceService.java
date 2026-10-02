@@ -17,6 +17,8 @@ import ma.mystix.canonical.InvoiceTotals;
 import ma.mystix.format.ubl.En16931Validator;
 import ma.mystix.format.ubl.UblInvoiceGenerator;
 import ma.mystix.format.ubl.UblSchemaValidator;
+import ma.mystix.flow.ExchangeFlow;
+import ma.mystix.flow.FlowService;
 import ma.mystix.logs.LogEvent;
 import ma.mystix.logs.ProcessingLog;
 import ma.mystix.shared.Sha256;
@@ -50,11 +52,14 @@ public class InvoiceService {
     private final En16931Validator rulesValidator;
     private final ClearanceGateway clearance;
     private final ProcessingLog logs;
+    private final FlowService flows;
     private final Clock clock;
 
     InvoiceService(CompanyService companies, InvoiceRepository repository, InvoiceCalculator calculator,
                    UblInvoiceGenerator generator, UblSchemaValidator schemaValidator,
-                   En16931Validator rulesValidator, ClearanceGateway clearance, ProcessingLog logs, Clock clock) {
+                   En16931Validator rulesValidator, ClearanceGateway clearance, ProcessingLog logs,
+                   FlowService flows, Clock clock) {
+        this.flows = flows;
         this.clearance = clearance;
         this.logs = logs;
         this.companies = companies;
@@ -70,8 +75,9 @@ public class InvoiceService {
     public record Submission(StoredInvoice invoice, byte[] ubl, boolean replayed) {
     }
 
-    public Submission submit(UUID companyId, byte[] rawRequest, Invoice invoice) {
+    public Submission submit(UUID companyId, UUID requestedFlowId, byte[] rawRequest, Invoice invoice) {
         Company company = companies.get(companyId);
+        ExchangeFlow flow = flows.forSubmission(companyId, requestedFlowId);
         if (invoice.seller().ice() != null && !invoice.seller().ice().equals(company.ice().value())) {
             throw new MystixException(ErrorCode.INVOICE_REJECTED, "Seller ICE differs from company " + companyId,
                     List.of(new ApiError.FieldViolation("seller.ice",
@@ -92,7 +98,7 @@ public class InvoiceService {
         StoredInvoice stored = new StoredInvoice(UUID.randomUUID(), companyId, invoice.number(), invoice.issueDate(),
                 StoredInvoice.STATUS_VALIDATED, CanonicalVersion.CURRENT, canonicalSha256, OffsetDateTime.now(clock),
                 null, null, null, invoice.buyer().name(), invoice.currency().getCurrencyCode(),
-                totals.payableAmount());
+                totals.payableAmount(), flow.id());
         Map<ArtifactKind, byte[]> artifacts = new EnumMap<>(ArtifactKind.class);
         artifacts.put(ArtifactKind.RAW, rawRequest);
         artifacts.put(ArtifactKind.CANONICAL, canonical);
@@ -111,9 +117,9 @@ public class InvoiceService {
     }
 
     /** Most recent invoices of the company first. */
-    public List<StoredInvoice> list(UUID companyId, int limit) {
+    public List<StoredInvoice> list(UUID companyId, UUID flowId, int limit) {
         companies.get(companyId);
-        return repository.list(companyId, Math.clamp(limit, 1, MAX_PAGE_SIZE));
+        return repository.list(companyId, flowId, Math.clamp(limit, 1, MAX_PAGE_SIZE));
     }
 
     public List<StoredInvoice.StatusEvent> history(UUID companyId, UUID invoiceId) {

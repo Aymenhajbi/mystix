@@ -54,6 +54,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   const navLabels = {
     main: dict.nav.main,
     home: dict.nav.home,
+    clients: dict.nav.clients,
     cockpit: dict.nav.cockpit,
     flow: dict.nav.flow,
     mapping: dict.nav.mapping,
@@ -61,6 +62,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     logs: dict.nav.logs,
   };
   const paletteItems: PaletteItem[] = [
+    { kind: dict.palette.kindPage, label: dict.nav.clients, extra: "", href: `/${lang}/clients`, keywords: `${dict.nav.clients} client environnement flux` },
     { kind: dict.palette.kindPage, label: dict.nav.cockpit, extra: "", href: `/${lang}`, keywords: dict.nav.cockpit },
     {
       kind: dict.palette.kindPage,
@@ -106,7 +108,9 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
               <Link href={`/${lang}`} className={styles.brand}>
                 <Wordmark />
               </Link>
-              {company?.kind === "ok" && <span className={styles.tenant}>{company.data.legalName}</span>}
+              <Link href={`/${lang}/clients`} className={styles.tenant} title={dict.clients.switch}>
+                {company?.kind === "ok" ? company.data.legalName : dict.clients.switch}
+              </Link>
               <span className={`${styles.chip} ${styles.chipSim}`} title={dict.top.simulatedTitle}>
                 {dict.top.simulated}
               </span>

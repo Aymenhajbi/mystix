@@ -14,11 +14,12 @@ import java.util.UUID;
  * @param buyerName          BT-44, for lists; {@code null} for invoices stored before summaries existed
  * @param currency           BT-5, for lists; may be {@code null} likewise
  * @param payableAmount      BT-115, for lists; may be {@code null} likewise
+ * @param flowId             exchange flow the invoice entered, {@code null} for invoices stored before flows
  */
 public record StoredInvoice(UUID id, UUID companyId, String number, LocalDate issueDate, String status,
                             String canonicalVersion, String canonicalSha256, OffsetDateTime createdAt,
                             String clearanceReference, Boolean clearanceSimulated, OffsetDateTime clearanceAt,
-                            String buyerName, String currency, BigDecimal payableAmount) {
+                            String buyerName, String currency, BigDecimal payableAmount, UUID flowId) {
 
     public static final String STATUS_VALIDATED = "VALIDATED";
     public static final String STATUS_CLEARED = "CLEARED";

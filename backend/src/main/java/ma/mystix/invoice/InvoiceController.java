@@ -45,6 +45,7 @@ class InvoiceController {
     static final String CANONICAL_VERSION_HEADER = "X-Mystix-Canonical-Version";
     static final String EN16931_HEADER = "X-Mystix-En16931-Artefacts";
     static final String STATUS_HEADER = "X-Mystix-Status";
+    static final String FLOW_HEADER = "X-Mystix-Flow-Id";
     static final String CLEARANCE_REFERENCE_HEADER = "X-Mystix-Clearance-Reference";
     static final String CLEARANCE_SIMULATED_HEADER = "X-Mystix-Clearance-Simulated";
 
@@ -70,12 +71,14 @@ class InvoiceController {
      * {@value #CLEARANCE_SIMULATED_HEADER}.
      */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_XML_VALUE)
-    ResponseEntity<byte[]> submit(@RequestHeader(COMPANY_HEADER) UUID companyId, @RequestBody byte[] body) {
+    ResponseEntity<byte[]> submit(@RequestHeader(COMPANY_HEADER) UUID companyId,
+                                  @RequestHeader(value = FLOW_HEADER, required = false) UUID flowId,
+                                  @RequestBody byte[] body) {
         InvoiceRequest request = null;
         InvoiceService.Submission submission;
         try {
             request = parse(body);
-            submission = service.submit(companyId, body, InvoiceRequestMapper.toCanonical(request));
+            submission = service.submit(companyId, flowId, body, InvoiceRequestMapper.toCanonical(request));
         } catch (MystixException e) {
             logs.submissionRejected(companyId, request == null ? null : request.number(), e, body);
             throw e;
@@ -91,6 +94,7 @@ class InvoiceController {
                 .header(INVOICE_ID_HEADER, invoice.id().toString())
                 .header(REPLAYED_HEADER, Boolean.toString(submission.replayed()))
                 .header(STATUS_HEADER, invoice.status())
+                .header(FLOW_HEADER, String.valueOf(invoice.flowId()))
                 .header(CANONICAL_VERSION_HEADER, invoice.canonicalVersion())
                 .header(EN16931_HEADER, En16931Validator.ARTEFACTS_VERSION);
         if (invoice.clearanceSimulated() != null) {
@@ -112,11 +116,12 @@ class InvoiceController {
 
     /** List item. {@code payableAmount} is a decimal string at the currency's precision, null for old invoices. */
     record InvoiceSummary(UUID id, String number, LocalDate issueDate, String buyerName, String currency,
-                          String payableAmount, String status, ClearanceView clearance, OffsetDateTime createdAt) {
+                          String payableAmount, String status, ClearanceView clearance, OffsetDateTime createdAt,
+                          UUID flowId) {
 
         static InvoiceSummary from(StoredInvoice i) {
             return new InvoiceSummary(i.id(), i.number(), i.issueDate(), i.buyerName(), i.currency(),
-                    amount(i), i.status(), ClearanceView.from(i), i.createdAt());
+                    amount(i), i.status(), ClearanceView.from(i), i.createdAt(), i.flowId());
         }
     }
 
@@ -128,8 +133,9 @@ class InvoiceController {
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     List<InvoiceSummary> list(@RequestHeader(COMPANY_HEADER) UUID companyId,
+                              @RequestParam(required = false) UUID flowId,
                               @RequestParam(defaultValue = "50") int limit) {
-        return service.list(companyId, limit).stream().map(InvoiceSummary::from).toList();
+        return service.list(companyId, flowId, limit).stream().map(InvoiceSummary::from).toList();
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)

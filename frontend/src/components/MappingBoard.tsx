@@ -35,7 +35,16 @@ function Wire({ active, kind, from = true }: { active: boolean; kind: MappingKin
 }
 
 /** Read-only, MapForce-like view of the implemented mapping with the real values of one invoice. */
-export function MappingBoard({ rows, dict }: { rows: LineageRow[]; dict: Pick<Dictionary, "mapping"> }) {
+/** {@code structureOnly}: no invoice yet, so paths are shown without values. */
+export function MappingBoard({
+  rows,
+  dict,
+  structureOnly = false,
+}: {
+  rows: LineageRow[];
+  dict: Pick<Dictionary, "mapping">;
+  structureOnly?: boolean;
+}) {
   const m = dict.mapping;
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -125,7 +134,7 @@ export function MappingBoard({ rows, dict }: { rows: LineageRow[]; dict: Pick<Di
                   {r.request ? (
                     <>
                       <span className={styles.mapPath}>{r.request.path}</span>
-                      <span className={styles.mapValue}>{r.request.value ?? <i>{m.absent}</i>}</span>
+                      <span className={styles.mapValue}>{structureOnly ? null : (r.request.value ?? <i>{m.absent}</i>)}</span>
                     </>
                   ) : (
                     <span className={styles.mapNone}>—</span>
@@ -136,7 +145,7 @@ export function MappingBoard({ rows, dict }: { rows: LineageRow[]; dict: Pick<Di
                   {r.canonical ? (
                     <>
                       <span className={styles.mapPath}>{r.canonical.path.replace(/^invoice\./, "")}</span>
-                      <span className={styles.mapValue}>{r.canonical.value ?? <i>{m.absent}</i>}</span>
+                      <span className={styles.mapValue}>{structureOnly ? null : (r.canonical.value ?? <i>{m.absent}</i>)}</span>
                     </>
                   ) : (
                     <span className={styles.mapNone}>—</span>
@@ -154,7 +163,7 @@ export function MappingBoard({ rows, dict }: { rows: LineageRow[]; dict: Pick<Di
                     <>
                       <span className={styles.mapPath}>{shortXPath(r.target.path)}</span>
                       <span className={styles.mapValue}>
-                        {r.target.value ?? <i>{m.absent}</i>}
+                        {structureOnly ? null : (r.target.value ?? <i>{m.absent}</i>)}
                         {changed && <span className={styles.mapChanged}>{m.changed}</span>}
                       </span>
                     </>
