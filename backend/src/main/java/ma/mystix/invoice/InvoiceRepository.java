@@ -175,6 +175,23 @@ class InvoiceRepository {
                 .list();
     }
 
+    /** RAW requests of the latest invoices of a flow, newest first, with their numbers. */
+    List<Map.Entry<String, byte[]>> latestRaw(UUID companyId, UUID flowId, int limit) {
+        return jdbc.sql("""
+                SELECT m.invoice_number, a.content
+                FROM invoice_message m
+                JOIN invoice_artifact a ON a.message_id = m.id AND a.company_id = m.company_id AND a.kind = 'RAW'
+                WHERE m.company_id = :companyId AND m.flow_id = :flowId
+                ORDER BY m.created_at DESC
+                LIMIT :limit
+                """)
+                .param("companyId", companyId)
+                .param("flowId", flowId)
+                .param("limit", limit)
+                .query((rs, n) -> Map.entry(rs.getString("invoice_number"), rs.getBytes("content")))
+                .list();
+    }
+
     Optional<byte[]> artifactContent(UUID companyId, UUID messageId, ArtifactKind kind) {
         return jdbc.sql("""
                 SELECT content FROM invoice_artifact

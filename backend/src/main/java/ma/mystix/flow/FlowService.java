@@ -100,6 +100,7 @@ public class FlowService {
      */
     @Transactional(readOnly = true)
     public ExchangeFlow forSubmission(UUID companyId, UUID requestedFlowId) {
+        companies.get(companyId);
         if (requestedFlowId != null) {
             ExchangeFlow flow = get(companyId, requestedFlowId);
             if (flow.status() != ExchangeFlow.Status.ACTIVE || !"API".equals(flow.sourceChannel())) {
