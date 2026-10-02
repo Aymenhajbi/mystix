@@ -1,0 +1,57 @@
+/* Mystix design tokens. Brand = #8500DE; green / orange / red are reserved for states. */
+:root {
+  --color-brand: #8500de;
+  --color-brand-contrast: #ffffff;
+  --color-bg: #ffffff;
+  --color-surface: #f6f4f9;
+  --color-text: #1b1523;
+  --color-text-muted: #5c5566;
+  --color-border: #e2dce9;
+  --color-success: #1e7a3c;
+  --color-warning: #a35200;
+  --color-danger: #b42318;
+  --radius: 8px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-brand: #b45cff;
+    --color-brand-contrast: #14001f;
+    --color-bg: #121016;
+    --color-surface: #1d1a23;
+    --color-text: #f1edf6;
+    --color-text-muted: #b3abbe;
+    --color-border: #332e3b;
+    --color-success: #5cc983;
+    --color-warning: #f0a04b;
+    --color-danger: #f97066;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-brand);
+  outline-offset: 2px;
+}
