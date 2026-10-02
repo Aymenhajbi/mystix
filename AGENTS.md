@@ -103,7 +103,8 @@ Vérifiées le 2026-09-29 sur Windows 11 (PowerShell, depuis la racine du dépô
 | Backend : lancer | `scripts\run-backend.ps1` (charge `.env`, profil `dev`, port 8080) |
 | Frontend : installer | `cd frontend; npm ci` |
 | Frontend : vérifier | `cd frontend; npm run lint; npm run typecheck; npm run build` |
-| Frontend : lancer | `cd frontend; npm run dev` (http://localhost:3000) |
+| Frontend : lancer | `cd frontend; npm run dev` (http://localhost:3000, redirige vers `/fr` ou `/ar`) |
+| Portail : configurer | `Copy-Item frontend\.env.example frontend\.env.local`, puis `MYSTIX_PORTAL_COMPANY_ID` = id d'une société (provisoire, avant authentification) |
 
 ## 9. Documentation
 

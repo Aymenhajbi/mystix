@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "title": "Mystix",
+    "description": "Intégration EDI, facturation électronique et clearance DGI"
+  },
+  "nav": {
+    "home": "Accueil",
+    "invoices": "Factures",
+    "switchTo": "العربية",
+    "switchToLabel": "Afficher en arabe",
+    "main": "Navigation principale"
+  },
+  "common": {
+    "simulatedBanner": "Clearance simulée. Les spécifications techniques de la DGI ne sont pas encore publiées : aucune facture n'est transmise à la DGI et les références affichées sont fictives.",
+    "simulatedBadge": "Simulée",
+    "devCompanyMissing": "Portail en mode développement : aucune société n'est configurée. Définissez MYSTIX_PORTAL_COMPANY_ID dans frontend/.env.local (identifiant d'une société créée via l'API), puis relancez le portail.",
+    "apiUnreachable": "L'API Mystix est injoignable. Vérifiez que le backend est démarré.",
+    "back": "Retour aux factures"
+  },
+  "home": {
+    "lead": "Intégration EDI, facturation électronique et clearance DGI.",
+    "statusTitle": "État de la plateforme",
+    "checking": "Vérification de l'API…",
+    "api": "API Mystix",
+    "up": "Opérationnelle",
+    "down": "Dégradée",
+    "unreachable": "Injoignable",
+    "seeInvoices": "Voir les factures"
+  },
+  "status": {
+    "VALIDATED": "En attente de clearance",
+    "CLEARED": "Acceptée",
+    "CLEARANCE_REJECTED": "Refusée",
+    "CLEARANCE_ERROR": "Erreur de clearance"
+  },
+  "invoices": {
+    "title": "Factures",
+    "caption": "Dernières factures de la société, de la plus récente à la plus ancienne",
+    "empty": "Aucune facture pour le moment. Envoyez une facture avec POST /api/v1/invoices.",
+    "number": "Numéro",
+    "issueDate": "Date",
+    "buyer": "Client",
+    "amount": "Montant TTC",
+    "status": "Statut",
+    "open": "Ouvrir la facture {number}"
+  },
+  "invoice": {
+    "title": "Facture {number}",
+    "notFound": "Facture introuvable pour cette société.",
+    "summary": "Résumé",
+    "clearance": "Clearance",
+    "reference": "Référence",
+    "noReference": "Aucune",
+    "clearedAt": "Date de la réponse",
+    "history": "Historique",
+    "artifacts": "Documents conservés",
+    "kind": { "RAW": "Requête reçue (JSON)", "CANONICAL": "Modèle canonique (JSON)", "OUT": "Facture UBL 2.1 (XML)" },
+    "size": "{size} octets",
+    "downloadUbl": "Télécharger l'UBL 2.1",
+    "canonicalVersion": "Version du modèle canonique"
+  }
+}
