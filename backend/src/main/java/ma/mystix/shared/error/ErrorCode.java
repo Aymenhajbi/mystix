@@ -38,6 +38,18 @@ public enum ErrorCode {
             new LocalizedText("Consultez les règles en échec, corrigez la facture puis renvoyez-la.",
                     "راجع القواعد غير المستوفاة، صحّح الفاتورة ثم أعد إرسالها.")),
 
+    INVOICE_NUMBER_CONFLICT(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Une autre facture porte déjà ce numéro pour cette société.",
+                    "توجد فاتورة أخرى بنفس الرقم لهذه الشركة."),
+            new LocalizedText("Utilisez un nouveau numéro, ou renvoyez la facture d'origine à l'identique.",
+                    "استخدم رقماً جديداً، أو أعد إرسال الفاتورة الأصلية دون أي تغيير.")),
+
+    INVOICE_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
+            new LocalizedText("Facture introuvable.",
+                    "الفاتورة غير موجودة."),
+            new LocalizedText("Vérifiez l'identifiant de la facture et la société utilisée.",
+                    "تحقّق من معرّف الفاتورة ومن الشركة المستخدمة.")),
+
     INVOICE_SCHEMA_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, Stage.GENERATION, false,
             new LocalizedText("Le document UBL produit n'est pas valide. L'erreur vient de Mystix.",
                     "مستند UBL الناتج غير صالح. الخطأ صادر عن Mystix."),
