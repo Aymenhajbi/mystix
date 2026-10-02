@@ -221,6 +221,59 @@ class InvoiceApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void lineageReadsRequestCanonicalAndUblValues() {
+        String id = submit(sellerCompany, withNumber("FA-LINEAGE-1"), byte[].class)
+                .getHeaders().getFirst("X-Mystix-Invoice-Id");
+
+        ResponseEntity<Map> response = http.get().uri("/api/v1/invoices/{id}/lineage", id)
+                .header("X-Mystix-Company-Id", sellerCompany.toString())
+                .retrieve().toEntity(Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsEntry("mapping", "ubl-invoice");
+        List<Map<String, Object>> rows = (List<Map<String, Object>>) response.getBody().get("rows");
+
+        Map<String, Object> number = row(rows, "BT-1", null);
+        assertThat(asMap(number.get("request"))).containsEntry("value", "FA-LINEAGE-1");
+        assertThat(asMap(number.get("canonical"))).containsEntry("value", "FA-LINEAGE-1");
+        assertThat(asMap(number.get("target"))).containsEntry("value", "FA-LINEAGE-1");
+
+        Map<String, Object> price = row(rows, "BT-146", 0);
+        assertThat(asMap(price.get("request"))).containsEntry("value", "125.50");
+        assertThat(asMap(price.get("target")))
+                .containsEntry("value", "125.5")
+                .containsEntry("path", "/inv:Invoice/cac:InvoiceLine[1]/cac:Price/cbc:PriceAmount");
+
+        assertThat(asMap(row(rows, "BT-131", 1).get("target"))).containsEntry("value", "120.83");
+        assertThat(row(rows, "BT-131", 1)).containsEntry("kind", "CALCULATED");
+
+        Map<String, Object> tradeRegister = rows.stream()
+                .filter(r -> "NOT_EMITTED".equals(r.get("kind"))).findFirst().orElseThrow();
+        assertThat(asMap(tradeRegister.get("canonical"))).containsEntry("value", "RC-TEST-1");
+        assertThat(tradeRegister.get("target")).isNull();
+
+        ResponseEntity<Map> asOther = http.get().uri("/api/v1/invoices/{id}/lineage", id)
+                .header("X-Mystix-Company-Id", otherCompany.toString())
+                .retrieve().toEntity(Map.class);
+        assertThat(asOther.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void mappingSpecIsPublished() {
+        ResponseEntity<Map> spec = http.get().uri("/api/v1/mappings/ubl-invoice").retrieve().toEntity(Map.class);
+
+        assertThat(spec.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(spec.getBody()).containsEntry("id", "ubl-invoice").containsKey("fields");
+    }
+
+    private static Map<String, Object> row(List<Map<String, Object>> rows, String term, Integer line) {
+        return rows.stream()
+                .filter(r -> term.equals(r.get("term")) && java.util.Objects.equals(line, r.get("line")))
+                .findFirst().orElseThrow(() -> new AssertionError("No row " + term + " line " + line));
+    }
+
+    @Test
     void statsCountSubmissionsPerEventAndStage() {
         long acceptedBefore = stat(sellerCompany, "INVOICE_ACCEPTED", "STORAGE", null);
         long mappingBefore = stat(sellerCompany, "INVOICE_REJECTED", "MAPPING", "INVOICE_REJECTED");
