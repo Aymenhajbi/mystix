@@ -28,7 +28,7 @@ class AdminController {
     }
 
     record Environment(UUID id, String ice, String legalName, OffsetDateTime createdAt, long flows,
-                       long activeFlows, long invoices, long errors24h, OffsetDateTime lastActivity) {
+                       long activeFlows, long inboundFlows, long partners, long invoices, long errors24h, OffsetDateTime lastActivity) {
     }
 
     @GetMapping(value = "/environments", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -38,6 +38,9 @@ class AdminController {
                        (SELECT count(*) FROM exchange_flow f WHERE f.company_id = c.id) AS flows,
                        (SELECT count(*) FROM exchange_flow f WHERE f.company_id = c.id AND f.status = 'ACTIVE')
                            AS active_flows,
+                       (SELECT count(*) FROM exchange_flow f WHERE f.company_id = c.id AND f.direction = 'IN')
+                           AS inbound_flows,
+                       (SELECT count(*) FROM partner p WHERE p.company_id = c.id) AS partners,
                        (SELECT count(*) FROM invoice_message m WHERE m.company_id = c.id) AS invoices,
                        (SELECT count(*) FROM processing_log l WHERE l.company_id = c.id AND l.level = 'ERROR'
                            AND l.occurred_at >= now() - interval '24 hours') AS errors_24h,
@@ -52,6 +55,8 @@ class AdminController {
                         rs.getObject("created_at", OffsetDateTime.class),
                         rs.getLong("flows"),
                         rs.getLong("active_flows"),
+                        rs.getLong("inbound_flows"),
+                        rs.getLong("partners"),
                         rs.getLong("invoices"),
                         rs.getLong("errors_24h"),
                         rs.getObject("last_activity", OffsetDateTime.class)))

@@ -27,7 +27,8 @@ class FlowRepository {
             rs.getString("mapping_version"),
             ExchangeFlow.Status.valueOf(rs.getString("status")),
             rs.getObject("created_at", OffsetDateTime.class),
-            rs.getObject("updated_at", OffsetDateTime.class));
+            rs.getObject("updated_at", OffsetDateTime.class),
+            rs.getObject("partner_id", UUID.class));
 
     private final JdbcClient jdbc;
 
@@ -39,9 +40,10 @@ class FlowRepository {
         jdbc.sql("""
                 INSERT INTO exchange_flow (id, company_id, name, document_type, direction, source_channel,
                                            source_format, target_format, target_channel, mapping_id, mapping_version,
-                                           status, created_at, updated_at)
+                                           status, created_at, updated_at, partner_id)
                 VALUES (:id, :companyId, :name, :documentType, :direction, :sourceChannel, :sourceFormat,
-                        :targetFormat, :targetChannel, :mappingId, :mappingVersion, :status, :createdAt, :updatedAt)
+                        :targetFormat, :targetChannel, :mappingId, :mappingVersion, :status, :createdAt, :updatedAt,
+                        :partnerId)
                 """)
                 .param("id", f.id())
                 .param("companyId", f.companyId())
@@ -57,11 +59,12 @@ class FlowRepository {
                 .param("status", f.status().name())
                 .param("createdAt", f.createdAt())
                 .param("updatedAt", f.updatedAt())
+                .param("partnerId", f.partnerId())
                 .update();
     }
 
     List<ExchangeFlow> list(UUID companyId) {
-        return jdbc.sql("SELECT * FROM exchange_flow WHERE company_id = :companyId ORDER BY created_at, name")
+        return jdbc.sql("SELECT * FROM exchange_flow WHERE company_id = :companyId ORDER BY direction DESC, created_at, name")
                 .param("companyId", companyId)
                 .query(FLOW)
                 .list();
@@ -79,7 +82,7 @@ class FlowRepository {
     Optional<ExchangeFlow> defaultApiFlow(UUID companyId) {
         return jdbc.sql("""
                 SELECT * FROM exchange_flow
-                WHERE company_id = :companyId AND status = 'ACTIVE'
+                WHERE company_id = :companyId AND status = 'ACTIVE' AND direction = 'OUT'
                   AND source_channel = 'API' AND document_type = 'INVOICE'
                 ORDER BY created_at, name
                 LIMIT 1

@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import ma.mystix.flow.FlowCatalog;
 import ma.mystix.flow.FlowService;
 import ma.mystix.shared.Sha256;
 import ma.mystix.shared.error.ApiError;
@@ -47,6 +48,10 @@ public class MappingVersionService {
     /** New draft from the given rules, or from the published (else latest) version when none are given. */
     @Transactional
     public MappingVersion createDraft(UUID companyId, UUID flowId, List<MappingRule> rules) {
+        // Rules target the JSON canonical to UBL mapping; a declared-only flow has no mapping to edit yet.
+        if (!FlowCatalog.executable(flows.get(companyId, flowId))) {
+            throw new MystixException(ErrorCode.FLOW_NOT_EXECUTABLE, "Flow " + flowId + " has no executable mapping");
+        }
         List<MappingVersion> existing = versions(companyId, flowId);
         List<MappingRule> start = rules != null ? rules
                 : existing.stream().filter(v -> v.status() == MappingVersion.Status.PUBLISHED).findFirst()

@@ -116,6 +116,24 @@ public enum ErrorCode {
             new LocalizedText("Ajoutez la valeur à la table de correspondance du flux, ou corrigez la facture.",
                     "أضف القيمة إلى جدول المطابقة في التدفق، أو صحّح الفاتورة.")),
 
+    PARTNER_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
+            new LocalizedText("Partenaire introuvable pour ce client.",
+                    "الشريك غير موجود لهذا الزبون."),
+            new LocalizedText("Vérifiez le partenaire choisi.",
+                    "تحقّق من الشريك المختار.")),
+
+    PARTNER_NAME_TAKEN(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Un partenaire porte déjà ce nom pour ce client.",
+                    "يوجد شريك بنفس الاسم لهذا الزبون."),
+            new LocalizedText("Choisissez un autre nom.",
+                    "اختر اسماً آخر.")),
+
+    FLOW_NOT_EXECUTABLE(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Ce flux est déclaré mais ses briques ne sont pas encore livrées : il ne peut pas être activé.",
+                    "هذا التدفق مُعلن لكن مكوّناته لم تُسلَّم بعد: لا يمكن تفعيله."),
+            new LocalizedText("Gardez-le en brouillon ; il pourra être activé quand les options prévues seront disponibles.",
+                    "احتفظ به كمسودة؛ يمكن تفعيله عندما تصبح الخيارات المبرمجة متاحة.")),
+
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
             new LocalizedText("Ressource introuvable.",
                     "المورد غير موجود."),
