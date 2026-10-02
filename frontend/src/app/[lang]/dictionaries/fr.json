@@ -13,7 +13,8 @@
     "skip": "Aller au contenu",
     "logs": "Logs",
     "flow": "Flux en direct",
-    "mapping": "Mapping"
+    "mapping": "Mapping",
+    "clients": "Environnements clients"
   },
   "top": {
     "search": "N° de facture, client, référence de clearance…",
@@ -336,5 +337,95 @@
     "openInvoice": "Ouvrir la facture",
     "seeLineage": "Voir la lignée des champs",
     "editorSoon": "L'édition des mappings par glisser-déposer arrive avec le Lot 7."
+  },
+  "clients": {
+    "title": "Environnements clients",
+    "lead": "Chaque client a ses propres flux d'échange. Choisissez un environnement pour voir ses flux, leur mapping et leurs messages, ou pour en configurer un nouveau.",
+    "consoleOff": "La console opérateur est désactivée (mystix.admin.enabled). Elle s'active avec le profil dev, en local uniquement.",
+    "empty": "Aucun environnement client. Créez une société avec POST /api/v1/companies.",
+    "current": "Actif",
+    "open": "Ouvrir",
+    "colClient": "Client",
+    "colFlows": "Flux actifs",
+    "colInvoices": "Factures",
+    "colErrors": "Erreurs 24 h",
+    "colLast": "Dernière activité",
+    "never": "jamais",
+    "switch": "Changer d'environnement",
+    "notActive": "Cet environnement n'est pas l'environnement actif du portail.",
+    "activate": "En faire l'environnement actif",
+    "flows": "Flux d'échange",
+    "flowsHint": "Cliquez un flux pour contrôler son mapping, sa configuration et ses messages",
+    "newFlow": "Nouveau flux",
+    "noFlows": "Aucun flux pour ce client.",
+    "stripFlows": "Flux",
+    "stripActive": "actifs : {count}",
+    "stripInvoices": "Factures",
+    "stripErrors": "Erreurs 24 h",
+    "breadcrumb": "Fil d'Ariane",
+    "status": {
+      "DRAFT": "Brouillon",
+      "ACTIVE": "Actif",
+      "PAUSED": "En pause"
+    },
+    "channels": {
+      "API": "API REST",
+      "PORTAL": "Portail PME",
+      "SFTP": "SFTP",
+      "AS2": "AS2",
+      "API_RESPONSE": "Réponse API",
+      "WEBHOOK": "Webhook"
+    },
+    "formats": {
+      "JSON_CANONICAL": "JSON canonique",
+      "IDOC_INVOIC02": "IDoc INVOIC02",
+      "EDIFACT_INVOIC_D96A": "EDIFACT INVOIC D96A",
+      "CSV": "CSV",
+      "UBL_2_1": "UBL 2.1",
+      "CII_D16B": "UN/CEFACT CII D16B",
+      "EANCOM_INVOIC": "EANCOM INVOIC"
+    },
+    "planned": "prévu, lot {lot}",
+    "flow": {
+      "source": "Source",
+      "mapping": "Mapping",
+      "target": "Cible",
+      "config": "Configuration",
+      "name": "Nom du flux",
+      "statusLabel": "Statut",
+      "save": "Enregistrer",
+      "saved": "Flux enregistré.",
+      "pauseNote": "Un flux en pause ou en brouillon refuse les factures (erreur FLOW_NOT_ACTIVE).",
+      "apiHint": "Pour envoyer sur ce flux : en-tête X-Mystix-Flow-Id: {id}",
+      "defaultHint": "Sans en-tête, les factures API entrent dans le premier flux API actif.",
+      "mappingFrom": "Valeurs de la dernière facture du flux : {number}",
+      "mappingEmpty": "Aucune facture sur ce flux : la structure du mapping est affichée sans valeurs.",
+      "messages": "Derniers messages du flux",
+      "noMessages": "Aucun message sur ce flux pour le moment.",
+      "editSoon": "Modifier le mapping (nouvelle version, publication bloquée si une fixture échoue) arrive au palier 3.",
+      "mappingTitle": "Mapping du flux"
+    },
+    "create": {
+      "title": "Nouveau flux",
+      "lead": "Choisissez la source, la cible et leurs canaux. Seules les options disponibles peuvent être utilisées ; les autres indiquent le lot où elles arrivent. Le flux est créé en brouillon : activez-le quand il est prêt.",
+      "name": "Nom du flux",
+      "namePlaceholder": "Ex. Factures export Hyper Anfa",
+      "document": "Document",
+      "invoice": "Facture",
+      "sourceChannel": "Canal d'entrée",
+      "sourceFormat": "Format reçu",
+      "targetFormat": "Format produit",
+      "targetChannel": "Canal de sortie",
+      "mappingAuto": "Mapping retenu",
+      "submit": "Créer le flux en brouillon",
+      "cancel": "Annuler"
+    },
+    "errors": {
+      "FLOW_NAME_TAKEN": "Un flux porte déjà ce nom pour ce client.",
+      "FLOW_OPTION_UNAVAILABLE": "Cette combinaison n'est pas encore disponible.",
+      "VALIDATION_FAILED": "Le formulaire est incomplet.",
+      "API_UNREACHABLE": "L'API Mystix ne répond pas.",
+      "default": "L'opération a échoué ({code})."
+    }
   }
 }

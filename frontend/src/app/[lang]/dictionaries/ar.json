@@ -13,7 +13,8 @@
     "skip": "الانتقال إلى المحتوى",
     "logs": "السجلات",
     "flow": "التدفق المباشر",
-    "mapping": "الربط"
+    "mapping": "الربط",
+    "clients": "بيئات الزبناء"
   },
   "top": {
     "search": "رقم الفاتورة، الزبون، مرجع المصادقة…",
@@ -336,5 +337,95 @@
     "openInvoice": "فتح الفاتورة",
     "seeLineage": "عرض مسار الحقول",
     "editorSoon": "تعديل الربط بالسحب والإفلات قادم في الدفعة 7."
+  },
+  "clients": {
+    "title": "بيئات الزبناء",
+    "lead": "لكل زبون تدفقات تبادل خاصة به. اختر بيئة لعرض تدفقاتها وربطها ورسائلها، أو لإعداد تدفق جديد.",
+    "consoleOff": "وحدة المشغّل معطّلة (mystix.admin.enabled). تُفعَّل مع ملف dev محلياً فقط.",
+    "empty": "لا توجد بيئة زبون. أنشئ شركة عبر POST /api/v1/companies.",
+    "current": "نشطة",
+    "open": "فتح",
+    "colClient": "الزبون",
+    "colFlows": "التدفقات النشطة",
+    "colInvoices": "الفواتير",
+    "colErrors": "أخطاء 24 ساعة",
+    "colLast": "آخر نشاط",
+    "never": "أبداً",
+    "switch": "تغيير البيئة",
+    "notActive": "هذه البيئة ليست البيئة النشطة في البوابة.",
+    "activate": "جعلها البيئة النشطة",
+    "flows": "تدفقات التبادل",
+    "flowsHint": "انقر على تدفق لمراجعة ربطه وإعداده ورسائله",
+    "newFlow": "تدفق جديد",
+    "noFlows": "لا توجد تدفقات لهذا الزبون.",
+    "stripFlows": "التدفقات",
+    "stripActive": "النشطة: {count}",
+    "stripInvoices": "الفواتير",
+    "stripErrors": "أخطاء 24 ساعة",
+    "breadcrumb": "مسار التنقل",
+    "status": {
+      "DRAFT": "مسودة",
+      "ACTIVE": "نشط",
+      "PAUSED": "متوقف"
+    },
+    "channels": {
+      "API": "API REST",
+      "PORTAL": "بوابة المقاولات",
+      "SFTP": "SFTP",
+      "AS2": "AS2",
+      "API_RESPONSE": "رد API",
+      "WEBHOOK": "Webhook"
+    },
+    "formats": {
+      "JSON_CANONICAL": "JSON موحّد",
+      "IDOC_INVOIC02": "IDoc INVOIC02",
+      "EDIFACT_INVOIC_D96A": "EDIFACT INVOIC D96A",
+      "CSV": "CSV",
+      "UBL_2_1": "UBL 2.1",
+      "CII_D16B": "UN/CEFACT CII D16B",
+      "EANCOM_INVOIC": "EANCOM INVOIC"
+    },
+    "planned": "مُبرمج، الدفعة {lot}",
+    "flow": {
+      "source": "المصدر",
+      "mapping": "الربط",
+      "target": "الهدف",
+      "config": "الإعداد",
+      "name": "اسم التدفق",
+      "statusLabel": "الحالة",
+      "save": "حفظ",
+      "saved": "تم حفظ التدفق.",
+      "pauseNote": "التدفق المتوقف أو المسودة يرفض الفواتير (الخطأ FLOW_NOT_ACTIVE).",
+      "apiHint": "للإرسال على هذا التدفق: الترويسة X-Mystix-Flow-Id: {id}",
+      "defaultHint": "دون ترويسة، تدخل فواتير API في أول تدفق API نشط.",
+      "mappingFrom": "قيم آخر فاتورة في التدفق: {number}",
+      "mappingEmpty": "لا توجد فاتورة في هذا التدفق: تُعرض بنية الربط دون قيم.",
+      "messages": "آخر رسائل التدفق",
+      "noMessages": "لا توجد رسائل في هذا التدفق حالياً.",
+      "editSoon": "تعديل الربط (إصدار جديد، مع منع النشر إذا فشلت حالة اختبار) قادم في المرحلة 3.",
+      "mappingTitle": "ربط التدفق"
+    },
+    "create": {
+      "title": "تدفق جديد",
+      "lead": "اختر المصدر والهدف وقنواتهما. لا يمكن استعمال إلا الخيارات المتاحة؛ الخيارات الأخرى تشير إلى الدفعة التي ستصل فيها. يُنشأ التدفق كمسودة: فعّله عندما يكون جاهزاً.",
+      "name": "اسم التدفق",
+      "namePlaceholder": "مثال: فواتير تصدير هايبر أنفا",
+      "document": "الوثيقة",
+      "invoice": "فاتورة",
+      "sourceChannel": "قناة الدخول",
+      "sourceFormat": "الصيغة المستلمة",
+      "targetFormat": "الصيغة المُنتَجة",
+      "targetChannel": "قناة الخروج",
+      "mappingAuto": "الربط المعتمد",
+      "submit": "إنشاء التدفق كمسودة",
+      "cancel": "إلغاء"
+    },
+    "errors": {
+      "FLOW_NAME_TAKEN": "يوجد تدفق بنفس الاسم لهذا الزبون.",
+      "FLOW_OPTION_UNAVAILABLE": "هذا المزيج غير متاح بعد.",
+      "VALIDATION_FAILED": "الاستمارة غير مكتملة.",
+      "API_UNREACHABLE": "واجهة برمجة Mystix لا تستجيب.",
+      "default": "فشلت العملية ({code})."
+    }
   }
 }

@@ -2,12 +2,24 @@
  * Server-side client of the Mystix backend. Only imported by Server Components and Route Handlers:
  * the company identifier never reaches the browser.
  *
- * TODO(auth): the portal company comes from MYSTIX_PORTAL_COMPANY_ID until authentication exists (Lot 8).
+ * TODO(auth): the active client environment comes from the "mystix-company" cookie set by the environment picker,
+ * or MYSTIX_PORTAL_COMPANY_ID, until authentication exists (Lot 8).
  */
+import { cookies } from "next/headers";
+
+export const COMPANY_COOKIE = "mystix-company";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const isUuid = (v: string | undefined | null): v is string => !!v && UUID.test(v);
 export const apiBaseUrl =
   process.env.MYSTIX_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
-export const portalCompanyId = () => process.env.MYSTIX_PORTAL_COMPANY_ID?.trim() || null;
+/** Active client environment: the picker's cookie, else the configured default. */
+export async function portalCompanyId(): Promise<string | null> {
+  const fromCookie = (await cookies()).get(COMPANY_COOKIE)?.value;
+  if (isUuid(fromCookie)) return fromCookie;
+  const configured = process.env.MYSTIX_PORTAL_COMPANY_ID?.trim();
+  return isUuid(configured) ? configured : null;
+}
 
 export type InvoiceStatus = "VALIDATED" | "CLEARED" | "CLEARANCE_REJECTED";
 
@@ -60,8 +72,8 @@ export const listInvoices = () => companyGet<InvoiceSummary[]>(`/api/v1/invoices
 
 export type Company = { id: string; ice: string; legalName: string; taxIdentifier: string | null };
 
-export const getPortalCompany = () => {
-  const company = portalCompanyId();
+export const getPortalCompany = async () => {
+  const company = await portalCompanyId();
   return company ? companyGet<Company>(`/api/v1/companies/${encodeURIComponent(company)}`) : null;
 };
 
@@ -142,7 +154,7 @@ export const listLogs = (options: { level?: LogLevel; invoiceId?: string; limit?
 
 /** Request body kept with a rejected submission, for the payload route. */
 export async function fetchLogPayload(id: string): Promise<ApiResult<ArrayBuffer>> {
-  const company = portalCompanyId();
+  const company = await portalCompanyId();
   if (!company) return { kind: "no-company" };
   try {
     const response = await fetch(`${apiBaseUrl}/api/v1/logs/${encodeURIComponent(id)}/payload`, {
@@ -162,7 +174,7 @@ export type ArtifactKind = "RAW" | "CANONICAL" | "OUT";
 
 /** Stored artefact as text (RAW and CANONICAL are JSON, OUT is UBL XML). */
 export async function fetchArtifactText(id: string, kind: ArtifactKind): Promise<ApiResult<string>> {
-  const company = portalCompanyId();
+  const company = await portalCompanyId();
   if (!company) return { kind: "no-company" };
   try {
     const response = await fetch(`${apiBaseUrl}/api/v1/invoices/${encodeURIComponent(id)}/artifacts/${kind}`, {
@@ -182,7 +194,7 @@ export const getInvoice = (id: string) => companyGet<InvoiceDetail>(`/api/v1/inv
 
 /** Raw UBL of an invoice, for the download route. */
 export async function fetchInvoiceUbl(id: string): Promise<ApiResult<ArrayBuffer>> {
-  const company = portalCompanyId();
+  const company = await portalCompanyId();
   if (!company) return { kind: "no-company" };
   try {
     const response = await fetch(`${apiBaseUrl}/api/v1/invoices/${encodeURIComponent(id)}/artifacts/OUT`, {
@@ -198,8 +210,8 @@ export async function fetchInvoiceUbl(id: string): Promise<ApiResult<ArrayBuffer
   }
 }
 
-async function companyGet<T>(path: string): Promise<ApiResult<T>> {
-  const company = portalCompanyId();
+async function companyGet<T>(path: string, forCompany?: string): Promise<ApiResult<T>> {
+  const company = forCompany ?? (await portalCompanyId());
   if (!company) return { kind: "no-company" };
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -213,5 +225,136 @@ async function companyGet<T>(path: string): Promise<ApiResult<T>> {
     return { kind: "ok", data: (await response.json()) as T };
   } catch {
     return { kind: "unreachable" };
+  }
+}
+
+// ---------- client environments and flows (ADR-0007) ----------
+
+export type Environment = {
+  id: string;
+  ice: string;
+  legalName: string;
+  createdAt: string;
+  flows: number;
+  activeFlows: number;
+  invoices: number;
+  errors24h: number;
+  lastActivity: string | null;
+};
+
+/** Operator list of client environments; "not-found" when the operator console is disabled. */
+export async function listEnvironments(): Promise<ApiResult<Environment[]>> {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/v1/admin/environments`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (response.status === 404) return { kind: "not-found" };
+    if (!response.ok) return { kind: "unreachable" };
+    return { kind: "ok", data: (await response.json()) as Environment[] };
+  } catch {
+    return { kind: "unreachable" };
+  }
+}
+
+export const getCompany = (companyId: string) =>
+  companyGet<Company>(`/api/v1/companies/${encodeURIComponent(companyId)}`, companyId);
+
+export type FlowStatus = "DRAFT" | "ACTIVE" | "PAUSED";
+
+export type ExchangeFlow = {
+  id: string;
+  companyId: string;
+  name: string;
+  documentType: string;
+  direction: string;
+  sourceChannel: string;
+  sourceFormat: string;
+  targetFormat: string;
+  targetChannel: string;
+  mappingId: string;
+  mappingVersion: string;
+  status: FlowStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CatalogOption = { code: string; available: boolean; lot: string | null };
+
+export type FlowCatalog = {
+  sourceChannels: CatalogOption[];
+  sourceFormats: CatalogOption[];
+  targetFormats: CatalogOption[];
+  targetChannels: CatalogOption[];
+  mappings: { sourceFormat: string; targetFormat: string; id: string; version: string }[];
+};
+
+export const listFlows = (companyId: string) => companyGet<ExchangeFlow[]>("/api/v1/flows", companyId);
+
+export const getFlow = (companyId: string, flowId: string) =>
+  companyGet<ExchangeFlow>(`/api/v1/flows/${encodeURIComponent(flowId)}`, companyId);
+
+export const getFlowCatalog = (companyId: string) => companyGet<FlowCatalog>("/api/v1/flows/catalog", companyId);
+
+export const listFlowInvoices = (companyId: string, flowId: string, limit = 20) =>
+  companyGet<InvoiceSummary[]>(`/api/v1/invoices?flowId=${encodeURIComponent(flowId)}&limit=${limit}`, companyId);
+
+export const getLineageFor = (companyId: string, invoiceId: string) =>
+  companyGet<Lineage>(`/api/v1/invoices/${encodeURIComponent(invoiceId)}/lineage`, companyId);
+
+export type SpecField = {
+  group: LineageRow["group"];
+  term: string | null;
+  label: string;
+  request: string | null;
+  canonical: string | null;
+  target: string | null;
+  kind: MappingKind;
+  rule: string;
+};
+
+export type MappingSpec = { id: string; version: string; fields: SpecField[] };
+
+export const getMappingSpec = (companyId: string) => companyGet<MappingSpec>("/api/v1/mappings/ubl-invoice", companyId);
+
+/** Lineage rows without values, for a flow that has not received an invoice yet (one line shown). */
+export function specRows(spec: MappingSpec): LineageRow[] {
+  const fill = (p: string | null) => (p === null ? null : { path: p.replace("{i}", "0").replace("{n}", "1"), value: null });
+  return spec.fields.map((f) => ({
+    group: f.group,
+    line: f.group === "line" ? 0 : null,
+    term: f.term,
+    label: f.label,
+    kind: f.kind,
+    rule: f.rule,
+    request: fill(f.request),
+    canonical: fill(f.canonical),
+    target: fill(f.target),
+  }));
+}
+
+export type MutationResult<T> = { ok: true; data: T } | { ok: false; errorCode: string };
+
+/** Writes for the flow screens (called from server actions only). */
+export async function sendFlowMutation<T>(
+  companyId: string,
+  method: "POST" | "PATCH",
+  path: string,
+  body: unknown,
+): Promise<MutationResult<T>> {
+  try {
+    const response = await fetch(`${apiBaseUrl}${path}`, {
+      method,
+      cache: "no-store",
+      headers: { "X-Mystix-Company-Id": companyId, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(5000),
+    });
+    const json = (await response.json().catch(() => null)) as (T & { errorCode?: string }) | null;
+    if (!response.ok) return { ok: false, errorCode: json?.errorCode ?? "INTERNAL_ERROR" };
+    return { ok: true, data: json as T };
+  } catch {
+    return { ok: false, errorCode: "API_UNREACHABLE" };
   }
 }
