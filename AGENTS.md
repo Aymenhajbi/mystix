@@ -104,6 +104,8 @@ Vérifiées le 2026-09-29 sur Windows 11 (PowerShell, depuis la racine du dépô
 | Frontend : installer | `cd frontend; npm ci` |
 | Frontend : vérifier | `cd frontend; npm run lint; npm run typecheck; npm run build` |
 | Frontend : lancer | `cd frontend; npm run dev` (http://localhost:3000, redirige vers `/fr` ou `/ar`) |
+| Logs métier (par société) | Portail `/fr/logs`, ou `GET /api/v1/logs?level=ERROR` (en-tête `X-Mystix-Company-Id`) |
+| Logs serveur | `backend/logs/mystix-backend.log` (rotation quotidienne et à 10 Mo) ; chercher le `X-Request-Id` affiché dans le portail |
 | Portail : configurer | `Copy-Item frontend\.env.example frontend\.env.local`, puis `MYSTIX_PORTAL_COMPANY_ID` = id d'une société (provisoire, avant authentification) |
 
 ## 9. Documentation

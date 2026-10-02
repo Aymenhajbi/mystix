@@ -56,6 +56,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     home: dict.nav.home,
     cockpit: dict.nav.cockpit,
     invoices: dict.nav.invoices,
+    logs: dict.nav.logs,
   };
   const paletteItems: PaletteItem[] = [
     { kind: dict.palette.kindPage, label: dict.nav.cockpit, extra: "", href: `/${lang}`, keywords: dict.nav.cockpit },
@@ -66,6 +67,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
       href: `/${lang}/invoices`,
       keywords: dict.nav.invoices,
     },
+    { kind: dict.palette.kindPage, label: dict.nav.logs, extra: "", href: `/${lang}/logs`, keywords: `${dict.nav.logs} log erreur error` },
     ...(invoices.kind === "ok"
       ? invoices.data.map((i) => ({
           kind: dict.palette.kindInvoice,

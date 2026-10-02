@@ -10,7 +10,8 @@
     "invoices": "Factures et clearance",
     "switchTo": "العربية",
     "switchToLabel": "Afficher en arabe",
-    "skip": "Aller au contenu"
+    "skip": "Aller au contenu",
+    "logs": "Logs"
   },
   "top": {
     "search": "N° de facture, client, référence de clearance…",
@@ -18,7 +19,11 @@
     "simulated": "Clearance simulée",
     "simulatedTitle": "Les spécifications techniques de la DGI ne sont pas publiées : aucune facture n'est transmise à la DGI et les références sont fictives.",
     "theme": "Changer de thème",
-    "themeNames": { "system": "Thème du système", "light": "Thème clair", "dark": "Thème sombre" },
+    "themeNames": {
+      "system": "Thème du système",
+      "light": "Thème clair",
+      "dark": "Thème sombre"
+    },
     "apiUp": "API opérationnelle",
     "apiDown": "API dégradée",
     "apiUnreachable": "API injoignable"
@@ -38,7 +43,12 @@
     "none": "—",
     "open": "Ouvrir"
   },
-  "severity": { "ok": "Acceptée", "warn": "En attente", "err": "Refusée", "info": "Info" },
+  "severity": {
+    "ok": "Acceptée",
+    "warn": "En attente",
+    "err": "Refusée",
+    "info": "Info"
+  },
   "status": {
     "VALIDATED": "En attente de clearance",
     "CLEARED": "Acceptée",
@@ -103,7 +113,12 @@
     "open": "Ouvrir la facture {number}",
     "search": "Numéro, client ou référence",
     "searchSubmit": "Rechercher",
-    "filters": { "all": "Toutes", "cleared": "Acceptées", "rejected": "Refusées", "pending": "En attente" },
+    "filters": {
+      "all": "Toutes",
+      "cleared": "Acceptées",
+      "rejected": "Refusées",
+      "pending": "En attente"
+    },
     "count": "{shown} sur {total}"
   },
   "invoice": {
@@ -132,7 +147,11 @@
     "answeredAt": "Réponse le",
     "history": "Événements",
     "files": "Fichiers",
-    "fileKinds": { "RAW": "IN · requête reçue", "CANONICAL": "Modèle canonique", "OUT": "OUT · UBL 2.1" },
+    "fileKinds": {
+      "RAW": "IN · requête reçue",
+      "CANONICAL": "Modèle canonique",
+      "OUT": "OUT · UBL 2.1"
+    },
     "fileDesc": {
       "RAW": "Corps JSON reçu par l'API, conservé octet pour octet",
       "CANONICAL": "Modèle canonique déterministe (affiché indenté, valeurs inchangées)",
@@ -144,5 +163,67 @@
     "copied": "Copié",
     "copyFailed": "Copie impossible : sélectionnez le texte",
     "fileUnavailable": "Fichier indisponible."
+  },
+  "logs": {
+    "title": "Logs",
+    "lead": "Tout ce qui arrive aux factures de la société : acceptations, rejets avec leur cause, réponses de clearance. Le plus récent en premier.",
+    "filterLabel": "Filtrer par niveau",
+    "filters": {
+      "all": "Tout",
+      "ERROR": "Erreurs",
+      "INFO": "Infos"
+    },
+    "search": "N° de facture, code d'erreur, request id, message",
+    "count": "{shown} sur {total}",
+    "window": "Les {count} lignes les plus récentes sont affichées.",
+    "empty": "Aucune ligne ne correspond.",
+    "none": "Aucun log pour le moment. Chaque facture envoyée laisse une trace ici, qu'elle soit acceptée ou refusée.",
+    "levels": {
+      "INFO": "Info",
+      "WARN": "Attention",
+      "ERROR": "Erreur"
+    },
+    "events": {
+      "INVOICE_ACCEPTED": "Facture acceptée et conservée",
+      "INVOICE_REPLAYED": "Facture renvoyée à l'identique",
+      "INVOICE_REJECTED": "Facture refusée",
+      "CLEARANCE_CLEARED": "Clearance acceptée (simulée)",
+      "CLEARANCE_REJECTED": "Clearance refusée (simulée)",
+      "CLEARANCE_ERROR": "Clearance indisponible"
+    },
+    "stages": {
+      "API": "API",
+      "MAPPING": "LECTURE",
+      "VALIDATION": "EN 16931",
+      "GENERATION": "GÉNÉRATION",
+      "STORAGE": "STOCKAGE",
+      "CLEARANCE": "CLEARANCE"
+    },
+    "colTime": "Horodatage",
+    "colLevel": "Niveau",
+    "colStage": "Étape",
+    "colEvent": "Événement",
+    "colInvoice": "Facture",
+    "what": "Ce qui s'est passé",
+    "action": "Que faire",
+    "technical": "Message technique",
+    "fields": "Champs en erreur",
+    "field": "Champ",
+    "reason": "Raison",
+    "rules": "Règles EN 16931 en échec",
+    "rule": "Règle",
+    "location": "Emplacement",
+    "ruleMessage": "Message du CEN",
+    "requestId": "Request id",
+    "requestIdHint": "À rechercher dans backend/logs/mystix-backend.log",
+    "errorCode": "Code",
+    "payload": "Voir la requête reçue ({size} octets)",
+    "openInvoice": "Ouvrir la facture",
+    "expand": "Détails",
+    "latestErrors": "Dernières erreurs",
+    "latestErrorsHint": "Les 5 plus récentes",
+    "noErrors": "Aucune erreur enregistrée.",
+    "seeAll": "Tous les logs",
+    "invoiceLogs": "Logs de la facture"
   }
 }

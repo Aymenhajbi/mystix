@@ -3,7 +3,8 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { JournalPanel, type JournalRow } from "@/components/JournalPanel";
-import { INVOICE_WINDOW, listInvoices, type InvoiceSummary } from "@/lib/api";
+import { LogList } from "@/components/LogList";
+import { INVOICE_WINDOW, listInvoices, listLogs, type InvoiceSummary, type LogEntry } from "@/lib/api";
 import { formatAmount, formatDateTime, hasLocale, intlTag, type Locale } from "@/lib/i18n";
 import { cockpitStats, journal } from "@/lib/invoiceView";
 import { getDictionary, t, type Dictionary } from "./dictionaries";
@@ -19,7 +20,7 @@ export default async function CockpitPage({ params }: PageProps<"/[lang]">) {
   if (!hasLocale(lang)) notFound();
   await connection();
   const dict = await getDictionary(lang);
-  const result = await listInvoices();
+  const [result, errors] = await Promise.all([listInvoices(), listLogs({ level: "ERROR", limit: 5 })]);
 
   return (
     <>
@@ -35,7 +36,9 @@ export default async function CockpitPage({ params }: PageProps<"/[lang]">) {
       {(result.kind === "unreachable" || result.kind === "not-found") && (
         <p className={styles.message} role="alert">{dict.common.apiUnreachable}</p>
       )}
-      {result.kind === "ok" && <Cockpit lang={lang} dict={dict} invoices={result.data} />}
+      {result.kind === "ok" && (
+        <Cockpit lang={lang} dict={dict} invoices={result.data} errors={errors.kind === "ok" ? errors.data : []} />
+      )}
     </>
   );
 }
@@ -44,10 +47,12 @@ function Cockpit({
   lang,
   dict,
   invoices,
+  errors,
 }: {
   lang: Locale;
   dict: Dictionary;
   invoices: InvoiceSummary[];
+  errors: LogEntry[];
 }) {
   const c = dict.cockpit;
   const stats = cockpitStats(invoices);
@@ -155,6 +160,20 @@ function Cockpit({
             }}
           />
           <div className={styles.stack}>
+            <section className={styles.panel} aria-labelledby="errors-title">
+              <div className={styles.panelHead}>
+                <h2 id="errors-title">{dict.logs.latestErrors}</h2>
+                <span className={styles.hint}>{dict.logs.latestErrorsHint}</span>
+                <div className={styles.right}>
+                  <Link href={`/${lang}/logs?level=ERROR`}>{dict.logs.seeAll}</Link>
+                </div>
+              </div>
+              {errors.length === 0 ? (
+                <p className={styles.empty}>{dict.logs.noErrors}</p>
+              ) : (
+                <LogList entries={errors} lang={lang} dict={dict} compact />
+              )}
+            </section>
             <section className={styles.panel} aria-labelledby="pipeline-title">
               <div className={styles.panelHead}>
                 <h2 id="pipeline-title">{c.pipeline}</h2>

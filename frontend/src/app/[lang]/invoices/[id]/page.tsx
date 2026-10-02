@@ -4,8 +4,9 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { FileViewer, type ViewerFile } from "@/components/FileViewer";
 import { Icon } from "@/components/Icons";
+import { LogList } from "@/components/LogList";
 import { SimulatedBadge, StatusBadge } from "@/components/StatusBadge";
-import { fetchArtifactText, getInvoice, type ArtifactKind } from "@/lib/api";
+import { fetchArtifactText, getInvoice, listLogs, type ArtifactKind } from "@/lib/api";
 import { highlightLine, prettyJson } from "@/lib/highlight";
 import { formatAmount, formatDate, formatDateTime, hasLocale, intlTag } from "@/lib/i18n";
 import { processingSteps } from "@/lib/invoiceView";
@@ -65,7 +66,10 @@ export default async function InvoicePage({ params }: PageProps<"/[lang]/invoice
   const outSha = invoice.artifacts.find((a) => a.kind === "OUT")?.sha256;
 
   const kinds: ArtifactKind[] = ["RAW", "CANONICAL", "OUT"];
-  const texts = await Promise.all(kinds.map((kind) => fetchArtifactText(invoice.id, kind)));
+  const [texts, invoiceLogs] = await Promise.all([
+    Promise.all(kinds.map((kind) => fetchArtifactText(invoice.id, kind))),
+    listLogs({ invoiceId: invoice.id, limit: 100 }),
+  ]);
   const files: ViewerFile[] = kinds.map((kind, i) => {
     const res = texts[i];
     const info = invoice.artifacts.find((a) => a.kind === kind);
@@ -198,6 +202,18 @@ export default async function InvoicePage({ params }: PageProps<"/[lang]/invoice
           </section>
         </div>
       </div>
+
+      {invoiceLogs.kind === "ok" && invoiceLogs.data.length > 0 && (
+        <section className={styles.panel} aria-labelledby="invoice-logs-title">
+          <div className={styles.panelHead}>
+            <h2 id="invoice-logs-title">{dict.logs.invoiceLogs}</h2>
+            <div className={styles.right}>
+              <Link href={`/${lang}/logs?q=${encodeURIComponent(invoice.number)}`}>{dict.logs.seeAll}</Link>
+            </div>
+          </div>
+          <LogList entries={invoiceLogs.data} lang={lang} dict={dict} />
+        </section>
+      )}
     </div>
   );
 }

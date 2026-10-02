@@ -23,6 +23,16 @@ export function highlightLine(line: string, language: CodeLanguage): string {
 }
 
 /**
+ * Shortens the namespace-qualified XPath produced by the EN 16931 Schematron:
+ * /*:Invoice[namespace-uri()='…'][1]/*:InvoiceLine[namespace-uri()='…'][3] → /Invoice/InvoiceLine[3]
+ */
+export function readableXPath(location: string) {
+  return location
+    .replace(/\*:([\w.-]+)\[namespace-uri\(\)='[^']*'\]/g, "$1")
+    .replace(/\[1\]/g, "");
+}
+
+/**
  * Re-indents compact JSON for reading WITHOUT parsing it: every literal is kept byte for byte
  * (JSON.parse would turn 125.50 into 125.5 and misrepresent the stored artefact).
  * Text that already spans several lines is returned unchanged.

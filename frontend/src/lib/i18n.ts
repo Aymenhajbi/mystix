@@ -29,7 +29,7 @@ export function formatDate(locale: Locale, isoDate: string) {
 export function formatDateTime(locale: Locale, isoDateTime: string) {
   return new Intl.DateTimeFormat(intlTag(locale), {
     dateStyle: "medium",
-    timeStyle: "short",
+    timeStyle: "medium",
     numberingSystem: "latn",
     timeZone: "Africa/Casablanca",
   }).format(new Date(isoDateTime));

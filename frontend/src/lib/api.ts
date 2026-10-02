@@ -65,6 +65,64 @@ export const getPortalCompany = () => {
   return company ? companyGet<Company>(`/api/v1/companies/${encodeURIComponent(company)}`) : null;
 };
 
+export type LogLevel = "INFO" | "WARN" | "ERROR";
+
+export type LogEvent =
+  | "INVOICE_ACCEPTED"
+  | "INVOICE_REPLAYED"
+  | "INVOICE_REJECTED"
+  | "CLEARANCE_CLEARED"
+  | "CLEARANCE_REJECTED"
+  | "CLEARANCE_ERROR";
+
+export type LogEntry = {
+  id: string;
+  seq: number;
+  occurredAt: string;
+  level: LogLevel;
+  stage: string;
+  event: LogEvent;
+  errorCode: string | null;
+  userMessage: { fr: string; ar: string } | null;
+  suggestedAction: { fr: string; ar: string } | null;
+  invoiceNumber: string | null;
+  invoiceId: string | null;
+  requestId: string | null;
+  message: string;
+  details: {
+    fieldErrors?: { field: string; reason: string }[];
+    ruleViolations?: { ruleId: string; severity: string; location: string; message: string }[];
+  } | null;
+  payloadSize: number | null;
+};
+
+/** Upper bound of log lines fetched at once. */
+export const LOG_WINDOW = 500;
+
+export const listLogs = (options: { level?: LogLevel; invoiceId?: string; limit?: number } = {}) => {
+  const p = new URLSearchParams({ level: options.level ?? "INFO", limit: String(options.limit ?? LOG_WINDOW) });
+  if (options.invoiceId) p.set("invoiceId", options.invoiceId);
+  return companyGet<LogEntry[]>(`/api/v1/logs?${p}`);
+};
+
+/** Request body kept with a rejected submission, for the payload route. */
+export async function fetchLogPayload(id: string): Promise<ApiResult<ArrayBuffer>> {
+  const company = portalCompanyId();
+  if (!company) return { kind: "no-company" };
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/v1/logs/${encodeURIComponent(id)}/payload`, {
+      cache: "no-store",
+      headers: { "X-Mystix-Company-Id": company },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (response.status === 404 || response.status === 400) return { kind: "not-found" };
+    if (!response.ok) return { kind: "unreachable" };
+    return { kind: "ok", data: await response.arrayBuffer() };
+  } catch {
+    return { kind: "unreachable" };
+  }
+}
+
 export type ArtifactKind = "RAW" | "CANONICAL" | "OUT";
 
 /** Stored artefact as text (RAW and CANONICAL are JSON, OUT is UBL XML). */
