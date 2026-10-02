@@ -11,7 +11,8 @@
     "switchTo": "العربية",
     "switchToLabel": "Afficher en arabe",
     "skip": "Aller au contenu",
-    "logs": "Logs"
+    "logs": "Logs",
+    "flow": "Flux en direct"
   },
   "top": {
     "search": "N° de facture, client, référence de clearance…",
@@ -225,5 +226,67 @@
     "noErrors": "Aucune erreur enregistrée.",
     "seeAll": "Tous les logs",
     "invoiceLogs": "Logs de la facture"
+  },
+  "flow": {
+    "title": "Flux en direct",
+    "lead": "Le circuit réel de chaque facture, étape par étape. Les chiffres viennent des logs de la société et se mettent à jour toutes les 5 secondes.",
+    "windowLabel": "Période",
+    "windows": {
+      "PT1H": "1 h",
+      "PT24H": "24 h",
+      "P7D": "7 jours"
+    },
+    "live": "En direct",
+    "paused": "En pause",
+    "updatedAt": "actualisé à {time}",
+    "pause": "Mettre en pause",
+    "resume": "Reprendre",
+    "offline": "Mise à jour impossible : l'API ne répond pas. Nouvel essai dans 5 secondes.",
+    "pipeline": "Circuit des factures",
+    "stages": {
+      "reception": {
+        "title": "Réception",
+        "sub": "API REST · JSON"
+      },
+      "fields": {
+        "title": "Lecture et champs",
+        "sub": "contrôles · modèle canonique 1.0"
+      },
+      "idempotence": {
+        "title": "Idempotence",
+        "sub": "société + n° de facture"
+      },
+      "ubl": {
+        "title": "Génération UBL 2.1",
+        "sub": "XSD OASIS"
+      },
+      "en16931": {
+        "title": "Règles EN 16931",
+        "sub": "artefacts CEN 1.3.16"
+      },
+      "storage": {
+        "title": "Stockage",
+        "sub": "RAW · CANONICAL · OUT"
+      },
+      "clearance": {
+        "title": "Clearance DGI",
+        "sub": "simulée"
+      }
+    },
+    "passed": "passées",
+    "rejected": "{count} refus",
+    "replays": "renvois : {count}",
+    "lastAt": "dernière à {time}",
+    "never": "aucune activité",
+    "outcomes": "Résultat sur la période",
+    "cleared": "Acceptées en clearance",
+    "allRejected": "Refusées",
+    "replaysTitle": "Renvois à l'identique",
+    "clearanceErrors": "Clearance indisponible",
+    "seeRejected": "Voir les refus",
+    "feed": "Fil des traductions",
+    "feedHint": "Les 15 derniers événements",
+    "feedEmpty": "Aucun événement pour le moment.",
+    "note": "Comptage sur la période choisie : une facture reçue juste avant le début de la période peut apparaître seulement à l'étape de clearance. Les durées par étape seront mesurées dans un prochain incrément."
   }
 }
