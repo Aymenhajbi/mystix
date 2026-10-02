@@ -28,7 +28,7 @@ export function Wordmark() {
   );
 }
 
-type IconName = "cockpit" | "flow" | "invoices" | "logs" | "search" | "theme" | "download";
+type IconName = "cockpit" | "flow" | "mapping" | "invoices" | "logs" | "search" | "theme" | "download";
 
 const paths: Record<IconName, ReactNode> = {
   cockpit: <path d="M3 12h4l3-8 4 16 3-8h4" />,
@@ -38,6 +38,12 @@ const paths: Record<IconName, ReactNode> = {
       <circle cx="19" cy="18" r="2" />
       <path d="M7 6h6a3 3 0 0 1 3 3v6" />
       <path d="m13.5 13 2.5 2.5 2.5-2.5" />
+    </>
+  ),
+  mapping: (
+    <>
+      <path d="M4 5h5M4 12h5M4 19h5M15 5h5M15 12h5M15 19h5" />
+      <path d="M9 5c3 0 3 7 6 7M9 19c3 0 3-14 6-14" />
     </>
   ),
   invoices: (

@@ -1432,6 +1432,251 @@
   }
 }
 
+/* ---------- mapping (lineage) ---------- */
+@keyframes wireFlow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+.kindLegend {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kindPill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid currentColor;
+  background: var(--surface);
+  --kind: var(--accent);
+  color: var(--kind);
+}
+
+.kindDirect {
+  --kind: var(--accent);
+}
+
+.kindConstant {
+  --kind: var(--info);
+}
+
+.kindCalculated {
+  --kind: var(--ok);
+}
+
+.kindConfigured {
+  --kind: var(--warn);
+}
+
+.kindNotEmitted {
+  --kind: var(--muted);
+  border-style: dashed;
+}
+
+.mapGrid {
+  padding: 8px 18px 16px;
+  overflow-x: auto;
+}
+
+.mapHead,
+.mapRow {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) 48px minmax(170px, 1fr) minmax(150px, 0.8fr) minmax(200px, 1.2fr);
+  align-items: center;
+  min-width: 860px;
+}
+
+.mapHead {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 0 10px;
+  border-block-end: 1px solid var(--line);
+}
+
+.mapGroup {
+  min-width: 860px;
+  padding: 14px 0 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mapRow {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: start;
+  padding: 4px 0;
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+}
+
+.mapRow:hover,
+.mapRowOpen {
+  background: var(--surface-2);
+}
+
+.mapCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.mapCellDashed {
+  border-style: dashed;
+}
+
+.mapPath {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  direction: ltr;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mapValue {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  direction: ltr;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mapValue i {
+  color: var(--muted);
+}
+
+.mapNone {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mapChanged {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--warn);
+  background: var(--warn-soft);
+  padding: 0 6px;
+  border-radius: 5px;
+  flex: none;
+}
+
+.mapLink {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+
+.mapLink .wire {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mapLink .kindPill {
+  position: relative;
+}
+
+.wire {
+  width: 100%;
+  height: 24px;
+  display: block;
+}
+
+:global([dir="rtl"]) .wire {
+  transform: scaleX(-1);
+}
+
+.wireEmpty {
+  display: block;
+}
+
+.wireBase {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.wireFlow {
+  fill: none;
+  stroke: var(--kind, var(--accent));
+  stroke-width: 2;
+  stroke-dasharray: 4 10;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.75;
+}
+
+.mapRow:hover .wireFlow,
+.wireActive {
+  animation: wireFlow 0.9s linear infinite;
+  opacity: 1;
+  stroke-width: 2.6;
+}
+
+.mapDetails {
+  min-width: 860px;
+  margin: 4px 0 8px;
+  padding: 10px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+
+.mapPicker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mapPicker select {
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 10px;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapRow:hover .wireFlow,
+  .wireActive {
+    animation: none;
+  }
+}
+
 /* ---------- command palette ---------- */
 .scrim {
   position: fixed;

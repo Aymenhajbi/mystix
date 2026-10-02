@@ -56,6 +56,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     home: dict.nav.home,
     cockpit: dict.nav.cockpit,
     flow: dict.nav.flow,
+    mapping: dict.nav.mapping,
     invoices: dict.nav.invoices,
     logs: dict.nav.logs,
   };
@@ -69,6 +70,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
       keywords: dict.nav.invoices,
     },
     { kind: dict.palette.kindPage, label: dict.nav.flow, extra: "", href: `/${lang}/flow`, keywords: `${dict.nav.flow} flux live direct` },
+    { kind: dict.palette.kindPage, label: dict.nav.mapping, extra: "", href: `/${lang}/mapping`, keywords: `${dict.nav.mapping} mapping lignée lineage UBL` },
     { kind: dict.palette.kindPage, label: dict.nav.logs, extra: "", href: `/${lang}/logs`, keywords: `${dict.nav.logs} log erreur error` },
     ...(invoices.kind === "ok"
       ? invoices.data.map((i) => ({

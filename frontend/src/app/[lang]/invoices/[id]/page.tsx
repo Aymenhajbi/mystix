@@ -117,6 +117,10 @@ export default async function InvoicePage({ params }: PageProps<"/[lang]/invoice
             </div>
           </div>
           <div className={styles.actions}>
+            <Link href={`/${lang}/mapping?invoice=${invoice.id}`} className={styles.btn}>
+              <Icon name="mapping" size={16} />
+              {dict.mapping.seeLineage}
+            </Link>
             <a href={`/api/invoices/${invoice.id}/ubl`} className={`${styles.btn} ${styles.btnPrimary}`} download>
               <Icon name="download" size={16} />
               {d.download}

@@ -110,6 +110,27 @@ export type LogStats = { since: string; until: string; stats: LogStat[] };
 export const getLogStats = (window: string) =>
   companyGet<LogStats>(`/api/v1/logs/stats?window=${encodeURIComponent(window)}`);
 
+export type MappingKind = "DIRECT" | "CONSTANT" | "CALCULATED" | "CONFIGURED" | "NOT_EMITTED";
+
+export type LineageValue = { path: string; value: string | null };
+
+export type LineageRow = {
+  group: "header" | "seller" | "buyer" | "line" | "totals";
+  line: number | null;
+  term: string | null;
+  label: string;
+  kind: MappingKind;
+  rule: string;
+  request: LineageValue | null;
+  canonical: LineageValue | null;
+  target: LineageValue | null;
+};
+
+export type Lineage = { mapping: string; mappingVersion: string; rows: LineageRow[] };
+
+export const getLineage = (invoiceId: string) =>
+  companyGet<Lineage>(`/api/v1/invoices/${encodeURIComponent(invoiceId)}/lineage`);
+
 /** Upper bound of log lines fetched at once. */
 export const LOG_WINDOW = 500;
 
