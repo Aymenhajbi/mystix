@@ -12,7 +12,8 @@
     "switchToLabel": "Afficher en arabe",
     "skip": "Aller au contenu",
     "logs": "Logs",
-    "flow": "Flux en direct"
+    "flow": "Flux en direct",
+    "mapping": "Mapping"
   },
   "top": {
     "search": "N° de facture, client, référence de clearance…",
@@ -288,5 +289,52 @@
     "feedHint": "Les 15 derniers événements",
     "feedEmpty": "Aucun événement pour le moment.",
     "note": "Comptage sur la période choisie : une facture reçue juste avant le début de la période peut apparaître seulement à l'étape de clearance. Les durées par étape seront mesurées dans un prochain incrément."
+  },
+  "mapping": {
+    "title": "Mapping",
+    "lead": "Ce que Mystix fait de chaque champ, de la requête reçue à la facture UBL 2.1, avec les vraies valeurs de la facture choisie. Lecture seule : c'est le mapping codé dans Mystix.",
+    "badge": "ubl-invoice {version} · lecture seule",
+    "invoice": "Facture",
+    "show": "Afficher",
+    "noInvoice": "Aucune facture pour cette société : envoyez-en une pour voir sa lignée.",
+    "columns": {
+      "request": "Requête reçue · JSON",
+      "canonical": "Modèle canonique 1.0",
+      "target": "Facture UBL 2.1"
+    },
+    "groups": {
+      "header": "En-tête",
+      "seller": "Vendeur",
+      "buyer": "Acheteur",
+      "line": "Ligne {n}",
+      "totals": "Totaux"
+    },
+    "kinds": {
+      "DIRECT": "Copie",
+      "CONSTANT": "Constante",
+      "CALCULATED": "Calcul",
+      "CONFIGURED": "Configuration",
+      "NOT_EMITTED": "Non émis"
+    },
+    "filterLabel": "Filtrer les champs",
+    "filters": {
+      "all": "Tout",
+      "transformed": "Transformations",
+      "notEmitted": "Non émis"
+    },
+    "search": "BT, champ ou chemin",
+    "absent": "absent",
+    "notEmitted": "non émis en UBL",
+    "changed": "valeur réécrite",
+    "details": "Détails du champ",
+    "term": "Terme EN 16931",
+    "rule": "Règle",
+    "requestPath": "Chemin requête",
+    "canonicalPath": "Chemin canonique",
+    "targetPath": "XPath UBL",
+    "count": "{shown} champs sur {total}",
+    "openInvoice": "Ouvrir la facture",
+    "seeLineage": "Voir la lignée des champs",
+    "editorSoon": "L'édition des mappings par glisser-déposer arrive avec le Lot 7."
   }
 }

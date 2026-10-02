@@ -13,6 +13,7 @@ import java.util.UUID;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import ma.mystix.format.ubl.En16931Validator;
+import ma.mystix.format.ubl.UblMappingSpec;
 import ma.mystix.logs.ProcessingLog;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
@@ -48,12 +49,15 @@ class InvoiceController {
     static final String CLEARANCE_SIMULATED_HEADER = "X-Mystix-Clearance-Simulated";
 
     private final InvoiceService service;
+    private final InvoiceLineage lineage;
     private final ProcessingLog logs;
     private final JsonMapper json;
     private final Validator validator;
 
-    InvoiceController(InvoiceService service, ProcessingLog logs, JsonMapper json, Validator validator) {
+    InvoiceController(InvoiceService service, InvoiceLineage lineage, ProcessingLog logs, JsonMapper json,
+                      Validator validator) {
         this.service = service;
+        this.lineage = lineage;
         this.logs = logs;
         this.json = json;
         this.validator = validator;
@@ -143,6 +147,15 @@ class InvoiceController {
         }
         int digits = Currency.getInstance(invoice.currency()).getDefaultFractionDigits();
         return invoice.payableAmount().setScale(digits, RoundingMode.UNNECESSARY).toPlainString();
+    }
+
+    record LineageResponse(String mapping, String mappingVersion, List<InvoiceLineage.Row> rows) {
+    }
+
+    /** Field lineage read from the stored RAW, CANONICAL and OUT artefacts (see {@link UblMappingSpec}). */
+    @GetMapping(value = "/{id}/lineage", produces = MediaType.APPLICATION_JSON_VALUE)
+    LineageResponse lineage(@RequestHeader(COMPANY_HEADER) UUID companyId, @PathVariable UUID id) {
+        return new LineageResponse(UblMappingSpec.ID, UblMappingSpec.VERSION, lineage.of(companyId, id));
     }
 
     @GetMapping("/{id}/artifacts/{kind}")
