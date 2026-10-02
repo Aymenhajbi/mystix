@@ -35,7 +35,7 @@ class CompanyApiTests {
 
     @Test
     void createsThenReadsACompany() {
-        ResponseEntity<Map> created = post(Map.of("ice", "000000001000011", "legalName", " Atlas Test SARL ",
+        ResponseEntity<Map> created = post(Map.of("ice", "000000101000011", "legalName", " Atlas Test SARL ",
                 "taxIdentifier", "12345678"));
 
         assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -46,13 +46,13 @@ class CompanyApiTests {
         ResponseEntity<Map> read = http.get().uri("/api/v1/companies/{id}", id).retrieve().toEntity(Map.class);
         assertThat(read.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(read.getBody())
-                .containsEntry("ice", "000000001000011")
+                .containsEntry("ice", "000000101000011")
                 .containsEntry("taxIdentifier", "12345678");
     }
 
     @Test
     void rejectsDuplicateIceWithStructuredError() {
-        Map<String, String> body = Map.of("ice", "000000002000022", "legalName", "Duplicate Test SA");
+        Map<String, String> body = Map.of("ice", "000000102000022", "legalName", "Duplicate Test SA");
         assertThat(post(body).getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         ResponseEntity<Map> duplicate = post(body);
