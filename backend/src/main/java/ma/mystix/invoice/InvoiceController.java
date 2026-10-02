@@ -13,6 +13,7 @@ import java.util.UUID;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import ma.mystix.format.ubl.En16931Validator;
+import ma.mystix.logs.ProcessingLog;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
@@ -47,11 +48,13 @@ class InvoiceController {
     static final String CLEARANCE_SIMULATED_HEADER = "X-Mystix-Clearance-Simulated";
 
     private final InvoiceService service;
+    private final ProcessingLog logs;
     private final JsonMapper json;
     private final Validator validator;
 
-    InvoiceController(InvoiceService service, JsonMapper json, Validator validator) {
+    InvoiceController(InvoiceService service, ProcessingLog logs, JsonMapper json, Validator validator) {
         this.service = service;
+        this.logs = logs;
         this.json = json;
         this.validator = validator;
     }
@@ -64,9 +67,18 @@ class InvoiceController {
      */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_XML_VALUE)
     ResponseEntity<byte[]> submit(@RequestHeader(COMPANY_HEADER) UUID companyId, @RequestBody byte[] body) {
-        InvoiceRequest request = parse(body);
-        InvoiceService.Submission submission =
-                service.submit(companyId, body, InvoiceRequestMapper.toCanonical(request));
+        InvoiceRequest request = null;
+        InvoiceService.Submission submission;
+        try {
+            request = parse(body);
+            submission = service.submit(companyId, body, InvoiceRequestMapper.toCanonical(request));
+        } catch (MystixException e) {
+            logs.submissionRejected(companyId, request == null ? null : request.number(), e, body);
+            throw e;
+        } catch (RuntimeException e) {
+            logs.submissionFailed(companyId, request == null ? null : request.number(), e, body);
+            throw e;
+        }
         StoredInvoice invoice = submission.invoice();
         ResponseEntity.BodyBuilder response = submission.replayed()
                 ? ResponseEntity.ok()

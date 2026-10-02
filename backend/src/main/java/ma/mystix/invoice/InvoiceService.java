@@ -17,6 +17,8 @@ import ma.mystix.canonical.InvoiceTotals;
 import ma.mystix.format.ubl.En16931Validator;
 import ma.mystix.format.ubl.UblInvoiceGenerator;
 import ma.mystix.format.ubl.UblSchemaValidator;
+import ma.mystix.logs.LogEvent;
+import ma.mystix.logs.ProcessingLog;
 import ma.mystix.shared.Sha256;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
@@ -47,12 +49,14 @@ public class InvoiceService {
     private final UblSchemaValidator schemaValidator;
     private final En16931Validator rulesValidator;
     private final ClearanceGateway clearance;
+    private final ProcessingLog logs;
     private final Clock clock;
 
     InvoiceService(CompanyService companies, InvoiceRepository repository, InvoiceCalculator calculator,
                    UblInvoiceGenerator generator, UblSchemaValidator schemaValidator,
-                   En16931Validator rulesValidator, ClearanceGateway clearance, Clock clock) {
+                   En16931Validator rulesValidator, ClearanceGateway clearance, ProcessingLog logs, Clock clock) {
         this.clearance = clearance;
+        this.logs = logs;
         this.companies = companies;
         this.repository = repository;
         this.calculator = calculator;
@@ -100,6 +104,9 @@ public class InvoiceService {
             return replay(repository.findByNumber(companyId, invoice.number()).orElseThrow(() -> e),
                     canonicalSha256);
         }
+        logs.invoiceAccepted(companyId, stored.id(), stored.number(),
+                "Invoice accepted: UBL 2.1 generated (" + ubl.length + " bytes), XSD valid, EN 16931 "
+                        + En16931Validator.ARTEFACTS_VERSION + " compliant, stored with RAW, CANONICAL and OUT");
         return new Submission(clear(stored, ubl), ubl, false);
     }
 
@@ -126,6 +133,8 @@ public class InvoiceService {
             log.warn("Clearance failed for invoice {}", stored.id(), e);
             repository.appendEvent(stored.companyId(), stored.id(), StoredInvoice.EVENT_CLEARANCE_ERROR,
                     "Clearance gateway error; invoice stays VALIDATED", OffsetDateTime.now(clock));
+            logs.clearance(stored.companyId(), stored.id(), stored.number(), LogEvent.CLEARANCE_ERROR,
+                    "Clearance gateway error (" + e.getClass().getSimpleName() + "); invoice stays VALIDATED");
             return stored;
         }
         boolean cleared = result.outcome() == ClearanceResult.Outcome.CLEARED;
@@ -134,6 +143,9 @@ public class InvoiceService {
         repository.recordClearance(stored.companyId(), stored.id(),
                 cleared ? StoredInvoice.STATUS_CLEARED : StoredInvoice.STATUS_CLEARANCE_REJECTED,
                 result.reference(), result.simulated(), result.at(), detail);
+        logs.clearance(stored.companyId(), stored.id(), stored.number(),
+                cleared ? LogEvent.CLEARANCE_CLEARED : LogEvent.CLEARANCE_REJECTED,
+                cleared ? detail + ", reference " + result.reference() : detail);
         return get(stored.companyId(), stored.id());
     }
 
@@ -158,6 +170,7 @@ public class InvoiceService {
             throw new MystixException(ErrorCode.INVOICE_NUMBER_CONFLICT,
                     "Invoice number " + existing.number() + " already used with different content");
         }
+        logs.invoiceReplayed(existing.companyId(), existing.id(), existing.number());
         return new Submission(existing, artifact(existing.companyId(), existing.id(), ArtifactKind.OUT), true);
     }
 
