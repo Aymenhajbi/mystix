@@ -31,7 +31,8 @@ class InvoiceRepository {
             rs.getObject("clearance_at", OffsetDateTime.class),
             rs.getString("buyer_name"),
             rs.getString("currency"),
-            rs.getBigDecimal("payable_amount"));
+            rs.getBigDecimal("payable_amount"),
+            rs.getObject("flow_id", UUID.class));
 
     private final JdbcClient jdbc;
 
@@ -45,13 +46,14 @@ class InvoiceRepository {
         jdbc.sql("""
                 INSERT INTO invoice_message (id, company_id, invoice_number, issue_date, status,
                                              canonical_version, canonical_sha256, created_at,
-                                             buyer_name, currency, payable_amount)
+                                             buyer_name, currency, payable_amount, flow_id)
                 VALUES (:id, :companyId, :number, :issueDate, :status, :canonicalVersion, :canonicalSha256, :createdAt,
-                        :buyerName, :currency, :payableAmount)
+                        :buyerName, :currency, :payableAmount, :flowId)
                 """)
                 .param("buyerName", invoice.buyerName())
                 .param("currency", invoice.currency())
                 .param("payableAmount", invoice.payableAmount())
+                .param("flowId", invoice.flowId())
                 .param("id", invoice.id())
                 .param("companyId", invoice.companyId())
                 .param("number", invoice.number())
@@ -136,14 +138,16 @@ class InvoiceRepository {
                 .optional();
     }
 
-    List<StoredInvoice> list(UUID companyId, int limit) {
+    List<StoredInvoice> list(UUID companyId, UUID flowId, int limit) {
         return jdbc.sql("""
                 SELECT * FROM invoice_message
                 WHERE company_id = :companyId
+                  AND (CAST(:flowId AS uuid) IS NULL OR flow_id = :flowId)
                 ORDER BY created_at DESC, id
                 LIMIT :limit
                 """)
                 .param("companyId", companyId)
+                .param("flowId", flowId)
                 .param("limit", limit)
                 .query(INVOICE)
                 .list();

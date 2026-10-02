@@ -56,6 +56,30 @@ public enum ErrorCode {
             new LocalizedText("Contactez le support en indiquant le numéro de facture.",
                     "اتصل بالدعم مع ذكر رقم الفاتورة.")),
 
+    FLOW_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
+            new LocalizedText("Flux introuvable pour cette société.",
+                    "التدفق غير موجود لهذه الشركة."),
+            new LocalizedText("Vérifiez l'identifiant du flux et l'environnement client choisi.",
+                    "تحقّق من معرّف التدفق ومن بيئة الزبون المختارة.")),
+
+    FLOW_NOT_ACTIVE(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Aucun flux actif ne peut recevoir cette facture.",
+                    "لا يوجد تدفق نشط يمكنه استقبال هذه الفاتورة."),
+            new LocalizedText("Activez le flux dans le portail (environnement client > flux), puis renvoyez la facture.",
+                    "فعّل التدفق في البوابة (بيئة الزبون > التدفقات)، ثم أعد إرسال الفاتورة.")),
+
+    FLOW_OPTION_UNAVAILABLE(HttpStatus.BAD_REQUEST, Stage.API, false,
+            new LocalizedText("Cette combinaison de canal et de format n'est pas encore disponible.",
+                    "هذا المزيج من القناة والصيغة غير متاح بعد."),
+            new LocalizedText("Choisissez une option marquée disponible ; les autres arrivent avec les lots indiqués.",
+                    "اختر خياراً متاحاً؛ الخيارات الأخرى قادمة مع الدفعات المشار إليها.")),
+
+    FLOW_NAME_TAKEN(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Un flux porte déjà ce nom pour cette société.",
+                    "يوجد تدفق بنفس الاسم لهذه الشركة."),
+            new LocalizedText("Choisissez un autre nom.",
+                    "اختر اسماً آخر.")),
+
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
             new LocalizedText("Ressource introuvable.",
                     "المورد غير موجود."),

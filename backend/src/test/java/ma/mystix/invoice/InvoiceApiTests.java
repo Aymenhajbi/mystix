@@ -28,7 +28,7 @@ import org.springframework.web.client.RestClient;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "mystix.clearance.simulated.reject-numbers-matching=FA-SIMREJECT-.*")
+        properties = {"mystix.clearance.simulated.reject-numbers-matching=FA-SIMREJECT-.*", "mystix.admin.enabled=true"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InvoiceApiTests {
 
@@ -271,6 +271,107 @@ class InvoiceApiTests {
         return rows.stream()
                 .filter(r -> term.equals(r.get("term")) && java.util.Objects.equals(line, r.get("line")))
                 .findFirst().orElseThrow(() -> new AssertionError("No row " + term + " line " + line));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void flowsDriveWhereInvoicesGo() {
+        UUID company = companies.register(new Ice("000000004000044"), "Environnement Flux SARL", null).id();
+        String request = withNumber("FA-FLOW-1").replace("000000001000011", "000000004000044");
+
+        List<Map<String, Object>> flows = getList("/api/v1/flows", company);
+        assertThat(flows).singleElement().satisfies(f -> assertThat(f)
+                .containsEntry("name", "Factures API vers UBL 2.1")
+                .containsEntry("status", "ACTIVE")
+                .containsEntry("mappingId", "ubl-invoice"));
+        String defaultFlow = (String) flows.getFirst().get("id");
+
+        ResponseEntity<byte[]> first = submit(company, request, byte[].class);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(first.getHeaders().getFirst("X-Mystix-Flow-Id")).isEqualTo(defaultFlow);
+
+        // A paused flow receives nothing.
+        assertThat(patchFlow(company, defaultFlow, "{\"status\":\"PAUSED\"}").getStatusCode()).isEqualTo(HttpStatus.OK);
+        ResponseEntity<Map> paused = submit(company, request.replace("FA-FLOW-1", "FA-FLOW-2"), Map.class);
+        assertThat(paused.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(paused.getBody()).containsEntry("errorCode", "FLOW_NOT_ACTIVE");
+
+        // Only available catalog options can be used.
+        ResponseEntity<Map> unavailable = createFlow(company, "Factures AS2", "AS2", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE");
+        assertThat(unavailable.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(unavailable.getBody()).containsEntry("errorCode", "FLOW_OPTION_UNAVAILABLE");
+
+        ResponseEntity<Map> created = createFlow(company, "Factures export", "API", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE");
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(created.getBody()).containsEntry("status", "DRAFT").containsEntry("mappingVersion", "1.0");
+        String exportFlow = (String) created.getBody().get("id");
+        assertThat(createFlow(company, "Factures export", "API", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE")
+                .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        // A draft flow named by the caller refuses; once active it takes the invoice.
+        ResponseEntity<byte[]> draft = submitToFlow(company, exportFlow, request.replace("FA-FLOW-1", "FA-FLOW-3"));
+        assertThat(draft.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        patchFlow(company, exportFlow, "{\"status\":\"ACTIVE\"}");
+        ResponseEntity<byte[]> routed = submitToFlow(company, exportFlow, request.replace("FA-FLOW-1", "FA-FLOW-3"));
+        assertThat(routed.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(routed.getHeaders().getFirst("X-Mystix-Flow-Id")).isEqualTo(exportFlow);
+
+        assertThat(getList("/api/v1/invoices?flowId=" + exportFlow, company))
+                .extracting(i -> i.get("number")).containsExactly("FA-FLOW-3");
+        assertThat(getList("/api/v1/invoices?flowId=" + defaultFlow, company))
+                .extracting(i -> i.get("number")).containsExactly("FA-FLOW-1");
+
+        // Isolation: another company cannot see the flow.
+        ResponseEntity<Map> foreign = http.get().uri("/api/v1/flows/{id}", exportFlow)
+                .header("X-Mystix-Company-Id", otherCompany.toString()).retrieve().toEntity(Map.class);
+        assertThat(foreign.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Operator view across environments.
+        ResponseEntity<List> environments = http.get().uri("/api/v1/admin/environments").retrieve().toEntity(List.class);
+        assertThat((List<Map<String, Object>>) environments.getBody())
+                .filteredOn(e -> company.toString().equals(e.get("id")))
+                .singleElement()
+                .satisfies(e -> assertThat(e)
+                        .containsEntry("legalName", "Environnement Flux SARL")
+                        .containsEntry("flows", 2)
+                        .containsEntry("activeFlows", 1)
+                        .containsEntry("invoices", 2));
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> getList(String uri, UUID company) {
+        ResponseEntity<List> response = http.get().uri(uri)
+                .header("X-Mystix-Company-Id", company.toString()).retrieve().toEntity(List.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return (List<Map<String, Object>>) response.getBody();
+    }
+
+    private ResponseEntity<Map> createFlow(UUID company, String name, String sourceChannel, String sourceFormat,
+                                           String targetFormat, String targetChannel) {
+        return http.post().uri("/api/v1/flows")
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", name, "sourceChannel", sourceChannel, "sourceFormat", sourceFormat,
+                        "targetFormat", targetFormat, "targetChannel", targetChannel))
+                .retrieve().toEntity(Map.class);
+    }
+
+    private ResponseEntity<Map> patchFlow(UUID company, String flowId, String json) {
+        return http.patch().uri("/api/v1/flows/{id}", flowId)
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(json)
+                .retrieve().toEntity(Map.class);
+    }
+
+    private ResponseEntity<byte[]> submitToFlow(UUID company, String flowId, String body) {
+        return http.post().uri("/api/v1/invoices")
+                .header("X-Mystix-Company-Id", company.toString())
+                .header("X-Mystix-Flow-Id", flowId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON)
+                .body(body.getBytes(StandardCharsets.UTF_8))
+                .retrieve().toEntity(byte[].class);
     }
 
     @Test

@@ -1,0 +1,4 @@
+# Developer workstation only (SPRING_PROFILES_ACTIVE=dev).
+mystix:
+  admin:
+    enabled: true
