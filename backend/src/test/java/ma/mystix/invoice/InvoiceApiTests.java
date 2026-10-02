@@ -221,6 +221,38 @@ class InvoiceApiTests {
     }
 
     @Test
+    void statsCountSubmissionsPerEventAndStage() {
+        long acceptedBefore = stat(sellerCompany, "INVOICE_ACCEPTED", "STORAGE", null);
+        long mappingBefore = stat(sellerCompany, "INVOICE_REJECTED", "MAPPING", "INVOICE_REJECTED");
+
+        submit(sellerCompany, withNumber("FA-STATS-OK-1"), byte[].class);
+        submit(sellerCompany, withNumber("FA-STATS-KO-1")
+                .replace("\"gln\": \"6110000000017\"", "\"gln\": \"6110000000018\""), Map.class);
+
+        assertThat(stat(sellerCompany, "INVOICE_ACCEPTED", "STORAGE", null)).isEqualTo(acceptedBefore + 1);
+        assertThat(stat(sellerCompany, "INVOICE_REJECTED", "MAPPING", "INVOICE_REJECTED")).isEqualTo(mappingBefore + 1);
+
+        ResponseEntity<Map> invalid = http.get().uri("/api/v1/logs/stats?window=yesterday")
+                .header("X-Mystix-Company-Id", sellerCompany.toString())
+                .retrieve().toEntity(Map.class);
+        assertThat(invalid.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @SuppressWarnings("unchecked")
+    private long stat(UUID company, String event, String stage, String errorCode) {
+        ResponseEntity<Map> response = http.get().uri("/api/v1/logs/stats?window=PT1H")
+                .header("X-Mystix-Company-Id", company.toString())
+                .retrieve().toEntity(Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsKeys("since", "until");
+        return ((List<Map<String, Object>>) response.getBody().get("stats")).stream()
+                .filter(s -> event.equals(s.get("event")) && stage.equals(s.get("stage"))
+                        && java.util.Objects.equals(errorCode, s.get("errorCode")))
+                .mapToLong(s -> ((Number) s.get("count")).longValue())
+                .sum();
+    }
+
+    @Test
     void logsAreIsolatedPerCompany() {
         ResponseEntity<Map> rejected = submit(sellerCompany, "{ not json", Map.class);
         String requestId = (String) rejected.getBody().get("requestId");
