@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import ma.mystix.canonical.CanonicalVersion;
+import ma.mystix.clearance.ClearanceGateway;
+import ma.mystix.clearance.ClearanceRequest;
+import ma.mystix.clearance.ClearanceResult;
 import ma.mystix.canonical.Invoice;
 import ma.mystix.canonical.InvoiceCalculator;
 import ma.mystix.format.ubl.En16931Validator;
@@ -19,16 +22,21 @@ import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
 import ma.mystix.tenant.Company;
 import ma.mystix.tenant.CompanyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 /**
  * Accepts invoices for a company: canonical → totals → UBL 2.1 → XSD → EN 16931 → storage with artefacts.
  * Idempotent on (company, invoice number): the same canonical content returns the stored UBL, different content
- * under the same number is a conflict. Nothing is sent to the DGI here.
+ * under the same number is a conflict. Clearance goes through {@link ClearanceGateway}, simulated only (ADR-0001):
+ * nothing is sent to the DGI.
  */
 @Service
 public class InvoiceService {
+
+    private static final Logger log = LoggerFactory.getLogger(InvoiceService.class);
 
     private final CompanyService companies;
     private final InvoiceRepository repository;
@@ -36,11 +44,13 @@ public class InvoiceService {
     private final UblInvoiceGenerator generator;
     private final UblSchemaValidator schemaValidator;
     private final En16931Validator rulesValidator;
+    private final ClearanceGateway clearance;
     private final Clock clock;
 
     InvoiceService(CompanyService companies, InvoiceRepository repository, InvoiceCalculator calculator,
                    UblInvoiceGenerator generator, UblSchemaValidator schemaValidator,
-                   En16931Validator rulesValidator, Clock clock) {
+                   En16931Validator rulesValidator, ClearanceGateway clearance, Clock clock) {
+        this.clearance = clearance;
         this.companies = companies;
         this.repository = repository;
         this.calculator = calculator;
@@ -73,7 +83,8 @@ public class InvoiceService {
 
         byte[] ubl = toUbl(invoice);
         StoredInvoice stored = new StoredInvoice(UUID.randomUUID(), companyId, invoice.number(), invoice.issueDate(),
-                StoredInvoice.STATUS_VALIDATED, CanonicalVersion.CURRENT, canonicalSha256, OffsetDateTime.now(clock));
+                StoredInvoice.STATUS_VALIDATED, CanonicalVersion.CURRENT, canonicalSha256, OffsetDateTime.now(clock),
+                null, null, null);
         Map<ArtifactKind, byte[]> artifacts = new EnumMap<>(ArtifactKind.class);
         artifacts.put(ArtifactKind.RAW, rawRequest);
         artifacts.put(ArtifactKind.CANONICAL, canonical);
@@ -85,7 +96,35 @@ public class InvoiceService {
             return replay(repository.findByNumber(companyId, invoice.number()).orElseThrow(() -> e),
                     canonicalSha256);
         }
-        return new Submission(stored, ubl, false);
+        return new Submission(clear(stored, ubl), ubl, false);
+    }
+
+    public List<StoredInvoice.StatusEvent> history(UUID companyId, UUID invoiceId) {
+        return repository.history(companyId, get(companyId, invoiceId).id());
+    }
+
+    /**
+     * Submits a stored invoice for clearance, synchronously for now (the Lot 4 queue will retry failures).
+     * A gateway failure leaves the invoice VALIDATED and is recorded in its history.
+     */
+    private StoredInvoice clear(StoredInvoice stored, byte[] ubl) {
+        ClearanceResult result;
+        try {
+            result = clearance.submit(new ClearanceRequest(stored.companyId(), stored.id(), stored.number(), ubl,
+                    Sha256.hex(ubl)));
+        } catch (RuntimeException e) {
+            log.warn("Clearance failed for invoice {}", stored.id(), e);
+            repository.appendEvent(stored.companyId(), stored.id(), StoredInvoice.EVENT_CLEARANCE_ERROR,
+                    "Clearance gateway error; invoice stays VALIDATED", OffsetDateTime.now(clock));
+            return stored;
+        }
+        boolean cleared = result.outcome() == ClearanceResult.Outcome.CLEARED;
+        String detail = (result.simulated() ? "SIMULATED clearance: " : "")
+                + (cleared ? "cleared" : result.reason());
+        repository.recordClearance(stored.companyId(), stored.id(),
+                cleared ? StoredInvoice.STATUS_CLEARED : StoredInvoice.STATUS_CLEARANCE_REJECTED,
+                result.reference(), result.simulated(), result.at(), detail);
+        return get(stored.companyId(), stored.id());
     }
 
     public StoredInvoice get(UUID companyId, UUID invoiceId) {

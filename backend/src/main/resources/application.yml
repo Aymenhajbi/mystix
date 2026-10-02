@@ -15,6 +15,12 @@ server:
     include-message: never
 
 mystix:
+  clearance:
+    # Only "simulated" exists (ADR-0001). Any other value stops the application at startup. TODO(DGI-SPEC)
+    mode: ${MYSTIX_CLEARANCE_MODE:simulated}
+    simulated:
+      # Regex on the invoice number to simulate a rejection; empty = always cleared.
+      reject-numbers-matching:
   invoice:
     # TODO(DGI-SPEC): rounding mode required by the DGI is not published.
     rounding-mode: HALF_UP

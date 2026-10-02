@@ -25,7 +25,10 @@ class InvoiceRepository {
             rs.getString("status"),
             rs.getString("canonical_version"),
             rs.getString("canonical_sha256"),
-            rs.getObject("created_at", OffsetDateTime.class));
+            rs.getObject("created_at", OffsetDateTime.class),
+            rs.getString("clearance_reference"),
+            rs.getObject("clearance_simulated", Boolean.class),
+            rs.getObject("clearance_at", OffsetDateTime.class));
 
     private final JdbcClient jdbc;
 
@@ -64,6 +67,57 @@ class InvoiceRepository {
                 .param("sha256", Sha256.hex(content))
                 .param("createdAt", invoice.createdAt())
                 .update());
+        appendEvent(invoice.companyId(), invoice.id(), invoice.status(), null, invoice.createdAt());
+    }
+
+    /** Records the clearance answer and its history entry atomically. */
+    @Transactional
+    void recordClearance(UUID companyId, UUID id, String status, String reference, boolean simulated,
+                         OffsetDateTime at, String detail) {
+        int updated = jdbc.sql("""
+                UPDATE invoice_message
+                SET status = :status, clearance_reference = :reference, clearance_simulated = :simulated,
+                    clearance_at = :at
+                WHERE company_id = :companyId AND id = :id AND status = 'VALIDATED'
+                """)
+                .param("status", status)
+                .param("reference", reference)
+                .param("simulated", simulated)
+                .param("at", at)
+                .param("companyId", companyId)
+                .param("id", id)
+                .update();
+        if (updated != 1) {
+            throw new IllegalStateException("Invoice " + id + " is not awaiting clearance");
+        }
+        appendEvent(companyId, id, status, detail, at);
+    }
+
+    void appendEvent(UUID companyId, UUID messageId, String status, String detail, OffsetDateTime at) {
+        jdbc.sql("""
+                INSERT INTO invoice_status_event (id, message_id, company_id, status, detail, occurred_at)
+                VALUES (:id, :messageId, :companyId, :status, :detail, :at)
+                """)
+                .param("id", UUID.randomUUID())
+                .param("messageId", messageId)
+                .param("companyId", companyId)
+                .param("status", status)
+                .param("detail", detail)
+                .param("at", at)
+                .update();
+    }
+
+    List<StoredInvoice.StatusEvent> history(UUID companyId, UUID messageId) {
+        return jdbc.sql("""
+                SELECT status, detail, occurred_at FROM invoice_status_event
+                WHERE company_id = :companyId AND message_id = :messageId
+                ORDER BY seq
+                """)
+                .param("companyId", companyId)
+                .param("messageId", messageId)
+                .query((rs, n) -> new StoredInvoice.StatusEvent(rs.getString("status"), rs.getString("detail"),
+                        rs.getObject("occurred_at", OffsetDateTime.class)))
+                .list();
     }
 
     Optional<StoredInvoice> findByNumber(UUID companyId, String number) {

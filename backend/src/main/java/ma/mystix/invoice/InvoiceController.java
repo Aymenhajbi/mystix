@@ -39,6 +39,9 @@ class InvoiceController {
     static final String REPLAYED_HEADER = "X-Mystix-Replayed";
     static final String CANONICAL_VERSION_HEADER = "X-Mystix-Canonical-Version";
     static final String EN16931_HEADER = "X-Mystix-En16931-Artefacts";
+    static final String STATUS_HEADER = "X-Mystix-Status";
+    static final String CLEARANCE_REFERENCE_HEADER = "X-Mystix-Clearance-Reference";
+    static final String CLEARANCE_SIMULATED_HEADER = "X-Mystix-Clearance-Simulated";
 
     private final InvoiceService service;
     private final JsonMapper json;
@@ -53,35 +56,49 @@ class InvoiceController {
     /**
      * Accepts a JSON invoice and returns its UBL 2.1 (XSD-valid, EN 16931 compliant).
      * 201 on first acceptance, 200 with {@value #REPLAYED_HEADER}: true when the same invoice is sent again.
-     * Clearance is simulated and not part of this call.
+     * The clearance outcome is in {@value #STATUS_HEADER}; clearance is SIMULATED (ADR-0001), see
+     * {@value #CLEARANCE_SIMULATED_HEADER}.
      */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_XML_VALUE)
     ResponseEntity<byte[]> submit(@RequestHeader(COMPANY_HEADER) UUID companyId, @RequestBody byte[] body) {
         InvoiceRequest request = parse(body);
         InvoiceService.Submission submission =
                 service.submit(companyId, body, InvoiceRequestMapper.toCanonical(request));
-        UUID id = submission.invoice().id();
+        StoredInvoice invoice = submission.invoice();
         ResponseEntity.BodyBuilder response = submission.replayed()
                 ? ResponseEntity.ok()
-                : ResponseEntity.created(URI.create("/api/v1/invoices/" + id));
-        return response
-                .contentType(MediaType.APPLICATION_XML)
-                .header(INVOICE_ID_HEADER, id.toString())
+                : ResponseEntity.created(URI.create("/api/v1/invoices/" + invoice.id()));
+        response.contentType(MediaType.APPLICATION_XML)
+                .header(INVOICE_ID_HEADER, invoice.id().toString())
                 .header(REPLAYED_HEADER, Boolean.toString(submission.replayed()))
-                .header(CANONICAL_VERSION_HEADER, submission.invoice().canonicalVersion())
-                .header(EN16931_HEADER, En16931Validator.ARTEFACTS_VERSION)
-                .body(submission.ubl());
+                .header(STATUS_HEADER, invoice.status())
+                .header(CANONICAL_VERSION_HEADER, invoice.canonicalVersion())
+                .header(EN16931_HEADER, En16931Validator.ARTEFACTS_VERSION);
+        if (invoice.clearanceSimulated() != null) {
+            response.header(CLEARANCE_SIMULATED_HEADER, invoice.clearanceSimulated().toString());
+        }
+        if (invoice.clearanceReference() != null) {
+            response.header(CLEARANCE_REFERENCE_HEADER, invoice.clearanceReference());
+        }
+        return response.body(submission.ubl());
+    }
+
+    /** Clearance block of the invoice resource. {@code simulated} is always shown, never implied. */
+    record ClearanceView(String reference, Boolean simulated, OffsetDateTime at) {
     }
 
     record InvoiceResponse(UUID id, String number, LocalDate issueDate, String status, String canonicalVersion,
-                           OffsetDateTime createdAt, List<StoredInvoice.ArtifactInfo> artifacts) {
+                           OffsetDateTime createdAt, ClearanceView clearance,
+                           List<StoredInvoice.ArtifactInfo> artifacts, List<StoredInvoice.StatusEvent> history) {
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     InvoiceResponse get(@RequestHeader(COMPANY_HEADER) UUID companyId, @PathVariable UUID id) {
         StoredInvoice invoice = service.get(companyId, id);
         return new InvoiceResponse(invoice.id(), invoice.number(), invoice.issueDate(), invoice.status(),
-                invoice.canonicalVersion(), invoice.createdAt(), service.artifacts(companyId, id));
+                invoice.canonicalVersion(), invoice.createdAt(),
+                new ClearanceView(invoice.clearanceReference(), invoice.clearanceSimulated(), invoice.clearanceAt()),
+                service.artifacts(companyId, id), service.history(companyId, id));
     }
 
     @GetMapping("/{id}/artifacts/{kind}")
