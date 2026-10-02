@@ -140,6 +140,110 @@ class InvoiceApiTests {
     }
 
     @Test
+    void listsOnlyTheCompanysInvoicesWithSummaries() {
+        String id = submit(sellerCompany, withNumber("FA-LIST-1"), byte[].class)
+                .getHeaders().getFirst("X-Mystix-Invoice-Id");
+
+        ResponseEntity<List> mine = http.get().uri("/api/v1/invoices?limit=200")
+                .header("X-Mystix-Company-Id", sellerCompany.toString())
+                .retrieve().toEntity(List.class);
+        ResponseEntity<List> theirs = http.get().uri("/api/v1/invoices")
+                .header("X-Mystix-Company-Id", otherCompany.toString())
+                .retrieve().toEntity(List.class);
+
+        assertThat(mine.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat((List<Map<String, Object>>) mine.getBody())
+                .filteredOn(i -> id.equals(i.get("id")))
+                .singleElement()
+                .satisfies(i -> {
+                    assertThat(i)
+                            .containsEntry("number", "FA-LIST-1")
+                            .containsEntry("buyerName", "Client Synthetique SA")
+                            .containsEntry("currency", "MAD")
+                            .containsEntry("payableAmount", "1586.80")
+                            .containsEntry("status", "CLEARED");
+                    assertThat((Map<String, Object>) i.get("clearance")).containsEntry("simulated", true);
+                });
+        assertThat((List<Map<String, Object>>) theirs.getBody()).noneMatch(i -> id.equals(i.get("id")));
+    }
+
+    @Test
+    void rejectedSubmissionIsLoggedWithReasonsAndPayload() {
+        String request = withNumber("FA-LOG-REJ-1")
+                .replace("\"gln\": \"6110000000017\"", "\"gln\": \"6110000000018\"");
+
+        ResponseEntity<Map> rejected = submit(sellerCompany, request, Map.class);
+
+        assertThat(rejected.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        String requestId = (String) rejected.getBody().get("requestId");
+        assertThat(requestId).isNotBlank().isEqualTo(rejected.getHeaders().getFirst("X-Request-Id"));
+
+        Map<String, Object> entry = logs(sellerCompany, "?level=ERROR").stream()
+                .filter(e -> requestId.equals(e.get("requestId")))
+                .findFirst().orElseThrow();
+        assertThat(entry)
+                .containsEntry("level", "ERROR")
+                .containsEntry("event", "INVOICE_REJECTED")
+                .containsEntry("errorCode", "INVOICE_REJECTED")
+                .containsEntry("stage", "MAPPING")
+                .containsEntry("invoiceNumber", "FA-LOG-REJ-1")
+                .containsKey("occurredAt");
+        assertThat(asMap(entry.get("userMessage"))).containsKeys("fr", "ar");
+        assertThat((List<Map<String, Object>>) asMap(entry.get("details")).get("fieldErrors"))
+                .anySatisfy(f -> assertThat(f).containsEntry("field", "seller"));
+        assertThat((Integer) entry.get("payloadSize")).isEqualTo(request.getBytes(StandardCharsets.UTF_8).length);
+
+        ResponseEntity<byte[]> payload = http.get().uri("/api/v1/logs/{id}/payload", entry.get("id"))
+                .header("X-Mystix-Company-Id", sellerCompany.toString())
+                .retrieve().toEntity(byte[].class);
+        assertThat(payload.getBody()).isEqualTo(request.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void acceptedSubmissionLogsAcceptanceAndClearanceUnderTheCallersRequestId() {
+        ResponseEntity<byte[]> created = http.post().uri("/api/v1/invoices")
+                .header("X-Mystix-Company-Id", sellerCompany.toString())
+                .header("X-Request-Id", "erp-batch-0001")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(withNumber("FA-LOG-OK-1").getBytes(StandardCharsets.UTF_8))
+                .retrieve().toEntity(byte[].class);
+        assertThat(created.getHeaders().getFirst("X-Request-Id")).isEqualTo("erp-batch-0001");
+        String id = created.getHeaders().getFirst("X-Mystix-Invoice-Id");
+
+        List<Map<String, Object>> entries = logs(sellerCompany, "?invoiceId=" + id);
+
+        assertThat(entries).extracting(e -> e.get("event"))
+                .containsExactly("CLEARANCE_CLEARED", "INVOICE_ACCEPTED");
+        assertThat(entries).allSatisfy(e -> assertThat(e)
+                .containsEntry("requestId", "erp-batch-0001")
+                .containsEntry("level", "INFO")
+                .containsEntry("invoiceNumber", "FA-LOG-OK-1"));
+    }
+
+    @Test
+    void logsAreIsolatedPerCompany() {
+        ResponseEntity<Map> rejected = submit(sellerCompany, "{ not json", Map.class);
+        String requestId = (String) rejected.getBody().get("requestId");
+
+        assertThat(logs(sellerCompany, "")).anyMatch(e -> requestId.equals(e.get("requestId")));
+        assertThat(logs(otherCompany, "")).noneMatch(e -> requestId.equals(e.get("requestId")));
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> logs(UUID company, String query) {
+        ResponseEntity<List> response = http.get().uri("/api/v1/logs" + query)
+                .header("X-Mystix-Company-Id", company.toString())
+                .retrieve().toEntity(List.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return (List<Map<String, Object>>) response.getBody();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asMap(Object value) {
+        return (Map<String, Object>) value;
+    }
+
+    @Test
     void sameNumberWithDifferentContentIsAConflict() {
         String original = withNumber("FA-CONFLICT-1");
         assertThat(submit(sellerCompany, original, byte[].class).getStatusCode()).isEqualTo(HttpStatus.CREATED);

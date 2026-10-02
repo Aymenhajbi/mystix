@@ -28,7 +28,10 @@ class InvoiceRepository {
             rs.getObject("created_at", OffsetDateTime.class),
             rs.getString("clearance_reference"),
             rs.getObject("clearance_simulated", Boolean.class),
-            rs.getObject("clearance_at", OffsetDateTime.class));
+            rs.getObject("clearance_at", OffsetDateTime.class),
+            rs.getString("buyer_name"),
+            rs.getString("currency"),
+            rs.getBigDecimal("payable_amount"));
 
     private final JdbcClient jdbc;
 
@@ -41,9 +44,14 @@ class InvoiceRepository {
     void insert(StoredInvoice invoice, Map<ArtifactKind, byte[]> artifacts) {
         jdbc.sql("""
                 INSERT INTO invoice_message (id, company_id, invoice_number, issue_date, status,
-                                             canonical_version, canonical_sha256, created_at)
-                VALUES (:id, :companyId, :number, :issueDate, :status, :canonicalVersion, :canonicalSha256, :createdAt)
+                                             canonical_version, canonical_sha256, created_at,
+                                             buyer_name, currency, payable_amount)
+                VALUES (:id, :companyId, :number, :issueDate, :status, :canonicalVersion, :canonicalSha256, :createdAt,
+                        :buyerName, :currency, :payableAmount)
                 """)
+                .param("buyerName", invoice.buyerName())
+                .param("currency", invoice.currency())
+                .param("payableAmount", invoice.payableAmount())
                 .param("id", invoice.id())
                 .param("companyId", invoice.companyId())
                 .param("number", invoice.number())
@@ -126,6 +134,19 @@ class InvoiceRepository {
                 .param("number", number)
                 .query(INVOICE)
                 .optional();
+    }
+
+    List<StoredInvoice> list(UUID companyId, int limit) {
+        return jdbc.sql("""
+                SELECT * FROM invoice_message
+                WHERE company_id = :companyId
+                ORDER BY created_at DESC, id
+                LIMIT :limit
+                """)
+                .param("companyId", companyId)
+                .param("limit", limit)
+                .query(INVOICE)
+                .list();
     }
 
     Optional<StoredInvoice> findById(UUID companyId, UUID id) {

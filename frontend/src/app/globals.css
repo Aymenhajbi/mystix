@@ -1,37 +1,105 @@
-/* Mystix design tokens. Brand = #8500DE; green / orange / red are reserved for states. */
+/*
+ * Mystix design tokens, taken from the Cockpit mockup (artifact "Mystix Cockpit").
+ * Brand = #8500DE. ok / warn / crit / info are reserved for states.
+ * Three theme states: system (no attribute), data-theme="light", data-theme="dark".
+ */
 :root {
-  --color-brand: #8500de;
-  --color-brand-contrast: #ffffff;
-  --color-bg: #ffffff;
-  --color-surface: #f6f4f9;
-  --color-text: #1b1523;
-  --color-text-muted: #5c5566;
-  --color-border: #e2dce9;
-  --color-success: #1e7a3c;
-  --color-warning: #a35200;
-  --color-danger: #b42318;
-  --radius: 8px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 16px;
-  --space-4: 24px;
-  --space-5: 40px;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", sans-serif;
+  --bg: #f6f5f9;
+  --surface: #ffffff;
+  --surface-2: #f3f1f8;
+  --surface-3: #e9e5f2;
+  --line: #e3dfec;
+  --line-strong: #cec8db;
+  --text: #16121e;
+  --text-2: #433d51;
+  --muted: #655e78;
+  --accent: #8500de;
+  --accent-soft: #f2e6fc;
+  --accent-text: #ffffff;
+  --ok: #1a7a4e;
+  --ok-soft: #e1f3ea;
+  --warn: #9a540c;
+  --warn-soft: #fbeedd;
+  --crit: #c22d33;
+  --crit-soft: #fbe4e4;
+  --info: #2a66b8;
+  --info-soft: #e3eefa;
+  --code-bg: #faf9fc;
+  --c-tag: #7a12c9;
+  --c-attr: #2a66b8;
+  --c-str: #1a7a4e;
+  --c-com: #77718a;
+  --c-num: #9a540c;
+  --shadow: 0 12px 40px rgba(22, 18, 30, 0.16);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --font-sans: var(--font-plex-sans), var(--font-plex-arabic), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-brand: #b45cff;
-    --color-brand-contrast: #14001f;
-    --color-bg: #121016;
-    --color-surface: #1d1a23;
-    --color-text: #f1edf6;
-    --color-text-muted: #b3abbe;
-    --color-border: #332e3b;
-    --color-success: #5cc983;
-    --color-warning: #f0a04b;
-    --color-danger: #f97066;
+  :root:not([data-theme="light"]) {
+    --bg: #0e0c13;
+    --surface: #15121c;
+    --surface-2: #1b1824;
+    --surface-3: #25202f;
+    --line: #2a2536;
+    --line-strong: #3a3448;
+    --text: #ece9f2;
+    --text-2: #bdb6cb;
+    --muted: #958ea6;
+    --accent: #b57bff;
+    --accent-soft: #2a1940;
+    --accent-text: #120a1c;
+    --ok: #43b883;
+    --ok-soft: #14261f;
+    --warn: #f0963f;
+    --warn-soft: #2b2014;
+    --crit: #f0595e;
+    --crit-soft: #2e1719;
+    --info: #6aa8f0;
+    --info-soft: #16233a;
+    --code-bg: #110e17;
+    --c-tag: #c59bff;
+    --c-attr: #7db3f2;
+    --c-str: #72cfa0;
+    --c-com: #7c7590;
+    --c-num: #f2ae6b;
+    --shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0e0c13;
+  --surface: #15121c;
+  --surface-2: #1b1824;
+  --surface-3: #25202f;
+  --line: #2a2536;
+  --line-strong: #3a3448;
+  --text: #ece9f2;
+  --text-2: #bdb6cb;
+  --muted: #958ea6;
+  --accent: #b57bff;
+  --accent-soft: #2a1940;
+  --accent-text: #120a1c;
+  --ok: #43b883;
+  --ok-soft: #14261f;
+  --warn: #f0963f;
+  --warn-soft: #2b2014;
+  --crit: #f0595e;
+  --crit-soft: #2e1719;
+  --info: #6aa8f0;
+  --info-soft: #16233a;
+  --code-bg: #110e17;
+  --c-tag: #c59bff;
+  --c-attr: #7db3f2;
+  --c-str: #72cfa0;
+  --c-com: #7c7590;
+  --c-num: #f2ae6b;
+  --shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 }
 
 * {
@@ -45,13 +113,52 @@ body {
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans);
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent);
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-brand);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: 8px;
+  top: -40px;
+  background: var(--accent);
+  color: var(--accent-text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  z-index: 50;
+}
+
+.skip-link:focus {
+  top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
