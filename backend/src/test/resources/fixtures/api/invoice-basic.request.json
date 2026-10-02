@@ -1,0 +1,31 @@
+{
+  "number": "FA-2026-000123",
+  "issueDate": "2026-09-15",
+  "currency": "MAD",
+  "dueDate": "2026-10-15",
+  "buyerReference": "ACHATS-42",
+  "purchaseOrderReference": "PO-7781",
+  "note": "Synthetic test invoice & fixture",
+  "seller": {
+    "name": "Fournisseur Synthetique SARL",
+    "ice": "000000001000011",
+    "taxIdentifier": "99999999",
+    "tradeRegister": "RC-TEST-1",
+    "gln": "6110000000017",
+    "address": { "street": "12 Rue des Tests", "city": "Casablanca", "postalCode": "20000", "countryCode": "MA" }
+  },
+  "buyer": {
+    "name": "Client Synthetique SA",
+    "ice": "000000002000022",
+    "gln": "6110000000024",
+    "address": { "city": "Rabat", "countryCode": "MA" }
+  },
+  "lines": [
+    { "id": "1", "quantity": 3, "unitCode": "C62", "unitPrice": "125.50", "itemName": "Carton test A",
+      "gtin": "6110000000109", "vat": { "category": "S", "ratePercent": 20 } },
+    { "id": "2", "quantity": "2.5", "unitCode": "KGM", "unitPrice": "48.333", "itemName": "Produit au poids test B",
+      "vat": { "category": "S", "ratePercent": 20 } },
+    { "id": "3", "quantity": 1, "unitCode": "C62", "unitPrice": 900, "itemName": "Prestation test C",
+      "vat": { "category": "S", "ratePercent": "10.00" } }
+  ]
+}

@@ -4,10 +4,12 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -21,7 +23,9 @@ class GlobalExceptionHandler {
     @ExceptionHandler(MystixException.class)
     ResponseEntity<ApiError> handleMystix(MystixException e) {
         log.info("Business error {}: {}", e.errorCode(), e.getMessage());
-        return respond(e.errorCode(), List.of());
+        return ResponseEntity.status(e.errorCode().status())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiError.of(e.errorCode(), e.fieldErrors(), e.ruleViolations()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -30,6 +34,12 @@ class GlobalExceptionHandler {
                 .map(f -> new ApiError.FieldViolation(f.getField(), f.getDefaultMessage()))
                 .toList();
         return respond(ErrorCode.VALIDATION_FAILED, violations);
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    ResponseEntity<ApiError> handleMissingHeader(MissingRequestHeaderException e) {
+        return respond(ErrorCode.VALIDATION_FAILED,
+                List.of(new ApiError.FieldViolation(e.getHeaderName(), "required header is missing")));
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
@@ -55,6 +65,9 @@ class GlobalExceptionHandler {
     }
 
     private static ResponseEntity<ApiError> respond(ErrorCode code, List<ApiError.FieldViolation> violations) {
-        return ResponseEntity.status(code.status()).body(ApiError.of(code, violations));
+        // Errors are always JSON, even when the client asked for the XML output of a successful call.
+        return ResponseEntity.status(code.status())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiError.of(code, violations));
     }
 }
