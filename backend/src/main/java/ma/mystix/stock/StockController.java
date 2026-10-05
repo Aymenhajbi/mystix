@@ -32,10 +32,12 @@ class StockController {
     private static final int MAX_LIMIT = 500;
 
     private final StockService stock;
+    private final StockEdifactService edifact;
     private final StockRepository repository;
 
-    StockController(StockService stock, StockRepository repository) {
+    StockController(StockService stock, StockEdifactService edifact, StockRepository repository) {
         this.stock = stock;
+        this.edifact = edifact;
         this.repository = repository;
     }
 
@@ -54,6 +56,22 @@ class StockController {
      */
     record Position(String sku, String location, Map<StockState, BigDecimal> states, BigDecimal onHand,
                     BigDecimal availableToPromise, OffsetDateTime updatedAt) {
+    }
+
+    /**
+     * A UN/EDIFACT D96A interchange of DESADV, RECADV, ORDERS or INVRPT messages (ADR-0012). Each message is applied
+     * on its own; the response gives the outcome per message.
+     *
+     * @param direction IN (from a supplier) or OUT (to a customer), needed for DESADV messages
+     * @param location  stock location used when a message names none
+     */
+    @PostMapping(value = "/edifact", consumes = {"application/edifact", MediaType.TEXT_PLAIN_VALUE,
+            MediaType.APPLICATION_OCTET_STREAM_VALUE}, produces = MediaType.APPLICATION_JSON_VALUE)
+    StockEdifactService.Receipt edifact(@RequestHeader(COMPANY) UUID companyId, @RequestBody byte[] body,
+                                       @RequestParam(required = false) String direction,
+                                       @RequestParam(required = false) String location) {
+        return edifact.receive(companyId, body, direction == null ? null : direction.strip().toUpperCase(),
+                location);
     }
 
     @GetMapping(value = "/positions", produces = MediaType.APPLICATION_JSON_VALUE)
