@@ -26,8 +26,9 @@ const fileNames: Record<ArtifactKind, string> = {
   OUT: "invoice-ubl-2.1.xml",
 };
 
-export default async function InvoicePage({ params }: PageProps<"/[lang]/invoices/[id]">) {
+export default async function InvoicePage({ params, searchParams }: PageProps<"/[lang]/invoices/[id]">) {
   const { lang, id } = await params;
+  const created = (await searchParams).created === "1";
   if (!hasLocale(lang)) notFound();
   await connection();
   const dict = await getDictionary(lang);
@@ -92,6 +93,11 @@ export default async function InvoicePage({ params }: PageProps<"/[lang]/invoice
 
   return (
     <div className={styles.stack}>
+      {created && (
+        <p className={styles.notice} role="status">
+          {d.created}
+        </p>
+      )}
       <section className={styles.panel}>
         <div className={styles.detailHead}>
           <div style={{ minWidth: 0 }}>

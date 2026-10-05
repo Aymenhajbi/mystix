@@ -454,3 +454,55 @@ export async function sendMappingCommand(
     return { ok: false, errorCode: "API_UNREACHABLE" };
   }
 }
+
+// ---------- invoice entry in the portal (Lot 3) ----------
+
+export type ApiErrorBody = {
+  errorCode: string;
+  userMessage: { fr: string; ar: string } | null;
+  suggestedAction: { fr: string; ar: string } | null;
+  fieldErrors: { field: string; reason: string }[];
+  ruleViolations: { ruleId: string; severity: string; location: string; message: string }[];
+  requestId: string | null;
+};
+
+export type SubmitResult = { ok: true; invoiceId: string } | { ok: false; error: ApiErrorBody };
+
+const failure = (errorCode: string): SubmitResult => ({
+  ok: false,
+  error: { errorCode, userMessage: null, suggestedAction: null, fieldErrors: [], ruleViolations: [], requestId: null },
+});
+
+/** Submits an invoice request (same contract as POST /api/v1/invoices). Server actions only. */
+export async function submitInvoice(companyId: string, body: unknown): Promise<SubmitResult> {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/v1/invoices`, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "X-Mystix-Company-Id": companyId,
+        "Content-Type": "application/json",
+        Accept: "application/xml, application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15000),
+    });
+    const invoiceId = response.headers.get("X-Mystix-Invoice-Id");
+    if (response.ok && isUuid(invoiceId)) return { ok: true, invoiceId };
+    const json = (await response.json().catch(() => null)) as Partial<ApiErrorBody> | null;
+    if (!json?.errorCode) return failure("INTERNAL_ERROR");
+    return {
+      ok: false,
+      error: {
+        errorCode: json.errorCode,
+        userMessage: json.userMessage ?? null,
+        suggestedAction: json.suggestedAction ?? null,
+        fieldErrors: json.fieldErrors ?? [],
+        ruleViolations: json.ruleViolations ?? [],
+        requestId: json.requestId ?? null,
+      },
+    };
+  } catch {
+    return failure("API_UNREACHABLE");
+  }
+}
