@@ -17,6 +17,7 @@ import ma.mystix.mapping.MappingVersionService;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
+import ma.mystix.tenant.CompanyService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,15 +53,17 @@ class InvoiceController {
     private final InvoiceIntake intake;
     private final FlowService flows;
     private final MappingVersionService mappings;
+    private final CompanyService companies;
 
     InvoiceController(InvoiceService service, InvoiceLineage lineage, ProcessingLog logs, InvoiceIntake intake,
-                      FlowService flows, MappingVersionService mappings) {
+                      FlowService flows, MappingVersionService mappings, CompanyService companies) {
         this.service = service;
         this.lineage = lineage;
         this.logs = logs;
         this.intake = intake;
         this.flows = flows;
         this.mappings = mappings;
+        this.companies = companies;
     }
 
     /**
@@ -78,7 +81,8 @@ class InvoiceController {
             // Flow first: its published rules (ADR-0008) apply before any field check.
             ExchangeFlow flow = flows.forSubmission(companyId, flowId);
             submission = service.submit(companyId, flow, body,
-                    intake.read(body, mappings.publishedRules(companyId, flow.id())));
+                    intake.read(body, mappings.publishedRules(companyId, flow.id()),
+                            companies.enforcedSellerIce(companyId).orElse(null)));
         } catch (MystixException e) {
             logs.submissionRejected(companyId, intake.numberOf(body), e, body);
             throw e;

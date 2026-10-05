@@ -40,3 +40,6 @@ desktop.ini
 # Local data
 *.log
 tmp/
+
+# Server log files and their rotated archives
+backend/logs/

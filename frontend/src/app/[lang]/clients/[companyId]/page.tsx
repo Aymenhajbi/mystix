@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { DirectionBadge, FlowRoute, FlowStatusBadge } from "@/components/FlowChips";
 import {
   getCompany,
+  getCompanySettings,
   isUuid,
   listEnvironments,
   listFlows,
@@ -18,7 +19,7 @@ import {
 import { formatDateTime, hasLocale, intlTag, type Locale } from "@/lib/i18n";
 import { getDictionary, t, type Dictionary } from "../../dictionaries";
 import styles from "../../portal.module.css";
-import { createPartnerAction } from "../actions";
+import { createPartnerAction, updateSettingsAction } from "../actions";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/clients/[companyId]">): Promise<Metadata> {
   const { lang, companyId } = await params;
@@ -96,12 +97,14 @@ export default async function ClientEnvironmentPage({ params, searchParams }: Pa
   const query = await searchParams;
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
   const partnerSaved = query.partner === "1";
-  const [company, flows, partners, environments, active] = await Promise.all([
+  const settingsSaved = query.settings === "1";
+  const [company, flows, partners, environments, active, settings] = await Promise.all([
     getCompany(companyId),
     listFlows(companyId),
     listPartners(companyId),
     listEnvironments(),
     portalCompanyId(),
+    getCompanySettings(companyId),
   ]);
   if (company.kind === "not-found") notFound();
   if (company.kind !== "ok" || flows.kind !== "ok" || partners.kind !== "ok") {
@@ -155,6 +158,11 @@ export default async function ClientEnvironmentPage({ params, searchParams }: Pa
       {partnerSaved && (
         <p className={styles.notice} role="status">
           {c.partner.saved}
+        </p>
+      )}
+      {settingsSaved && (
+        <p className={styles.notice} role="status">
+          {c.settings.saved}
         </p>
       )}
 
@@ -263,6 +271,44 @@ export default async function ClientEnvironmentPage({ params, searchParams }: Pa
           </div>
         </form>
       </section>
+
+      {settings.kind === "ok" && (
+        <section className={styles.panel} aria-labelledby="settings-title" id="settings">
+          <div className={styles.panelHead}>
+            <h2 id="settings-title">{c.settings.title}</h2>
+            <span className={styles.hint}>{c.settings.hint}</span>
+          </div>
+          <form action={updateSettingsAction} className={styles.form}>
+            <input type="hidden" name="lang" value={lang} />
+            <input type="hidden" name="companyId" value={companyId} />
+            <div className={styles.check}>
+              <input
+                id="enforce-seller-ice"
+                type="checkbox"
+                name="enforceSellerIce"
+                defaultChecked={settings.data.enforceSellerIce}
+                aria-describedby="enforce-help"
+              />
+              <span>
+                <label htmlFor="enforce-seller-ice">
+                  <b>{c.settings.enforceSellerIce}</b>
+                </label>
+                <small id="enforce-help">{t(c.settings.enforceSellerIceHelp, { ice: company.data.ice })}</small>
+              </span>
+            </div>
+            {!settings.data.enforceSellerIce && (
+              <p className={styles.declared} role="note">
+                {c.settings.offWarning}
+              </p>
+            )}
+            <div className={styles.formActions}>
+              <button type="submit" className={styles.btn}>
+                {c.settings.save}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
     </div>
   );
 }

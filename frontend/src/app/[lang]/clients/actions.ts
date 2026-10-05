@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { isUuid, sendFlowMutation, type ExchangeFlow, type Partner } from "@/lib/api";
+import { isUuid, sendFlowMutation, type CompanySettings, type ExchangeFlow, type Partner } from "@/lib/api";
 import { hasLocale } from "@/lib/i18n";
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
@@ -55,4 +55,16 @@ export async function createPartnerAction(form: FormData) {
     reference: text(form, "reference") || null,
   });
   redirect(result.ok ? `${base}?partner=1#partners` : `${base}?error=${encodeURIComponent(result.errorCode)}#partners`);
+}
+
+/** Saves the environment settings (configurator). An unchecked box is absent from the form: rule off. */
+export async function updateSettingsAction(form: FormData) {
+  const lang = text(form, "lang");
+  const companyId = text(form, "companyId");
+  if (!hasLocale(lang) || !isUuid(companyId)) redirect("/");
+  const base = `/${lang}/clients/${companyId}`;
+  const result = await sendFlowMutation<CompanySettings>(companyId, "PUT", `/api/v1/companies/${companyId}/settings`, {
+    enforceSellerIce: form.get("enforceSellerIce") === "on",
+  });
+  redirect(result.ok ? `${base}?settings=1#settings` : `${base}?error=${encodeURIComponent(result.errorCode)}#settings`);
 }
