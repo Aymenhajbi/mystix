@@ -1,6 +1,6 @@
 # ADR-0011 — Module stock : registre de mouvements, cinq états, réconciliation INVRPT
 
-- Statut : **Proposé** (2026-10-05). Spécification fonctionnelle du fondateur ; deux arbitrages ci-dessous à valider.
+- Statut : **Accepté** (2026-10-05) : modèle par partition validé par le fondateur. Qualificatifs EDIFACT encore à vérifier avant le Lot 6.
 - Date : 2026-10-05
 - Lot : 10 (nouveau, stock)
 
@@ -22,7 +22,7 @@ Le fondateur veut un module qui fasse converger le flux physique (mouvements d'e
    | `STATUS_CHANGE` | INVRPT événementiel | état → état (ex. Disponible → Quarantaine) |
    | `ADJUSTMENT` | INVRPT événementiel (casse, vol) | entrée ou sortie d'un état |
    | `SNAPSHOT` | INVRPT de rapprochement | réconciliation, voir 4 |
-3. **Formules — modèle par partition (arbitrage 1, à valider)** : les cinq états partitionnent la quantité.
+3. **Formules — modèle par partition (arbitrage 1, validé par le fondateur le 2026-10-05)** : les cinq états partitionnent la quantité.
    - **Stock physique (On-Hand)** = Disponible + Réservé + Quarantaine.
    - **ATP** = Disponible + En transit. Le Réservé est déjà déduit, puisqu'une réservation fait passer la quantité de Disponible à Réservé.
    - La spécification écrivait « ATP = (Disponible + Transit) − Réservé », ce qui soustrairait le réservé deux fois avec la formule du stock physique. Le modèle par partition est le seul cohérent avec les règles ORDERS (« retirer de l'ATP, ajouter au Réservé ») et DESADV sortant (« diminuer le Réservé et le stock physique »).
