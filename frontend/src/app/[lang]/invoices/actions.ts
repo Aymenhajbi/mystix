@@ -1,7 +1,15 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getCompany, portalCompanyId, standardVatRates, submitInvoice, type ApiErrorBody } from "@/lib/api";
+import {
+  getCompany,
+  isUuid,
+  portalCompanyId,
+  sendFlowMutation,
+  standardVatRates,
+  submitInvoice,
+  type ApiErrorBody,
+} from "@/lib/api";
 import { hasLocale } from "@/lib/i18n";
 
 /** What the portal form sends. Amounts stay strings: the backend parses them as BigDecimal. */
@@ -102,4 +110,23 @@ export async function createInvoiceAction(lang: string, draft: InvoiceDraft): Pr
   });
   if (result.ok) redirect(`/${lang}/invoices/${result.invoiceId}?created=1`);
   return { error: result.error };
+}
+
+/**
+ * Administrator decision on a backdated invoice (approve: clearance runs; reject: it stops there).
+ * TODO(auth): only the environment administrator may decide (Lot 8).
+ */
+export async function decideValidationAction(form: FormData) {
+  const lang = String(form.get("lang") ?? "");
+  const invoiceId = String(form.get("invoiceId") ?? "");
+  if (!hasLocale(lang) || !isUuid(invoiceId)) redirect("/");
+  const companyId = await portalCompanyId();
+  const page = `/${lang}/invoices/${invoiceId}`;
+  if (!companyId) redirect(`${page}?error=NO_COMPANY`);
+  const approve = form.get("decision") === "approve";
+  const result = await sendFlowMutation<unknown>(companyId, "POST", `/api/v1/invoices/${invoiceId}/validation`, {
+    approve,
+    comment: String(form.get("comment") ?? "").trim() || null,
+  });
+  redirect(result.ok ? `${page}?decided=${approve ? "approved" : "rejected"}` : `${page}?error=${encodeURIComponent(result.errorCode)}`);
 }

@@ -56,7 +56,9 @@
     "VALIDATED": "En attente de clearance",
     "CLEARED": "Acceptée",
     "CLEARANCE_REJECTED": "Refusée",
-    "CLEARANCE_ERROR": "Erreur de clearance"
+    "CLEARANCE_ERROR": "Erreur de clearance",
+    "PENDING_VALIDATION": "À valider (antidatée)",
+    "VALIDATION_REJECTED": "Refusée par l'administrateur"
   },
   "cockpit": {
     "title": "Cockpit",
@@ -69,7 +71,7 @@
     "clearanceSub": "Acceptées : {cleared} · Refusées : {rejected} · mode simulé",
     "clearanceEmpty": "aucune réponse de clearance",
     "toHandle": "À traiter",
-    "toHandleSub": "Refusées : {rejected} · En attente : {pending}",
+    "toHandleSub": "Refusées : {rejected} · En attente : {pending} · À valider : {toValidate}",
     "amount": "Montant TTC accepté",
     "amountSub": "factures acceptées en clearance",
     "journal": "Journal",
@@ -101,7 +103,14 @@
     "stepPending": "En attente de clearance",
     "send": "Envoyer une facture",
     "sendHint": "Depuis le portail avec « Nouvelle facture », ou par l'API : POST /api/v1/invoices avec l'en-tête X-Mystix-Company-Id.",
-    "empty": "Aucune facture pour cette société. Le journal se remplira dès la première facture envoyée."
+    "empty": "Aucune facture pour cette société. Le journal se remplira dès la première facture envoyée.",
+    "stageValidation": "VALIDATION",
+    "eventToValidate": "Antidatée, en attente de validation",
+    "eventValidationRejected": "Refusée par l'administrateur",
+    "toValidateTitle": "{count} facture(s) antidatée(s) en attente de validation",
+    "toValidateLead": "Émises avant leur jour de réception, elles ont été contrôlées avec les taux de TVA de leur date d'émission. Elles ne partent en clearance qu'après validation par un administrateur.",
+    "toValidateItem": "émise le {issued}, reçue le {received}",
+    "toValidateAll": "Voir toutes les factures à valider"
   },
   "invoices": {
     "title": "Factures",
@@ -118,6 +127,7 @@
     "searchSubmit": "Rechercher",
     "filters": {
       "all": "Toutes",
+      "toValidate": "À valider",
       "cleared": "Acceptées",
       "rejected": "Refusées",
       "pending": "En attente"
@@ -168,7 +178,19 @@
     "fileUnavailable": "Fichier indisponible.",
     "created": "Facture émise : contrôlée, convertie en UBL 2.1 et soumise à la clearance (simulée).",
     "backdated": "Antidatée",
-    "backdatedNote": "Facture antidatée : émise le {issued}, reçue le {received}. Les taux de TVA en vigueur à la date d'émission s'appliquent."
+    "backdatedNote": "Facture antidatée : émise le {issued}, reçue le {received}. Les taux de TVA en vigueur à la date d'émission s'appliquent.",
+    "createdPending": "Facture reçue et contrôlée. Elle est antidatée : elle attend la validation d'un administrateur avant la clearance.",
+    "validation": {
+      "title": "Validation administrateur requise",
+      "lead": "Facture antidatée : émise le {issued}, reçue le {received}. Les taux de TVA en vigueur à la date d'émission ont été contrôlés. Validez-la pour l'envoyer en clearance, ou refusez-la.",
+      "comment": "Commentaire (optionnel, conservé dans l'historique)",
+      "approve": "Valider et envoyer en clearance",
+      "reject": "Refuser",
+      "note": "Décision définitive, tracée dans l'historique et les logs.",
+      "approved": "Facture validée : envoyée en clearance (simulée).",
+      "rejected": "Facture refusée : elle ne partira pas en clearance.",
+      "error": "La décision n'a pas pu être enregistrée ({code})."
+    }
   },
   "logs": {
     "title": "Logs",
@@ -198,7 +220,9 @@
       "CLEARANCE_REJECTED": "Clearance refusée (simulée)",
       "CLEARANCE_ERROR": "Clearance indisponible",
       "INVOICE_BACKDATED": "Facture antidatée",
-      "VAT_RATES_UNCHECKED": "Taux de TVA non contrôlés"
+      "VAT_RATES_UNCHECKED": "Taux de TVA non contrôlés",
+      "INVOICE_VALIDATION_APPROVED": "Facture antidatée validée",
+      "INVOICE_VALIDATION_REJECTED": "Facture antidatée refusée"
     },
     "stages": {
       "API": "API",

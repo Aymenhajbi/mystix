@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import ma.mystix.TestClockConfiguration;
 import ma.mystix.TestcontainersConfiguration;
 import ma.mystix.shared.Sha256;
 import ma.mystix.tenant.CompanyService;
@@ -26,13 +27,15 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestClockConfiguration.class})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"mystix.clearance.simulated.reject-numbers-matching=FA-SIMREJECT-.*", "mystix.admin.enabled=true"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InvoiceApiTests {
 
     private static final String REFERENCE_NUMBER = "FA-2026-000123";
+    private static final String FIXTURE_SELLER_ICE = "\"ice\": \"000000001000011\"";
+    private static final String RATE_TEN = "\"ratePercent\": \"10.00\"";
 
     @Value("${local.server.port}")
     int port;
@@ -596,100 +599,131 @@ class InvoiceApiTests {
                 .contains("<cbc:CompanyID>000000001000011</cbc:CompanyID>");
     }
 
+
     @Test
     @SuppressWarnings("unchecked")
-    void standardRatesMustBeInForceOnTheIssueDateUnlessTheEnvironmentTurnsTheCheckOff() {
-        // Synthetic rates in a year no other test uses, so the referential stays empty for them.
+    void vatReferentialIsDatedAndMaintainedByTheOperator() {
+        // A test country, so the Moroccan rates loaded by migration are not touched.
         for (String rate : List.of("20", "10")) {
-            ResponseEntity<Map> added = http.post().uri("/api/v1/admin/vat-rates")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of("countryCode", "MA", "categoryCode", "S", "ratePercent", rate,
-                            "validFrom", "2031-01-01", "validTo", "2031-12-31", "legalReference", "TEST synthetic"))
-                    .retrieve().toEntity(Map.class);
-            assertThat(added.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            assertThat(addRate("TN", rate, "2031-01-01", "2031-12-31").getStatusCode()).isEqualTo(HttpStatus.CREATED);
         }
-        ResponseEntity<Map> duplicate = http.post().uri("/api/v1/admin/vat-rates")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("countryCode", "MA", "categoryCode", "S", "ratePercent", "20.00",
-                        "validFrom", "2031-01-01", "legalReference", "TEST synthetic"))
-                .retrieve().toEntity(Map.class);
-        assertThat(duplicate.getBody()).containsEntry("errorCode", "VAT_RATE_EXISTS");
+        assertThat(addRate("TN", "20.00", "2031-01-01", null).getBody()).containsEntry("errorCode", "VAT_RATE_EXISTS");
         ResponseEntity<Map> invalid = http.post().uri("/api/v1/admin/vat-rates")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("countryCode", "MA", "categoryCode", "X", "ratePercent", "12",
+                .body(Map.of("countryCode", "TN", "categoryCode", "X", "ratePercent", "12",
                         "validFrom", "2031-02-01", "validTo", "2031-01-01", "legalReference", " "))
                 .retrieve().toEntity(Map.class);
         assertThat(invalid.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(fields(invalid)).containsExactlyInAnyOrder("categoryCode", "validTo", "legalReference");
 
-        List<Map<String, Object>> inForce = http.get().uri("/api/v1/referential/vat-rates?date=2031-06-15")
+        List<Map<String, Object>> inForce = http.get().uri("/api/v1/referential/vat-rates?country=TN&date=2031-06-15")
                 .retrieve().body(List.class);
         assertThat(inForce).extracting(r -> ((Number) r.get("ratePercent")).doubleValue()).containsExactly(10.0, 20.0);
-        assertThat(http.get().uri("/api/v1/referential/vat-rates?date=2032-01-01").retrieve().body(List.class))
+        assertThat(http.get().uri("/api/v1/referential/vat-rates?country=TN&date=2032-01-01").retrieve().body(List.class))
                 .isEmpty();
 
-        UUID company = companies.register(new Ice("000000011000011"), "Environnement TVA SARL", null).id();
-        String dated = withNumber("FA-VAT-1").replace("2026-09-15", "2031-06-15").replace("2026-10-15", "2031-07-15")
-                .replace("\"ice\": \"000000001000011\",", "");
-        ResponseEntity<byte[]> inForceRates = submit(company, dated, byte[].class);
-        assertThat(inForceRates.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        // Moroccan rates loaded by V12: 10 and 20 % from 2026.
+        List<Map<String, Object>> morocco = http.get().uri("/api/v1/referential/vat-rates?date=2026-09-15")
+                .retrieve().body(List.class);
+        assertThat(morocco).extracting(r -> ((Number) r.get("ratePercent")).doubleValue()).containsExactly(10.0, 20.0);
+    }
 
-        String fourteen = dated.replace("FA-VAT-1", "FA-VAT-2").replace("\"ratePercent\": \"10.00\"",
-                "\"ratePercent\": 14");
-        assertThat(fourteen).contains("\"ratePercent\": 14");
+    @Test
+    @SuppressWarnings("unchecked")
+    void standardRatesMustBeInForceOnTheIssueDateUnlessTheEnvironmentTurnsTheCheckOff() {
+        UUID company = companies.register(new Ice("000000011000011"), "Environnement TVA SARL", null).id();
+        String request = withNumber("FA-VAT-1").replace(FIXTURE_SELLER_ICE + ",", "");
+        assertThat(submit(company, request, byte[].class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        String fourteen = request.replace("FA-VAT-1", "FA-VAT-2").replace(RATE_TEN, "\"ratePercent\": 14");
         ResponseEntity<Map> unknown = submit(company, fourteen, Map.class);
         assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(unknown.getBody()).containsEntry("errorCode", "VAT_RATE_UNKNOWN");
         assertThat(fields(unknown)).containsExactly("lines[2].vat.ratePercent");
 
         // Turned off by the environment (partial update: the seller identity rule stays on).
-        ResponseEntity<Map> off = http.put().uri("/api/v1/companies/{id}/settings", company)
-                .header("X-Mystix-Company-Id", company.toString())
-                .contentType(MediaType.APPLICATION_JSON).body(Map.of("enforceVatRates", false))
-                .retrieve().toEntity(Map.class);
-        assertThat(off.getBody()).containsEntry("enforceVatRates", false).containsEntry("enforceSellerIce", true);
+        assertThat(settings(company, Map.of("enforceVatRates", false)))
+                .containsEntry("enforceVatRates", false).containsEntry("enforceSellerIce", true);
         assertThat(submit(company, fourteen, byte[].class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void backdatedInvoicesKeepTheRatesOfTheirIssueDateAndAreFlagged() {
-        // Synthetic 2025 rates: a 2025 invoice received today is backdated and checked against them.
-        for (String rate : List.of("20", "10")) {
-            assertThat(http.post().uri("/api/v1/admin/vat-rates")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of("countryCode", "MA", "categoryCode", "S", "ratePercent", rate,
-                            "validFrom", "2025-01-01", "validTo", "2025-12-31", "legalReference", "TEST synthetic"))
-                    .retrieve().toEntity(Map.class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        }
+    void backdatedInvoicesKeepTheRatesOfTheirIssueDateAndWaitForAnAdministrator() {
         UUID company = companies.register(new Ice("000000012000012"), "Environnement Antidate SARL", null).id();
         String issued2025 = withNumber("FA-BACK-1").replace("2026-09-15", "2025-06-15")
-                .replace("2026-10-15", "2025-07-15").replace("\"ice\": \"000000001000011\",", "");
+                .replace("2026-10-15", "2025-07-15").replace(FIXTURE_SELLER_ICE + ",", "");
 
-        ResponseEntity<byte[]> accepted = submit(company, issued2025, byte[].class);
-        assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        String id = accepted.getHeaders().getFirst("X-Mystix-Invoice-Id");
-        Map<String, Object> listed = getList("/api/v1/invoices", company).stream()
-                .filter(i -> id.equals(i.get("id"))).findFirst().orElseThrow();
-        assertThat(listed).containsEntry("backdated", true);
+        // Accepted with the 2025 rates (V12), held for validation: no clearance yet.
+        ResponseEntity<byte[]> held = submit(company, issued2025, byte[].class);
+        assertThat(held.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(held.getHeaders().getFirst("X-Mystix-Status")).isEqualTo("PENDING_VALIDATION");
+        String id = held.getHeaders().getFirst("X-Mystix-Invoice-Id");
+        assertThat(invoice(company, id)).containsEntry("status", "PENDING_VALIDATION").containsEntry("backdated", true)
+                .satisfies(i -> assertThat(asMap(i.get("clearance"))).containsEntry("reference", null));
         assertThat(logs(company, "?level=WARN")).anySatisfy(e -> assertThat(e)
                 .containsEntry("event", "INVOICE_BACKDATED")
                 .satisfies(x -> assertThat((String) x.get("message"))
-                        .contains("issued 2025-06-15").contains("10 %, 20 %")));
+                        .contains("held for administrator validation").contains("issued 2025-06-15")));
 
-        // A rate outside the 2025 rates is blocked, and the reason says the invoice is backdated.
+        // 13 % was a 2024 rate only: blocked, and the reason says the invoice is backdated.
         ResponseEntity<Map> blocked = submit(company, issued2025.replace("FA-BACK-1", "FA-BACK-2")
-                .replace("\"ratePercent\": \"10.00\"", "\"ratePercent\": 14"), Map.class);
+                .replace(RATE_TEN, "\"ratePercent\": 13"), Map.class);
         assertThat(blocked.getBody()).containsEntry("errorCode", "VAT_RATE_UNKNOWN");
         assertThat(((List<Map<String, Object>>) blocked.getBody().get("fieldErrors")).getFirst().get("reason"))
                 .asString().startsWith("backdated invoice (issued 2025-06-15");
 
-        // No rate in the referential for 2024: accepted, but with a warning; nothing passes silently.
-        ResponseEntity<byte[]> unchecked = submit(company, issued2025.replace("FA-BACK-1", "FA-BACK-3")
-                .replace("2025-06-15", "2024-06-15").replace("2025-07-15", "2024-07-15"), byte[].class);
-        assertThat(unchecked.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        // Another environment cannot decide; the administrator approves, then clearance runs.
+        assertThat(decide(otherCompany, id, true).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        ResponseEntity<Map> approved = decide(company, id, true);
+        assertThat(approved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(approved.getBody()).containsEntry("status", "CLEARED");
+        assertThat(decide(company, id, false).getBody()).containsEntry("errorCode", "INVOICE_NOT_PENDING_VALIDATION");
+
+        // Rejected: stops there.
+        String other = submit(company, issued2025.replace("FA-BACK-1", "FA-BACK-3"), byte[].class)
+                .getHeaders().getFirst("X-Mystix-Invoice-Id");
+        assertThat(decide(company, other, false).getBody()).containsEntry("status", "VALIDATION_REJECTED");
+
+        // No rate in the referential before 2021: accepted and held, with a warning; nothing passes silently.
+        ResponseEntity<byte[]> unchecked = submit(company, issued2025.replace("FA-BACK-1", "FA-BACK-4")
+                .replace("2025-06-15", "2020-06-15").replace("2025-07-15", "2020-07-15"), byte[].class);
+        assertThat(unchecked.getHeaders().getFirst("X-Mystix-Status")).isEqualTo("PENDING_VALIDATION");
         assertThat(logs(company, "?level=WARN")).extracting(e -> e.get("event"))
-                .contains("VAT_RATES_UNCHECKED");
+                .contains("VAT_RATES_UNCHECKED", "INVOICE_VALIDATION_REJECTED");
+    }
+
+    private ResponseEntity<Map> addRate(String country, String rate, String from, String to) {
+        Map<String, Object> body = new java.util.HashMap<>(Map.of("countryCode", country, "categoryCode", "S",
+                "ratePercent", rate, "validFrom", from, "legalReference", "TEST synthetic"));
+        if (to != null) {
+            body.put("validTo", to);
+        }
+        return http.post().uri("/api/v1/admin/vat-rates").contentType(MediaType.APPLICATION_JSON).body(body)
+                .retrieve().toEntity(Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> settings(UUID company, Map<String, Object> changes) {
+        return http.put().uri("/api/v1/companies/{id}/settings", company)
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON).body(changes)
+                .retrieve().body(Map.class);
+    }
+
+    private ResponseEntity<Map> decide(UUID company, String invoiceId, boolean approve) {
+        return http.post().uri("/api/v1/invoices/{id}/validation", invoiceId)
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("approve", approve, "comment", "TEST decision"))
+                .retrieve().toEntity(Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> invoice(UUID company, String invoiceId) {
+        return http.get().uri("/api/v1/invoices/{id}", invoiceId)
+                .header("X-Mystix-Company-Id", company.toString())
+                .retrieve().body(Map.class);
     }
 
     @Test
@@ -837,7 +871,17 @@ class InvoiceApiTests {
 
     @Test
     void returnsEn16931RuleViolations() {
-        // EN 16931 BR-S-05: a standard rated (S) line must have a VAT rate greater than zero.
+        // EN 16931 BR-S-05: a standard rated (S) line must have a VAT rate greater than zero. A 0 % standard rate is
+        // also outside the VAT referential, so its check is turned off here to reach the EN 16931 rules.
+        settings(sellerCompany, Map.of("enforceVatRates", false));
+        try {
+            returnsEn16931RuleViolationsWithoutReferentialCheck();
+        } finally {
+            settings(sellerCompany, Map.of("enforceVatRates", true));
+        }
+    }
+
+    private void returnsEn16931RuleViolationsWithoutReferentialCheck() {
         String request = withNumber("FA-BR-S-05").replace(
                 "\"vat\": { \"category\": \"S\", \"ratePercent\": \"10.00\" }",
                 "\"vat\": { \"category\": \"S\", \"ratePercent\": 0 }");

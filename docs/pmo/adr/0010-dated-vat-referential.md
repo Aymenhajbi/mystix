@@ -1,6 +1,6 @@
 # ADR-0010 — Référentiel TVA daté et contrôle des taux à l'émission
 
-- Statut : **Accepté** pour le mécanisme (décision du fondateur, 2026-10-05). **Données initiales : proposées, en attente de validation.**
+- Statut : **Accepté** (décisions du fondateur, 2026-10-05). Données de source secondaire, à confirmer sur le CGI.
 - Date : 2026-10-05
 - Lot : 2 (référentiel daté), 3 (portail)
 
@@ -34,25 +34,28 @@ AGENTS.md impose que les taux de TVA viennent d'un référentiel daté, jamais d
 | Avertissement seul | Décision du fondateur : refus par défaut, désactivable |
 | Taux codés en dur | Interdit par AGENTS.md (§4) |
 
-## Données initiales proposées (non chargées : à valider par le fondateur)
-**Non vérifiées sur le texte officiel** : le site de la DGI (tax.gov.ma) répondait 503 le 2026-10-05. Sources consultées :
-- [maroc.ma](https://www.maroc.ma/fr/actualites/la-dgi-publie-ledition-2026-du-code-general-des-impots), officiel : le CGI 2026 intègre la LF n° 50-25 (dahir n° 1-25-67 du 10/12/2025) ;
-- [Upsilon Consulting](https://www.upsilon-consulting.com/reforme-tva-maroc-2024-2026/) et [Sage Maroc](https://www.sage.com/fr-ma/blog/loi-de-finances-2024-ce-qui-change-avec-la-tva/), secondaires, qui citent les notes circulaires 735, 736 et 737 et le CGI art. 99 et 247.
+## Données chargées (V12, 2026-10-05)
+Sur demande du fondateur, les taux sont chargés d'après les **notes Grant Thornton Maroc sur les lois de finances 2021 à 2026** ([grantthornton.ma](https://www.grantthornton.ma/publications/lois-de-finances-annuelle/)). C'est une source **secondaire** : le site de la DGI, source primaire, ne répondait pas. Les notes ont été téléchargées pour lecture et ne sont pas versionnées dans le dépôt.
 
-Ensembles de taux S en vigueur par période, déduits du calendrier produit par produit :
-
-| Période | Taux S en vigueur | Origine (selon sources secondaires) |
+| Période | Taux S en vigueur | Ce que disent les notes |
 | --- | --- | --- |
-| 2024-01-01 → 2024-12-31 | 7, 8, 10, 11, 12, 13, 14 (?), 16, 20 | 7 : pâtes ; 8 : sucre raffiné ; 11 : location de compteurs ; 12 : énergies renouvelables, courtage d'assurance ; 13 : transport urbain et routier ; 16 : électricité, transport non urbain |
-| 2025-01-01 → 2025-12-31 | 7, 9, 10, 12, 14 (?), 15, 18, 20 | 9 : sucre ; 12 : transport urbain ; 15 : compteurs ; 18 : électricité, transport non urbain |
-| 2026-01-01 → (en vigueur) | **10, 20** | CGI art. 99-A (20 %) et 99-B (10 %) après convergence |
+| 2021-01-01 → 2023-12-31 | 7, 10, 14, 20 | LF 2021 à 2023 : reclassements d'opérations seulement (panneaux solaires à 10 % en 2022 ; avocats, notaires… de 10 à 20 % en 2023) |
+| 2024 | 7*, 8, 10, 11, 12, 13, 14*, 16, 20 | LF 2024 : sucre 8 % ; compteurs d'électricité 11 % ; électricité renouvelable et courtiers d'assurance 12 % ; transport 13 % ; électricité 16 % ; eau hors usage domestique et voiture économique 10 % |
+| 2025 | 7*, 9, 10, 12, 14*, 15, 18, 20 | Calendrier LF 2024 : sucre 9 %, transport 12 %, compteurs 15 %, électricité 18 %, renouvelable et courtiers 10 % ; LF 2025 : levures sèches 20 % |
+| Depuis 2026-01-01 | 10, 20 | Fin du calendrier LF 2024 ; la note LF 2026 ne modifie aucun taux |
 
-**Points à confirmer avant chargement** :
-1. Restait-il des opérations à **14 %** en 2024 et 2025 ? Les sources ne le disent pas.
-2. Le **7 %** est-il resté en vigueur jusqu'au 31/12/2025 ? Il l'est pour les pâtes, si la NC 737 est confirmée.
-3. Le texte exact de l'art. 99 du CGI 2026.
+\* *Taux antérieurs maintenus pour les opérations non visées par la LF 2024 : à confirmer.* Les notes ne disent pas si des opérations sont restées à 7 % ou 14 % en 2024-2025. L'historique est donc **permissif** : un taux en trop relâche le contrôle, un taux manquant bloquerait à tort, et toute facture antidatée passe de toute façon par la validation admin. Pour 2026, le contrôle est strict (10 et 20 %).
 
-Une fois les valeurs validées, elles seront chargées par une migration de données dédiée, avec la référence légale de chaque ligne.
+`TODO(DGI-SPEC)` : confirmer sur le CGI (art. 99, éditions 2024 à 2026) et les notes circulaires de la DGI. Toute correction se fera par une nouvelle migration, jamais en modifiant V12.
+
+## Factures antidatées : validation administrateur (V11, décision du fondateur 2026-10-05)
+- Une facture antidatée est **contrôlée et conservée**, puis mise en statut `PENDING_VALIDATION` : **pas de clearance automatique**.
+- `POST /api/v1/invoices/{id}/validation` (`approve`, `comment`) :
+  - si elle est validée, elle passe à `VALIDATED` puis part en clearance ;
+  - si elle est refusée, elle passe à `VALIDATION_REJECTED` et s'arrête là.
+- La décision est unique : une seconde décision renvoie `INVOICE_NOT_PENDING_VALIDATION` (409). Elle est tracée dans l'historique et dans les logs (`INVOICE_VALIDATION_APPROVED` / `INVOICE_VALIDATION_REJECTED`).
+- **Dashboard** : un bandeau d'avertissement liste les factures à valider (émission, réception, client, montant). Le compteur « À traiter » les inclut, et la liste des factures a un filtre « À valider ».
+- TODO(auth) : la décision sera réservée au rôle administrateur de l'environnement (Lot 8). D'ici là, toute personne qui accède au portail de l'environnement peut décider.
 
 ## Conséquences
 - Un environnement qui facture avant la date de début du référentiel n'est pas contrôlé, comme pour un référentiel vide.

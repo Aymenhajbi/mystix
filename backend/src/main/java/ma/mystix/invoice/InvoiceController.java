@@ -12,6 +12,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import ma.mystix.canonical.Invoice;
 import ma.mystix.canonical.VatCategoryCode;
 import ma.mystix.format.ubl.En16931Validator;
@@ -161,6 +164,21 @@ class InvoiceController {
         return service.list(companyId, flowId, limit).stream().map(InvoiceSummary::from).toList();
     }
 
+    record ValidationRequest(@NotNull Boolean approve, @Size(max = 500) String comment) {
+    }
+
+    /**
+     * Administrator decision on a backdated invoice pending validation (ADR-0010).
+     * TODO(auth): restricted to the environment administrator role (Lot 8).
+     */
+    @PostMapping(value = "/{id}/validation", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    InvoiceResponse decideValidation(@RequestHeader(COMPANY_HEADER) UUID companyId, @PathVariable UUID id,
+                                     @Valid @RequestBody ValidationRequest request) {
+        service.decideValidation(companyId, id, request.approve(), request.comment());
+        return get(companyId, id);
+    }
+
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     InvoiceResponse get(@RequestHeader(COMPANY_HEADER) UUID companyId, @PathVariable UUID id) {
         StoredInvoice invoice = service.get(companyId, id);
@@ -185,8 +203,9 @@ class InvoiceController {
                             + r.stream().map(x -> x.stripTrailingZeros().toPlainString() + " %")
                             .collect(Collectors.joining(", ")) + ")")
                     .orElse("no VAT rate in the referential for the issue date");
-            logs.invoiceBackdated(companyId, stored.id(), stored.number(), "Backdated invoice: issued "
-                    + invoice.issueDate() + ", received " + receivedOn + "; " + vat);
+            logs.invoiceBackdated(companyId, stored.id(), stored.number(), "Backdated invoice held for "
+                    + "administrator validation: issued " + invoice.issueDate() + ", received " + receivedOn + "; "
+                    + vat);
         }
         if (checkVatRates && standardLines && rates.isEmpty()) {
             logs.vatRatesUnchecked(companyId, stored.id(), stored.number(), "VAT rates not checked: the referential"

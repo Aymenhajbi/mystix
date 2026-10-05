@@ -103,6 +103,21 @@ class InvoiceRepository {
         appendEvent(companyId, id, status, detail, at);
     }
 
+    /** Approves (VALIDATED) or rejects a pending invoice with its history entry; false if it was not pending. */
+    @Transactional
+    boolean decideValidation(UUID companyId, UUID id, String status, String detail, OffsetDateTime at) {
+        int updated = jdbc.sql("""
+                        UPDATE invoice_message SET status = :status
+                        WHERE company_id = :companyId AND id = :id AND status = 'PENDING_VALIDATION'
+                        """)
+                .param("status", status).param("companyId", companyId).param("id", id)
+                .update();
+        if (updated == 1) {
+            appendEvent(companyId, id, status, detail, at);
+        }
+        return updated == 1;
+    }
+
     void appendEvent(UUID companyId, UUID messageId, String status, String detail, OffsetDateTime at) {
         jdbc.sql("""
                 INSERT INTO invoice_status_event (id, message_id, company_id, status, detail, occurred_at)

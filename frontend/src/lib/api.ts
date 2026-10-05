@@ -21,7 +21,8 @@ export async function portalCompanyId(): Promise<string | null> {
   return isUuid(configured) ? configured : null;
 }
 
-export type InvoiceStatus = "VALIDATED" | "CLEARED" | "CLEARANCE_REJECTED";
+/** PENDING_VALIDATION: backdated, waiting for the administrator (ADR-0010). */
+export type InvoiceStatus = "PENDING_VALIDATION" | "VALIDATION_REJECTED" | "VALIDATED" | "CLEARED" | "CLEARANCE_REJECTED";
 
 export type Clearance = { reference: string | null; simulated: boolean | null; at: string | null };
 
@@ -86,6 +87,8 @@ export type LogEvent =
   | "INVOICE_REPLAYED"
   | "INVOICE_BACKDATED"
   | "VAT_RATES_UNCHECKED"
+  | "INVOICE_VALIDATION_APPROVED"
+  | "INVOICE_VALIDATION_REJECTED"
   | "INVOICE_REJECTED"
   | "CLEARANCE_CLEARED"
   | "CLEARANCE_REJECTED"

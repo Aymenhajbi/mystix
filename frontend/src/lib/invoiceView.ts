@@ -4,13 +4,20 @@ import type { InvoiceDetail, InvoiceStatus, InvoiceSummary } from "./api";
 export type Severity = "ok" | "warn" | "err" | "info";
 
 export const severityOf = (status: string): Severity =>
-  status === "CLEARED" ? "ok" : status === "VALIDATED" ? "warn" : status.startsWith("CLEARANCE_") ? "err" : "info";
+  status === "CLEARED"
+    ? "ok"
+    : status === "VALIDATED" || status === "PENDING_VALIDATION"
+      ? "warn"
+      : status.startsWith("CLEARANCE_") || status === "VALIDATION_REJECTED"
+        ? "err"
+        : "info";
 
-export type StatusFilter = "all" | "cleared" | "rejected" | "pending";
+export type StatusFilter = "all" | "toValidate" | "cleared" | "rejected" | "pending";
 
-export const statusFilters: StatusFilter[] = ["all", "cleared", "rejected", "pending"];
+export const statusFilters: StatusFilter[] = ["all", "toValidate", "cleared", "rejected", "pending"];
 
 const filterStatus: Record<Exclude<StatusFilter, "all">, InvoiceStatus> = {
+  toValidate: "PENDING_VALIDATION",
   cleared: "CLEARED",
   rejected: "CLEARANCE_REJECTED",
   pending: "VALIDATED",
@@ -69,6 +76,10 @@ export function cockpitStats(invoices: InvoiceSummary[]) {
     cleared,
     rejected,
     pending,
+    /** Backdated invoices waiting for the administrator, oldest received first. */
+    toValidate: invoices
+      .filter((i) => i.status === "PENDING_VALIDATION")
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
     clearanceRate: decided === 0 ? null : (cleared / decided) * 100,
     clearedAmounts: sumByCurrency(invoices.filter((i) => i.status === "CLEARED")),
     lastActivity: invoices.reduce<string | null>((latest, i) => {
@@ -117,7 +128,11 @@ export type StepState = "done" | "err" | "warn";
  */
 export function processingSteps(invoice: Pick<InvoiceDetail, "status">): { key: StepKey; state: StepState }[] {
   const clearance: StepState =
-    invoice.status === "CLEARED" ? "done" : invoice.status === "CLEARANCE_REJECTED" ? "err" : "warn";
+    invoice.status === "CLEARED"
+      ? "done"
+      : invoice.status === "CLEARANCE_REJECTED" || invoice.status === "VALIDATION_REJECTED"
+        ? "err"
+        : "warn";
   return [
     { key: "received", state: "done" },
     { key: "canonical", state: "done" },

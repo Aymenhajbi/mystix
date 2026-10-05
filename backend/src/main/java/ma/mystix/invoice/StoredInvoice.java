@@ -23,6 +23,9 @@ public record StoredInvoice(UUID id, UUID companyId, String number, LocalDate is
                             String clearanceReference, Boolean clearanceSimulated, OffsetDateTime clearanceAt,
                             String buyerName, String currency, BigDecimal payableAmount, UUID flowId) {
 
+    /** Backdated: held until the environment administrator approves or rejects it (ADR-0010). */
+    public static final String STATUS_PENDING_VALIDATION = "PENDING_VALIDATION";
+    public static final String STATUS_VALIDATION_REJECTED = "VALIDATION_REJECTED";
     public static final String STATUS_VALIDATED = "VALIDATED";
     public static final String STATUS_CLEARED = "CLEARED";
     public static final String STATUS_CLEARANCE_REJECTED = "CLEARANCE_REJECTED";
