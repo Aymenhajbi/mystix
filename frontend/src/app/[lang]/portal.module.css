@@ -1939,6 +1939,270 @@
   }
 }
 
+/* ---------- mapping studio (editor) ---------- */
+@keyframes dropPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.studioActions {
+  margin-inline-start: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.studioActions .btn:disabled,
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.studioErrors {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+  font-size: 12.5px;
+}
+
+.studio {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.studioPalette {
+  position: sticky;
+  top: 12px;
+}
+
+.studioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+}
+
+.studioGroupTitle {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.studioChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 12.5px;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.15s, transform 0.15s, background 0.15s;
+}
+
+.studioChip:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateX(2px);
+}
+
+.studioChip[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
+}
+
+.studioChip small {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 5px;
+  padding: 1px 5px;
+  min-width: 46px;
+  text-align: center;
+}
+
+.studioTargets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+  gap: 14px;
+}
+
+.studioTarget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.studioTargetActive {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--warn) 60%, var(--line));
+}
+
+.studioTargetOver {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  animation: dropPulse 1s ease-in-out infinite;
+}
+
+.studioTargetHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.studioTargetHead b {
+  font-size: 13px;
+}
+
+.studioTargetHead .btn {
+  margin-inline-start: auto;
+}
+
+.studioRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+  gap: 10px;
+}
+
+.studioChain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.studioTransform {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  min-width: 150px;
+}
+
+.studioTransform input,
+.studioLookup input,
+.studioAdd select,
+.studioFallback select {
+  height: 32px;
+  border-radius: 7px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 8px;
+  font-size: 12.5px;
+}
+
+.studioTransformHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.linkButton {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  padding: 2px 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.studioLookup {
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) minmax(70px, 1fr) 24px;
+  gap: 6px;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.studioLookup > .linkButton {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.studioFallback {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.studioAdd {
+  align-self: center;
+}
+
+.studioSamples {
+  list-style: none;
+  margin: 0;
+  padding: 6px 18px 14px;
+}
+
+.studioSamples > li + li {
+  border-block-start: 1px solid var(--line);
+}
+
+.studioSample {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+@media (max-width: 960px) {
+  .studio {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .studioPalette {
+    position: static;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studioTargetOver {
+    animation: none;
+  }
+}
+
 /* ---------- command palette ---------- */
 .scrim {
   position: fixed;

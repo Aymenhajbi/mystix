@@ -5,16 +5,15 @@ import java.net.URI;
 import java.util.Currency;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validator;
 import ma.mystix.format.ubl.En16931Validator;
 import ma.mystix.format.ubl.UblMappingSpec;
+import ma.mystix.flow.ExchangeFlow;
+import ma.mystix.flow.FlowService;
 import ma.mystix.logs.ProcessingLog;
+import ma.mystix.mapping.MappingVersionService;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
@@ -28,8 +27,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Invoice API. The company is identified by the {@value #COMPANY_HEADER} header.
@@ -52,16 +49,18 @@ class InvoiceController {
     private final InvoiceService service;
     private final InvoiceLineage lineage;
     private final ProcessingLog logs;
-    private final JsonMapper json;
-    private final Validator validator;
+    private final InvoiceIntake intake;
+    private final FlowService flows;
+    private final MappingVersionService mappings;
 
-    InvoiceController(InvoiceService service, InvoiceLineage lineage, ProcessingLog logs, JsonMapper json,
-                      Validator validator) {
+    InvoiceController(InvoiceService service, InvoiceLineage lineage, ProcessingLog logs, InvoiceIntake intake,
+                      FlowService flows, MappingVersionService mappings) {
         this.service = service;
         this.lineage = lineage;
         this.logs = logs;
-        this.json = json;
-        this.validator = validator;
+        this.intake = intake;
+        this.flows = flows;
+        this.mappings = mappings;
     }
 
     /**
@@ -74,16 +73,17 @@ class InvoiceController {
     ResponseEntity<byte[]> submit(@RequestHeader(COMPANY_HEADER) UUID companyId,
                                   @RequestHeader(value = FLOW_HEADER, required = false) UUID flowId,
                                   @RequestBody byte[] body) {
-        InvoiceRequest request = null;
         InvoiceService.Submission submission;
         try {
-            request = parse(body);
-            submission = service.submit(companyId, flowId, body, InvoiceRequestMapper.toCanonical(request));
+            // Flow first: its published rules (ADR-0008) apply before any field check.
+            ExchangeFlow flow = flows.forSubmission(companyId, flowId);
+            submission = service.submit(companyId, flow, body,
+                    intake.read(body, mappings.publishedRules(companyId, flow.id())));
         } catch (MystixException e) {
-            logs.submissionRejected(companyId, request == null ? null : request.number(), e, body);
+            logs.submissionRejected(companyId, intake.numberOf(body), e, body);
             throw e;
         } catch (RuntimeException e) {
-            logs.submissionFailed(companyId, request == null ? null : request.number(), e, body);
+            logs.submissionFailed(companyId, intake.numberOf(body), e, body);
             throw e;
         }
         StoredInvoice invoice = submission.invoice();
@@ -172,25 +172,4 @@ class InvoiceController {
                 .body(service.artifact(companyId, id, kind));
     }
 
-    private InvoiceRequest parse(byte[] body) {
-        InvoiceRequest request;
-        try {
-            request = json.readValue(body, InvoiceRequest.class);
-        } catch (JacksonException e) {
-            throw new MystixException(ErrorCode.VALIDATION_FAILED, "Unreadable invoice JSON: " + e.getOriginalMessage());
-        }
-        if (request == null) {
-            throw new MystixException(ErrorCode.VALIDATION_FAILED, "Empty invoice body");
-        }
-        Set<ConstraintViolation<InvoiceRequest>> violations = validator.validate(request);
-        if (!violations.isEmpty()) {
-            throw new MystixException(ErrorCode.VALIDATION_FAILED, "Invalid invoice request",
-                    violations.stream()
-                            .map(v -> new ApiError.FieldViolation(v.getPropertyPath().toString(), v.getMessage()))
-                            .sorted(Comparator.comparing(ApiError.FieldViolation::field))
-                            .toList(),
-                    List.of(), null);
-        }
-        return request;
-    }
 }

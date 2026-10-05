@@ -18,7 +18,6 @@ import ma.mystix.format.ubl.En16931Validator;
 import ma.mystix.format.ubl.UblInvoiceGenerator;
 import ma.mystix.format.ubl.UblSchemaValidator;
 import ma.mystix.flow.ExchangeFlow;
-import ma.mystix.flow.FlowService;
 import ma.mystix.logs.LogEvent;
 import ma.mystix.logs.ProcessingLog;
 import ma.mystix.shared.Sha256;
@@ -52,14 +51,11 @@ public class InvoiceService {
     private final En16931Validator rulesValidator;
     private final ClearanceGateway clearance;
     private final ProcessingLog logs;
-    private final FlowService flows;
     private final Clock clock;
 
     InvoiceService(CompanyService companies, InvoiceRepository repository, InvoiceCalculator calculator,
                    UblInvoiceGenerator generator, UblSchemaValidator schemaValidator,
-                   En16931Validator rulesValidator, ClearanceGateway clearance, ProcessingLog logs,
-                   FlowService flows, Clock clock) {
-        this.flows = flows;
+                   En16931Validator rulesValidator, ClearanceGateway clearance, ProcessingLog logs, Clock clock) {
         this.clearance = clearance;
         this.logs = logs;
         this.companies = companies;
@@ -75,9 +71,8 @@ public class InvoiceService {
     public record Submission(StoredInvoice invoice, byte[] ubl, boolean replayed) {
     }
 
-    public Submission submit(UUID companyId, UUID requestedFlowId, byte[] rawRequest, Invoice invoice) {
+    public Submission submit(UUID companyId, ExchangeFlow flow, byte[] rawRequest, Invoice invoice) {
         Company company = companies.get(companyId);
-        ExchangeFlow flow = flows.forSubmission(companyId, requestedFlowId);
         if (invoice.seller().ice() != null && !invoice.seller().ice().equals(company.ice().value())) {
             throw new MystixException(ErrorCode.INVOICE_REJECTED, "Seller ICE differs from company " + companyId,
                     List.of(new ApiError.FieldViolation("seller.ice",
@@ -178,6 +173,11 @@ public class InvoiceService {
         }
         logs.invoiceReplayed(existing.companyId(), existing.id(), existing.number());
         return new Submission(existing, artifact(existing.companyId(), existing.id(), ArtifactKind.OUT), true);
+    }
+
+    /** UBL 2.1 for an invoice, checked against the XSD and EN 16931; throws on failure. No side effect. */
+    byte[] checkedUbl(Invoice invoice) {
+        return toUbl(invoice, calculator.calculate(invoice));
     }
 
     private byte[] toUbl(Invoice invoice, InvoiceTotals totals) {

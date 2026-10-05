@@ -375,6 +375,104 @@ class InvoiceApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void mappingVersionsAreTestedBeforeBeingPublishedAndRunOnTheFlow() {
+        UUID company = companies.register(new Ice("000000005000055"), "Environnement Mapping SARL", null).id();
+        String flowId = (String) getList("/api/v1/flows", company).getFirst().get("id");
+        String base = withNumber("FA-MAP-1").replace("000000001000011", "000000005000055");
+        String sapUnits = base.replace("\"unitCode\": \"C62\", \"unitPrice\": \"125.50\"",
+                "\"unitCode\": \"PCE\", \"unitPrice\": \"125.50\"");
+        assertThat(sapUnits).isNotEqualTo(base);
+
+        // Without a rule, the SAP unit code PCE fails EN 16931 (UN/ECE Rec 20 code list).
+        ResponseEntity<Map> refused = submit(company, sapUnits, Map.class);
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+
+        // Invalid rules are refused with their path.
+        ResponseEntity<Map> invalid = mapping(company, flowId, "POST", "/versions",
+                "{\"rules\":[{\"target\":\"lines.unitPrice\"}]}");
+        assertThat(invalid.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(invalid.getBody()).containsEntry("errorCode", "MAPPING_RULES_INVALID");
+        assertThat(fields(invalid)).containsExactly("rules[0].target");
+
+        String rules = """
+                {"rules":[
+                  {"target":"lines.unitCode","transforms":[{"op":"lookup","table":{"PCE":"C62"},"fallback":"KEEP"}]},
+                  {"target":"buyerReference","source":{"type":"FIELD","path":"purchaseOrderReference"},
+                   "transforms":[{"op":"prefix","value":"CMD-"}]}
+                ]}""";
+        ResponseEntity<Map> draft = mapping(company, flowId, "POST", "/versions", rules);
+        assertThat(draft.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(draft.getBody()).containsEntry("version", 1).containsEntry("status", "DRAFT");
+
+        // Publication needs a green test on these exact rules.
+        assertThat(mapping(company, flowId, "POST", "/versions/1/publish", null).getBody())
+                .containsEntry("errorCode", "MAPPING_NOT_TESTED");
+        ResponseEntity<Map> tested = mapping(company, flowId, "POST", "/versions/1/test", null);
+        Map<String, Object> report = asMap(tested.getBody().get("testReport"));
+        assertThat(report).containsEntry("passed", true).containsEntry("failures", 0);
+        assertThat((List<Map<String, Object>>) report.get("samples")).first().satisfies(sample -> {
+            assertThat(sample).containsEntry("label", "reference").containsEntry("passed", true);
+            assertThat((List<Map<String, Object>>) sample.get("changes"))
+                    .anySatisfy(c -> assertThat(c).containsEntry("term", "BT-10")
+                            .containsEntry("before", "ACHATS-42").containsEntry("after", "CMD-PO-7781"));
+        });
+        assertThat(mapping(company, flowId, "POST", "/versions/1/publish", null).getBody())
+                .containsEntry("status", "PUBLISHED");
+        assertThat(mapping(company, flowId, "PUT", "/versions/1", rules).getBody())
+                .containsEntry("errorCode", "MAPPING_NOT_EDITABLE");
+
+        // The published rules now run on the flow: PCE becomes C62, the RAW request is kept as received.
+        ResponseEntity<byte[]> accepted = submit(company, sapUnits, byte[].class);
+        assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String ubl = new String(accepted.getBody(), StandardCharsets.UTF_8);
+        assertThat(ubl).contains("unitCode=\"C62\"").contains("<cbc:BuyerReference>CMD-PO-7781</cbc:BuyerReference>");
+        String invoiceId = accepted.getHeaders().getFirst("X-Mystix-Invoice-Id");
+        assertThat(new String(artifact(company, invoiceId, "RAW").getBody(), StandardCharsets.UTF_8)).contains("\"PCE\"");
+
+        // A version that breaks EN 16931 cannot be published.
+        mapping(company, flowId, "POST", "/versions",
+                "{\"rules\":[{\"target\":\"lines.unitCode\",\"source\":{\"type\":\"CONSTANT\",\"value\":\"ZZQ\"}}]}");
+        Map<String, Object> failed = asMap(mapping(company, flowId, "POST", "/versions/2/test", null).getBody().get("testReport"));
+        assertThat(failed).containsEntry("passed", false);
+        assertThat(mapping(company, flowId, "POST", "/versions/2/publish", null).getBody())
+                .containsEntry("errorCode", "MAPPING_TEST_FAILED");
+
+        // Removing the conversion would break the flow's real traffic: the stored PCE invoice fails the test.
+        mapping(company, flowId, "POST", "/versions", "{\"rules\":[]}");
+        Map<String, Object> withoutRule = asMap(mapping(company, flowId, "POST", "/versions/3/test", null).getBody().get("testReport"));
+        assertThat(withoutRule).containsEntry("passed", false);
+        assertThat((List<Map<String, Object>>) withoutRule.get("samples"))
+                .anySatisfy(sample -> assertThat(sample).containsEntry("label", "FA-MAP-1").containsEntry("passed", false));
+
+        // Roll back: a new valid version is published, then the retired version 1 is published again.
+        mapping(company, flowId, "PUT", "/versions/3",
+                "{\"rules\":[{\"target\":\"lines.unitCode\",\"transforms\":[{\"op\":\"lookup\",\"table\":{\"PCE\":\"C62\"}}]}]}");
+        mapping(company, flowId, "POST", "/versions/3/test", null);
+        assertThat(mapping(company, flowId, "POST", "/versions/3/publish", null).getBody()).containsEntry("status", "PUBLISHED");
+        assertThat(mapping(company, flowId, "POST", "/versions/1/publish", null).getBody()).containsEntry("status", "PUBLISHED");
+        List<Map<String, Object>> versions = (List<Map<String, Object>>) http.get().uri("/api/v1/flows/{id}/mapping", flowId)
+                .header("X-Mystix-Company-Id", company.toString()).retrieve().toEntity(Map.class).getBody().get("versions");
+        assertThat(versions).extracting(v -> v.get("version") + ":" + v.get("status"))
+                .containsExactly("3:RETIRED", "2:DRAFT", "1:PUBLISHED");
+
+        // Isolation: another company cannot see this flow's mapping.
+        assertThat(http.get().uri("/api/v1/flows/{id}/mapping", flowId)
+                .header("X-Mystix-Company-Id", otherCompany.toString()).retrieve().toEntity(Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    private ResponseEntity<Map> mapping(UUID company, String flowId, String method, String path, String json) {
+        var spec = http.method(org.springframework.http.HttpMethod.valueOf(method))
+                .uri("/api/v1/flows/" + flowId + "/mapping" + path)
+                .header("X-Mystix-Company-Id", company.toString());
+        if (json != null) {
+            spec = spec.contentType(MediaType.APPLICATION_JSON).body(json);
+        }
+        return spec.retrieve().toEntity(Map.class);
+    }
+
+    @Test
     void statsCountSubmissionsPerEventAndStage() {
         long acceptedBefore = stat(sellerCompany, "INVOICE_ACCEPTED", "STORAGE", null);
         long mappingBefore = stat(sellerCompany, "INVOICE_REJECTED", "MAPPING", "INVOICE_REJECTED");

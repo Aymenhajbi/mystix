@@ -80,6 +80,42 @@ public enum ErrorCode {
             new LocalizedText("Choisissez un autre nom.",
                     "اختر اسماً آخر.")),
 
+    MAPPING_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
+            new LocalizedText("Version de mapping introuvable pour ce flux.",
+                    "إصدار الربط غير موجود لهذا التدفق."),
+            new LocalizedText("Vérifiez le numéro de version.",
+                    "تحقّق من رقم الإصدار.")),
+
+    MAPPING_NOT_EDITABLE(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Seul un brouillon peut être modifié.",
+                    "لا يمكن تعديل إلا المسودة."),
+            new LocalizedText("Créez une nouvelle version à partir de celle-ci.",
+                    "أنشئ إصداراً جديداً انطلاقاً من هذا الإصدار.")),
+
+    MAPPING_RULES_INVALID(HttpStatus.BAD_REQUEST, Stage.MAPPING, false,
+            new LocalizedText("Les règles de mapping sont invalides.",
+                    "قواعد الربط غير صالحة."),
+            new LocalizedText("Corrigez les règles signalées.",
+                    "صحّح القواعد المشار إليها.")),
+
+    MAPPING_NOT_TESTED(HttpStatus.CONFLICT, Stage.VALIDATION, false,
+            new LocalizedText("Cette version n'a pas été testée avec ses règles actuelles.",
+                    "لم يُختبر هذا الإصدار بقواعده الحالية."),
+            new LocalizedText("Lancez le rejeu à blanc, puis publiez si tout est vert.",
+                    "شغّل التجربة دون إرسال، ثم انشر إذا كانت كل النتائج سليمة.")),
+
+    MAPPING_TEST_FAILED(HttpStatus.CONFLICT, Stage.VALIDATION, false,
+            new LocalizedText("Le rejeu à blanc a échoué : la publication est bloquée.",
+                    "فشلت التجربة دون إرسال: النشر ممنوع."),
+            new LocalizedText("Corrigez les règles jusqu'à ce que toutes les factures de test passent.",
+                    "صحّح القواعد إلى أن تنجح كل فواتير الاختبار.")),
+
+    MAPPING_RULE_REJECTED(HttpStatus.UNPROCESSABLE_CONTENT, Stage.MAPPING, false,
+            new LocalizedText("Une règle du flux a refusé une valeur de la facture.",
+                    "رفضت قاعدة من قواعد التدفق قيمة في الفاتورة."),
+            new LocalizedText("Ajoutez la valeur à la table de correspondance du flux, ou corrigez la facture.",
+                    "أضف القيمة إلى جدول المطابقة في التدفق، أو صحّح الفاتورة.")),
+
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
             new LocalizedText("Ressource introuvable.",
                     "المورد غير موجود."),

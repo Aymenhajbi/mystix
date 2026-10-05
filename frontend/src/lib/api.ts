@@ -358,3 +358,68 @@ export async function sendFlowMutation<T>(
     return { ok: false, errorCode: "API_UNREACHABLE" };
   }
 }
+
+// ---------- mapping versions (ADR-0008) ----------
+
+export type RuleTransform = { op: string; value?: string | null; table?: Record<string, string>; fallback?: string | null };
+export type RuleSource = { type: "FIELD" | "CONSTANT"; path?: string | null; value?: string | null };
+export type MappingRuleDto = { target: string; source: RuleSource | null; transforms: RuleTransform[] };
+export type RuleField = { path: string; scope: "HEADER" | "LINE"; term: string; maxLen: number };
+
+export type TestSample = {
+  label: string;
+  passed: boolean;
+  errors: string[];
+  changes: { term: string | null; label: string; line: number | null; before: string | null; after: string | null }[];
+};
+
+export type MappingVersionDto = {
+  id: string;
+  version: number;
+  status: "DRAFT" | "PUBLISHED" | "RETIRED";
+  rules: MappingRuleDto[];
+  rulesSha256: string;
+  testReport: { rulesSha256: string; testedAt: string; passed: boolean; total: number; failures: number; samples: TestSample[] } | null;
+  testedSha256: string | null;
+  testPassed: boolean | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+};
+
+export type FlowMapping = {
+  catalog: { targets: RuleField[]; sources: RuleField[]; ops: string[] };
+  versions: MappingVersionDto[];
+};
+
+export const getFlowMapping = (companyId: string, flowId: string) =>
+  companyGet<FlowMapping>(`/api/v1/flows/${encodeURIComponent(flowId)}/mapping`, companyId);
+
+/** Writes for the mapping editor (server actions only). */
+export async function sendMappingCommand(
+  companyId: string,
+  method: "POST" | "PUT",
+  path: string,
+  body?: unknown,
+): Promise<MutationResult<MappingVersionDto> & { fields?: { field: string; reason: string }[] }> {
+  try {
+    const response = await fetch(`${apiBaseUrl}${path}`, {
+      method,
+      cache: "no-store",
+      headers: {
+        "X-Mystix-Company-Id": companyId,
+        Accept: "application/json",
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
+    });
+    const json = (await response.json().catch(() => null)) as
+      | (MappingVersionDto & { errorCode?: string; fieldErrors?: { field: string; reason: string }[] })
+      | null;
+    if (!response.ok) return { ok: false, errorCode: json?.errorCode ?? "INTERNAL_ERROR", fields: json?.fieldErrors };
+    return { ok: true, data: json as MappingVersionDto };
+  } catch {
+    return { ok: false, errorCode: "API_UNREACHABLE" };
+  }
+}

@@ -157,11 +157,11 @@ export default async function FlowPage({ params, searchParams }: Params) {
       <div>
         <div className={styles.pageHead} style={{ marginBottom: 8 }}>
           <h2 style={{ margin: 0, fontSize: 17 }}>{c.flow.mappingTitle}</h2>
+          <Link href={`/${lang}/clients/${companyId}/flows/${flowId}/mapping`} className={`${styles.btn} ${styles.btnPrimary}`}>
+            {dict.studio.edit}
+          </Link>
           <span className={styles.muted} style={{ fontSize: 12.5 }}>
             {latest ? t(c.flow.mappingFrom, { number: latest.number }) : c.flow.mappingEmpty}
-          </span>
-          <span className={styles.muted} style={{ fontSize: 12.5 }}>
-            {c.flow.editSoon}
           </span>
         </div>
         {rows.length > 0 && <MappingBoard rows={rows} dict={{ mapping: dict.mapping }} structureOnly={!latest} />}
