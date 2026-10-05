@@ -706,7 +706,7 @@
   "stock": {
     "title": "المخزون",
     "lead": "الوضعيات حسب المادة والموقع، على خمس حالات. المخزون الفعلي = المتاح + المحجوز + الحجر؛ المتاح للبيع (ATP) = المتاح + العابر: المحجوز خرج منه مسبقاً.",
-    "engineNote": "تصل الحركات عبر واجهة أحداث المخزون (DESADV وRECADV وORDERS وINVRPT بصيغة JSON موحّدة). قراءة رسائل EDIFACT تأتي في الدفعة 6.",
+    "engineNote": "تصل الحركات عبر واجهة أحداث المخزون بصيغة JSON موحّدة، أو بصيغة EDIFACT D96A (DESADV وRECADV وORDERS وINVRPT): POST /api/v1/stock/edifact.",
     "empty": "لا يوجد مخزون في هذا النطاق. أرسل أول حدث: POST /api/v1/stock/events.",
     "states": {
       "AVAILABLE": "متاح",
