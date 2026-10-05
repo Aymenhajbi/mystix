@@ -28,7 +28,7 @@ export function Wordmark() {
   );
 }
 
-type IconName = "clients" | "cockpit" | "flow" | "mapping" | "invoices" | "logs" | "search" | "theme" | "download";
+type IconName = "clients" | "cockpit" | "flow" | "mapping" | "invoices" | "stock" | "logs" | "search" | "theme" | "download";
 
 const paths: Record<IconName, ReactNode> = {
   clients: (
@@ -56,6 +56,12 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <path d="M6 3h9l4 4v14H6z" />
       <path d="M14 3v5h5M9 13h7M9 17h5" />
+    </>
+  ),
+  stock: (
+    <>
+      <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z" />
+      <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
     </>
   ),
   logs: (

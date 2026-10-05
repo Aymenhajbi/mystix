@@ -59,6 +59,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     flow: dict.nav.flow,
     mapping: dict.nav.mapping,
     invoices: dict.nav.invoices,
+    stock: dict.nav.stock,
     logs: dict.nav.logs,
   };
   const paletteItems: PaletteItem[] = [
@@ -72,6 +73,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
       keywords: dict.nav.invoices,
     },
     { kind: dict.palette.kindPage, label: dict.nav.flow, extra: "", href: `/${lang}/flow`, keywords: `${dict.nav.flow} flux live direct` },
+    { kind: dict.palette.kindPage, label: dict.nav.stock, extra: "", href: `/${lang}/stock`, keywords: `${dict.nav.stock} stock inventaire ATP entrepôt INVRPT DESADV RECADV` },
     { kind: dict.palette.kindPage, label: dict.nav.mapping, extra: "", href: `/${lang}/mapping`, keywords: `${dict.nav.mapping} mapping lignée lineage UBL` },
     { kind: dict.palette.kindPage, label: dict.nav.logs, extra: "", href: `/${lang}/logs`, keywords: `${dict.nav.logs} log erreur error` },
     ...(invoices.kind === "ok"

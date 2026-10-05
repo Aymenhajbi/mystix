@@ -14,7 +14,8 @@
     "logs": "السجلات",
     "flow": "التدفق المباشر",
     "mapping": "الربط",
-    "clients": "بيئات الزبناء"
+    "clients": "بيئات الزبناء",
+    "stock": "المخزون"
   },
   "top": {
     "search": "رقم الفاتورة، الزبون، مرجع المصادقة…",
@@ -701,5 +702,87 @@
     "ratesInForce": "الأسعار السارية في {date} حسب المرجع: {rates}.",
     "noRates": "لا يتضمن مرجع الضريبة أي سعر لهذا التاريخ: أدخل السعر.",
     "backdatedNote": "فاتورة بتاريخ سابق (صدرت في {date}): لا تُقبل إلا أسعار الضريبة السارية في ذلك التاريخ. ستُعلَّم كفاتورة بتاريخ سابق."
+  },
+  "stock": {
+    "title": "المخزون",
+    "lead": "الوضعيات حسب المادة والموقع، على خمس حالات. المخزون الفعلي = المتاح + المحجوز + الحجر؛ المتاح للبيع (ATP) = المتاح + العابر: المحجوز خرج منه مسبقاً.",
+    "engineNote": "تصل الحركات عبر واجهة أحداث المخزون (DESADV وRECADV وORDERS وINVRPT بصيغة JSON موحّدة). قراءة رسائل EDIFACT تأتي في الدفعة 6.",
+    "empty": "لا يوجد مخزون في هذا النطاق. أرسل أول حدث: POST /api/v1/stock/events.",
+    "states": {
+      "AVAILABLE": "متاح",
+      "RESERVED": "محجوز",
+      "IN_TRANSIT": "عابر",
+      "QUARANTINE": "حجر",
+      "CONSIGNMENT": "إيداع"
+    },
+    "stateHelp": {
+      "AVAILABLE": "حر للبيع أو للحجز",
+      "RESERVED": "محجوز بطلبية، ما زال في المستودع",
+      "IN_TRANSIT": "معلن بإشعار شحن، لم يُستلم بعد",
+      "QUARANTINE": "موقوف: مراقبة الجودة، كسر، رفض",
+      "CONSIGNMENT": "مخزوننا لدى الزبون"
+    },
+    "onHand": "المخزون الفعلي",
+    "onHandFormula": "متاح + محجوز + حجر",
+    "atp": "ATP",
+    "atpLong": "المتاح للبيع (ATP)",
+    "atpFormula": "متاح + عابر",
+    "sku": "المادة",
+    "location": "الموقع",
+    "updated": "آخر تحديث",
+    "split": "التوزيع",
+    "filterSku": "المادة (SKU، GTIN)",
+    "filterLocation": "الموقع",
+    "filter": "تصفية",
+    "reset": "عرض الكل",
+    "positionsCaption": "الوضعيات حسب المادة والموقع",
+    "count": "{count} وضعية",
+    "open": "فتح المادة {sku} في {location}",
+    "kpiPositions": "الوضعيات",
+    "kpiPositionsSub": "مواد × مواقع",
+    "kpiQuarantine": "في الحجر",
+    "kpiQuarantineSub": "وضعيات بها مخزون موقوف",
+    "kpiAlerts": "التنبيهات",
+    "kpiAlertsSub": "نزاعات: {receipt} · فوارق: {variance}",
+    "kpiAccuracy": "دقة الجرد",
+    "kpiAccuracySub": "آخر جرد: {matched} سطراً مطابقاً من {compared}",
+    "kpiAccuracyNone": "لم يُستلم أي جرد (INVRPT)",
+    "alerts": "التنبيهات",
+    "alertsHint": "نزاعات المورّد عند الاستلام، فوارق الجرد",
+    "noAlerts": "لا توجد تنبيهات.",
+    "alertKinds": {
+      "RECEIPT_DISCREPANCY": "نزاع مع المورّد",
+      "INVENTORY_VARIANCE": "فارق في الجرد"
+    },
+    "expectedActual": "المنتظر {expected} · المعاين {actual}",
+    "snapshots": "الجرود (INVRPT)",
+    "snapshotsHint": "نسبة الدقة: الأسطر دون فارق / الأسطر المقارنة",
+    "noSnapshots": "لم يُستلم أي جرد.",
+    "snapshotLine": "{document} · صورة بتاريخ {asOf}",
+    "item": {
+      "back": "المخزون",
+      "title": "{sku} · {location}",
+      "movements": "حركات السجل",
+      "movementsHint": "سجل إضافي فقط: كل سطر يأتي من حدث مؤرّخ",
+      "noMovements": "لا توجد حركات.",
+      "when": "تاريخ السريان",
+      "event": "الحدث",
+      "document": "الوثيقة",
+      "movement": "الحركة",
+      "quantity": "الكمية",
+      "outside": "خارج المخزون",
+      "alerts": "تنبيهات المادة",
+      "notFound": "لا توجد وضعية لهذه المادة في هذا الموقع."
+    },
+    "events": {
+      "SHIPMENT_NOTICE_IN": "إشعار شحن وارد (DESADV)",
+      "RECEIPT": "استلام (RECADV)",
+      "ORDER": "طلبية (ORDERS)",
+      "SHIPMENT_OUT": "شحن للزبون (DESADV)",
+      "STATUS_CHANGE": "تغيير الحالة (INVRPT)",
+      "ADJUSTMENT": "تسوية (INVRPT)",
+      "SNAPSHOT": "جرد (INVRPT)"
+    },
+    "announcedAccepted": "المُعلن {expected} · المقبول {actual}"
   }
 }

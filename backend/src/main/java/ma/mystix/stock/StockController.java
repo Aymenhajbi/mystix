@@ -92,8 +92,17 @@ class StockController {
 
     @GetMapping(value = "/alerts", produces = MediaType.APPLICATION_JSON_VALUE)
     List<StockRepository.AlertRow> alerts(@RequestHeader(COMPANY) UUID companyId,
+                                          @RequestParam(required = false) String sku,
+                                          @RequestParam(required = false) String location,
                                           @RequestParam(defaultValue = "100") int limit) {
-        return repository.alerts(companyId, Math.clamp(limit, 1, MAX_LIMIT));
+        return repository.alerts(companyId, blank(sku), blank(location), Math.clamp(limit, 1, MAX_LIMIT));
+    }
+
+    /** Inventory snapshots with their accuracy, most recent first (inventory accuracy rate). */
+    @GetMapping(value = "/snapshots", produces = MediaType.APPLICATION_JSON_VALUE)
+    List<StockRepository.SnapshotRow> snapshots(@RequestHeader(COMPANY) UUID companyId,
+                                                @RequestParam(defaultValue = "20") int limit) {
+        return repository.snapshots(companyId, Math.clamp(limit, 1, MAX_LIMIT));
     }
 
     private static String blank(String value) {

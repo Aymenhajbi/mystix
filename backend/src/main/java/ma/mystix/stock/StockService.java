@@ -112,8 +112,9 @@ public class StockService {
                     : "despatch advice " + despatchAdvice + " still expected " + remaining.toPlainString()
                     + ", receipt accounts for " + total.toPlainString() + " (accepted " + accepted.toPlainString()
                     + ", refused " + refused.toPlainString() + ", missing " + missing.toPlainString() + ")";
+            // expected = what the despatch advice still announced, actual = what was accepted into stock.
             repository.insertAlert(applier.companyId, applier.eventId, "RECEIPT_DISCREPANCY", l.sku(), l.location(),
-                    remaining, total, "Supplier dispute: " + why, applier.now);
+                    remaining, accepted, "Supplier dispute: " + why, applier.now);
             applier.alerts++;
         }
         BigDecimal[] budget = {remaining};
