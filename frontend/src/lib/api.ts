@@ -237,6 +237,8 @@ export type Environment = {
   createdAt: string;
   flows: number;
   activeFlows: number;
+  inboundFlows: number;
+  partners: number;
   invoices: number;
   errors24h: number;
   lastActivity: string | null;
@@ -263,32 +265,61 @@ export const getCompany = (companyId: string) =>
 
 export type FlowStatus = "DRAFT" | "ACTIVE" | "PAUSED";
 
+export type FlowDirection = "IN" | "OUT";
+
 export type ExchangeFlow = {
   id: string;
   companyId: string;
   name: string;
   documentType: string;
-  direction: string;
+  /** OUT: the client sends; IN: the client receives. */
+  direction: FlowDirection;
+  /** One partner of the client, or null for all partners. */
+  partnerId: string | null;
   sourceChannel: string;
   sourceFormat: string;
   targetFormat: string;
   targetChannel: string;
-  mappingId: string;
-  mappingVersion: string;
+  /** Null while the flow is only declared (no mapping delivered for its formats). */
+  mappingId: string | null;
+  mappingVersion: string | null;
   status: FlowStatus;
   createdAt: string;
   updatedAt: string;
+  /** False for a declared flow whose options are planned: it cannot be activated yet. */
+  executable: boolean;
 };
 
 export type CatalogOption = { code: string; available: boolean; lot: string | null };
 
-export type FlowCatalog = {
+export type DirectionCatalog = {
   sourceChannels: CatalogOption[];
   sourceFormats: CatalogOption[];
   targetFormats: CatalogOption[];
   targetChannels: CatalogOption[];
-  mappings: { sourceFormat: string; targetFormat: string; id: string; version: string }[];
 };
+
+export type FlowCatalog = {
+  out: DirectionCatalog;
+  in: DirectionCatalog;
+  mappings: { direction: FlowDirection; sourceFormat: string; targetFormat: string; id: string; version: string }[];
+};
+
+export const PARTNER_TYPES = ["CUSTOMER", "SUPPLIER", "TAX_AUTHORITY", "LOGISTICS", "BANK", "OTHER"] as const;
+export type PartnerType = (typeof PARTNER_TYPES)[number];
+
+export type Partner = {
+  id: string;
+  companyId: string;
+  name: string;
+  type: PartnerType;
+  ice: string | null;
+  gln: string | null;
+  reference: string | null;
+  createdAt: string;
+};
+
+export const listPartners = (companyId: string) => companyGet<Partner[]>("/api/v1/partners", companyId);
 
 export const listFlows = (companyId: string) => companyGet<ExchangeFlow[]>("/api/v1/flows", companyId);
 

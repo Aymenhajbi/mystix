@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { FlowRoute, FlowStatusBadge } from "@/components/FlowChips";
+import { DirectionBadge, FlowRoute, FlowStatusBadge } from "@/components/FlowChips";
 import { MappingBoard } from "@/components/MappingBoard";
 import { SimulatedBadge, StatusBadge } from "@/components/StatusBadge";
 import {
@@ -12,6 +12,7 @@ import {
   getMappingSpec,
   isUuid,
   listFlowInvoices,
+  listPartners,
   specRows,
   type LineageRow,
 } from "@/lib/api";
@@ -39,10 +40,11 @@ export default async function FlowPage({ params, searchParams }: Params) {
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
   const saved = query.saved === "1" || query.created === "1";
 
-  const [company, flow, invoices] = await Promise.all([
+  const [company, flow, invoices, partners] = await Promise.all([
     getCompany(companyId),
     getFlow(companyId, flowId),
     listFlowInvoices(companyId, flowId),
+    listPartners(companyId),
   ]);
   if (flow.kind === "not-found" || company.kind === "not-found") notFound();
   if (flow.kind !== "ok" || company.kind !== "ok" || invoices.kind !== "ok") {
@@ -50,8 +52,14 @@ export default async function FlowPage({ params, searchParams }: Params) {
   }
 
   const latest = invoices.data[0];
+  const executable = flow.data.executable;
+  const partner = flow.data.partnerId && partners.kind === "ok"
+    ? partners.data.find((p) => p.id === flow.data.partnerId)
+    : undefined;
   let rows: LineageRow[] = [];
-  if (latest) {
+  if (!executable) {
+    // Declared flow: no mapping delivered for its formats yet, nothing to show.
+  } else if (latest) {
     const lineage = await getLineageFor(companyId, latest.id);
     if (lineage.kind === "ok") rows = lineage.data.rows;
   } else {
@@ -72,9 +80,13 @@ export default async function FlowPage({ params, searchParams }: Params) {
         </nav>
         <div className={styles.pageHead} style={{ marginBottom: 0 }}>
           <h1>
-            {flow.data.name} <FlowStatusBadge status={flow.data.status} dict={dict} />
+            {flow.data.name} <DirectionBadge direction={flow.data.direction} dict={dict} />{" "}
+            <FlowStatusBadge status={flow.data.status} dict={dict} />
           </h1>
         </div>
+        <p className={styles.muted} style={{ margin: "6px 0 0" }}>
+          {c.partner.label} : {partner ? `${partner.name} · ${c.partner.types[partner.type]}` : c.partner.all}
+        </p>
       </div>
 
       {saved && (
@@ -85,6 +97,12 @@ export default async function FlowPage({ params, searchParams }: Params) {
       {errorText && (
         <p className={styles.message} role="alert">
           {errorText}
+        </p>
+      )}
+
+      {!executable && (
+        <p className={styles.declared} role="note">
+          {c.flow.declaredBanner}
         </p>
       )}
 
@@ -138,7 +156,7 @@ export default async function FlowPage({ params, searchParams }: Params) {
               <span>{c.flow.statusLabel}</span>
               <select name="status" defaultValue={flow.data.status}>
                 {(["ACTIVE", "PAUSED", "DRAFT"] as const).map((s) => (
-                  <option key={s} value={s}>
+                  <option key={s} value={s} disabled={s === "ACTIVE" && !executable}>
                     {c.status[s]}
                   </option>
                 ))}
@@ -148,8 +166,12 @@ export default async function FlowPage({ params, searchParams }: Params) {
             <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
               {c.flow.save}
             </button>
-            <code className={styles.code}>{t(c.flow.apiHint, { id: flowId })}</code>
-            <p className={styles.formNote}>{c.flow.defaultHint}</p>
+            {flow.data.direction === "OUT" && flow.data.sourceChannel === "API" && (
+              <>
+                <code className={styles.code}>{t(c.flow.apiHint, { id: flowId })}</code>
+                <p className={styles.formNote}>{c.flow.defaultHint}</p>
+              </>
+            )}
           </form>
         </section>
       </div>
@@ -157,11 +179,13 @@ export default async function FlowPage({ params, searchParams }: Params) {
       <div>
         <div className={styles.pageHead} style={{ marginBottom: 8 }}>
           <h2 style={{ margin: 0, fontSize: 17 }}>{c.flow.mappingTitle}</h2>
-          <Link href={`/${lang}/clients/${companyId}/flows/${flowId}/mapping`} className={`${styles.btn} ${styles.btnPrimary}`}>
-            {dict.studio.edit}
-          </Link>
+          {executable && (
+            <Link href={`/${lang}/clients/${companyId}/flows/${flowId}/mapping`} className={`${styles.btn} ${styles.btnPrimary}`}>
+              {dict.studio.edit}
+            </Link>
+          )}
           <span className={styles.muted} style={{ fontSize: 12.5 }}>
-            {latest ? t(c.flow.mappingFrom, { number: latest.number }) : c.flow.mappingEmpty}
+            {!executable ? c.flow.noMappingYet : latest ? t(c.flow.mappingFrom, { number: latest.number }) : c.flow.mappingEmpty}
           </span>
         </div>
         {rows.length > 0 && <MappingBoard rows={rows} dict={{ mapping: dict.mapping }} structureOnly={!latest} />}

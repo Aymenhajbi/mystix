@@ -2353,3 +2353,105 @@
     display: none;
   }
 }
+
+/* ---------- flow directions and partners ---------- */
+.dir {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.dirIn {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.dirOut {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.flowCardTags {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.flowCardMeta {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.dirTabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-2);
+}
+
+.dirTabs a {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.dirTabs a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(22, 18, 30, 0.12);
+}
+
+.partnerList {
+  list-style: none;
+  margin: 0;
+  padding: 8px 18px 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.partnerList li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-block-end: 1px solid var(--line);
+}
+
+.partnerList li:last-child {
+  border-block-end: 0;
+}
+
+.partnerList b {
+  font-size: 14px;
+}
+
+.partnerIds {
+  margin-inline-start: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.declared {
+  border-inline-start: 3px solid var(--info);
+  background: var(--info-soft);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  margin: 0;
+}

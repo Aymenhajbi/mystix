@@ -296,14 +296,19 @@ class InvoiceApiTests {
         assertThat(paused.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(paused.getBody()).containsEntry("errorCode", "FLOW_NOT_ACTIVE");
 
-        // Only available catalog options can be used.
-        ResponseEntity<Map> unavailable = createFlow(company, "Factures AS2", "AS2", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE");
-        assertThat(unavailable.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(unavailable.getBody()).containsEntry("errorCode", "FLOW_OPTION_UNAVAILABLE");
+        // A flow with planned options can be declared, but not activated until it is executable.
+        ResponseEntity<Map> declared = createFlow(company, "Factures AS2", "AS2", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE");
+        assertThat(declared.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(declared.getBody()).containsEntry("status", "DRAFT").containsEntry("executable", false);
+        assertThat(patchFlow(company, (String) declared.getBody().get("id"), "{\"status\":\"ACTIVE\"}").getBody())
+                .containsEntry("errorCode", "FLOW_NOT_EXECUTABLE");
+        ResponseEntity<Map> unknown = createFlow(company, "Factures X", "FAX", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE");
+        assertThat(unknown.getBody()).containsEntry("errorCode", "FLOW_OPTION_UNAVAILABLE");
 
         ResponseEntity<Map> created = createFlow(company, "Factures export", "API", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE");
         assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(created.getBody()).containsEntry("status", "DRAFT").containsEntry("mappingVersion", "1.0");
+        assertThat(created.getBody()).containsEntry("status", "DRAFT").containsEntry("mappingVersion", "1.0")
+                .containsEntry("executable", true).containsEntry("direction", "OUT");
         String exportFlow = (String) created.getBody().get("id");
         assertThat(createFlow(company, "Factures export", "API", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE")
                 .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -333,8 +338,10 @@ class InvoiceApiTests {
                 .singleElement()
                 .satisfies(e -> assertThat(e)
                         .containsEntry("legalName", "Environnement Flux SARL")
-                        .containsEntry("flows", 2)
+                        .containsEntry("flows", 3)
                         .containsEntry("activeFlows", 1)
+                        .containsEntry("inboundFlows", 0)
+                        .containsEntry("partners", 0)
                         .containsEntry("invoices", 2));
     }
 
@@ -351,7 +358,7 @@ class InvoiceApiTests {
         return http.post().uri("/api/v1/flows")
                 .header("X-Mystix-Company-Id", company.toString())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("name", name, "sourceChannel", sourceChannel, "sourceFormat", sourceFormat,
+                .body(Map.of("name", name, "direction", "OUT", "sourceChannel", sourceChannel, "sourceFormat", sourceFormat,
                         "targetFormat", targetFormat, "targetChannel", targetChannel))
                 .retrieve().toEntity(Map.class);
     }
@@ -470,6 +477,78 @@ class InvoiceApiTests {
             spec = spec.contentType(MediaType.APPLICATION_JSON).body(json);
         }
         return spec.retrieve().toEntity(Map.class);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void partnersAndInboundFlowsBelongToTheirEnvironment() {
+        UUID company = companies.register(new Ice("000000006000066"), "Environnement Partenaires SARL", null).id();
+
+        ResponseEntity<Map> supplier = http.post().uri("/api/v1/partners")
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "Fournisseur Emballages", "type", "SUPPLIER", "ice", "000000007000077",
+                        "gln", "6110000000017", "reference", "V-1001"))
+                .retrieve().toEntity(Map.class);
+        assertThat(supplier.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String supplierId = (String) supplier.getBody().get("id");
+
+        ResponseEntity<Map> badGln = http.post().uri("/api/v1/partners")
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "GLN faux", "type", "CUSTOMER", "gln", "6110000000018"))
+                .retrieve().toEntity(Map.class);
+        assertThat(badGln.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(fields(badGln)).containsExactly("gln");
+
+        // An inbound flow from the supplier: declared now, not executable before lot 6.
+        ResponseEntity<Map> inbound = http.post().uri("/api/v1/flows")
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "Factures fournisseurs vers SAP", "direction", "IN", "partnerId", supplierId,
+                        "sourceChannel", "AS2", "sourceFormat", "UBL_2_1", "targetFormat", "IDOC_INVOIC02",
+                        "targetChannel", "SFTP"))
+                .retrieve().toEntity(Map.class);
+        assertThat(inbound.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(inbound.getBody())
+                .containsEntry("direction", "IN")
+                .containsEntry("partnerId", supplierId)
+                .containsEntry("executable", false)
+                .containsEntry("mappingId", null);
+
+        String inboundId = (String) inbound.getBody().get("id");
+        ResponseEntity<Map> draftOnInbound = http.post().uri("/api/v1/flows/" + inboundId + "/mapping/versions")
+                .header("X-Mystix-Company-Id", company.toString())
+                .retrieve().toEntity(Map.class);
+        assertThat(draftOnInbound.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(draftOnInbound.getBody()).containsEntry("errorCode", "FLOW_NOT_EXECUTABLE");
+
+        // IN options do not exist for OUT and the reverse.
+        ResponseEntity<Map> wrongDirection = http.post().uri("/api/v1/flows")
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "Mauvais sens", "direction", "OUT", "sourceChannel", "API",
+                        "sourceFormat", "UBL_2_1", "targetFormat", "IDOC_INVOIC02", "targetChannel", "SFTP"))
+                .retrieve().toEntity(Map.class);
+        assertThat(wrongDirection.getBody()).containsEntry("errorCode", "FLOW_OPTION_UNAVAILABLE");
+
+        // A partner of another environment cannot be used.
+        ResponseEntity<Map> foreignPartner = http.post().uri("/api/v1/flows")
+                .header("X-Mystix-Company-Id", otherCompany.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "Partenaire étranger", "direction", "IN", "partnerId", supplierId,
+                        "sourceChannel", "AS2", "sourceFormat", "UBL_2_1", "targetFormat", "IDOC_INVOIC02",
+                        "targetChannel", "SFTP"))
+                .retrieve().toEntity(Map.class);
+        assertThat(foreignPartner.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(foreignPartner.getBody()).containsEntry("errorCode", "PARTNER_NOT_FOUND");
+
+        assertThat(getList("/api/v1/flows", company)).extracting(f -> f.get("direction"))
+                .containsExactly("OUT", "IN");
+        assertThat(getList("/api/v1/partners", company)).extracting(p -> p.get("name"))
+                .containsExactly("Fournisseur Emballages");
+        assertThat(getList("/api/v1/partners", otherCompany)).extracting(p -> p.get("name"))
+                .doesNotContain("Fournisseur Emballages");
     }
 
     @Test

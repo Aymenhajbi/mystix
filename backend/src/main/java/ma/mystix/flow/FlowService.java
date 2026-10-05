@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
+import ma.mystix.partner.PartnerService;
 import ma.mystix.tenant.CompanyRegistered;
 import ma.mystix.tenant.CompanyService;
 import org.springframework.context.event.EventListener;
@@ -20,17 +21,24 @@ public class FlowService {
 
     private final FlowRepository repository;
     private final CompanyService companies;
+    private final PartnerService partners;
     private final Clock clock;
 
-    FlowService(FlowRepository repository, CompanyService companies, Clock clock) {
+    FlowService(FlowRepository repository, CompanyService companies, PartnerService partners, Clock clock) {
         this.repository = repository;
         this.companies = companies;
+        this.partners = partners;
         this.clock = clock;
     }
 
-    /** What to create; codes come from {@link FlowCatalog}. */
-    public record NewFlow(String name, String sourceChannel, String sourceFormat, String targetFormat,
-                          String targetChannel) {
+    /**
+     * What to create; codes come from {@link FlowCatalog} for the direction.
+     *
+     * @param direction OUT (the client sends) or IN (the client receives)
+     * @param partnerId one partner of the client, or {@code null} for all partners
+     */
+    public record NewFlow(String name, String direction, UUID partnerId, String sourceChannel, String sourceFormat,
+                          String targetFormat, String targetChannel) {
     }
 
     /** Every new client environment starts with the flow Mystix already runs: invoices by API to UBL 2.1. */
@@ -39,7 +47,7 @@ public class FlowService {
         OffsetDateTime now = OffsetDateTime.now(clock);
         repository.insert(new ExchangeFlow(UUID.randomUUID(), event.company().id(), ExchangeFlow.DEFAULT_NAME,
                 "INVOICE", "OUT", "API", "JSON_CANONICAL", "UBL_2_1", "API_RESPONSE", "ubl-invoice", "1.0",
-                ExchangeFlow.Status.ACTIVE, now, now));
+                ExchangeFlow.Status.ACTIVE, now, now, null));
     }
 
     @Transactional(readOnly = true)
@@ -55,23 +63,31 @@ public class FlowService {
                         "No flow " + flowId + " for company " + companyId));
     }
 
-    /** New flows start as drafts; only available catalog options are accepted. */
+    /**
+     * New flows start as drafts. Options must exist in the direction catalog; planned options are accepted so a
+     * flow can be declared now, but such a flow cannot be activated until it is executable.
+     */
     @Transactional
     public ExchangeFlow create(UUID companyId, NewFlow request) {
         companies.get(companyId);
-        if (!FlowCatalog.isAvailable(FlowCatalog.SOURCE_CHANNELS, request.sourceChannel())
-                || !FlowCatalog.isAvailable(FlowCatalog.SOURCE_FORMATS, request.sourceFormat())
-                || !FlowCatalog.isAvailable(FlowCatalog.TARGET_FORMATS, request.targetFormat())
-                || !FlowCatalog.isAvailable(FlowCatalog.TARGET_CHANNELS, request.targetChannel())) {
-            throw new MystixException(ErrorCode.FLOW_OPTION_UNAVAILABLE, "Unavailable option in " + request);
+        FlowCatalog.DirectionCatalog catalog = FlowCatalog.of(request.direction());
+        if (catalog == null
+                || FlowCatalog.option(catalog.sourceChannels(), request.sourceChannel()).isEmpty()
+                || FlowCatalog.option(catalog.sourceFormats(), request.sourceFormat()).isEmpty()
+                || FlowCatalog.option(catalog.targetFormats(), request.targetFormat()).isEmpty()
+                || FlowCatalog.option(catalog.targetChannels(), request.targetChannel()).isEmpty()) {
+            throw new MystixException(ErrorCode.FLOW_OPTION_UNAVAILABLE, "Unknown option in " + request);
         }
-        FlowCatalog.Mapping mapping = FlowCatalog.mappingFor(request.sourceFormat(), request.targetFormat())
-                .orElseThrow(() -> new MystixException(ErrorCode.FLOW_OPTION_UNAVAILABLE,
-                        "No mapping from " + request.sourceFormat() + " to " + request.targetFormat()));
+        if (request.partnerId() != null) {
+            partners.get(companyId, request.partnerId());
+        }
+        var mapping = FlowCatalog.mappingFor(request.direction(), request.sourceFormat(), request.targetFormat());
         OffsetDateTime now = OffsetDateTime.now(clock);
-        ExchangeFlow flow = new ExchangeFlow(UUID.randomUUID(), companyId, request.name().strip(), "INVOICE", "OUT",
-                request.sourceChannel(), request.sourceFormat(), request.targetFormat(), request.targetChannel(),
-                mapping.id(), mapping.version(), ExchangeFlow.Status.DRAFT, now, now);
+        ExchangeFlow flow = new ExchangeFlow(UUID.randomUUID(), companyId, request.name().strip(), "INVOICE",
+                request.direction(), request.sourceChannel(), request.sourceFormat(), request.targetFormat(),
+                request.targetChannel(), mapping.map(FlowCatalog.Mapping::id).orElse(null),
+                mapping.map(FlowCatalog.Mapping::version).orElse(null), ExchangeFlow.Status.DRAFT, now, now,
+                request.partnerId());
         try {
             repository.insert(flow);
         } catch (DuplicateKeyException e) {
@@ -86,6 +102,9 @@ public class FlowService {
         ExchangeFlow current = get(companyId, flowId);
         String newName = name == null || name.isBlank() ? current.name() : name.strip();
         ExchangeFlow.Status newStatus = status == null ? current.status() : status;
+        if (newStatus == ExchangeFlow.Status.ACTIVE && !FlowCatalog.executable(current)) {
+            throw new MystixException(ErrorCode.FLOW_NOT_EXECUTABLE, "Flow " + flowId + " is declared only");
+        }
         try {
             repository.update(companyId, flowId, newName, newStatus, OffsetDateTime.now(clock));
         } catch (DuplicateKeyException e) {
@@ -103,7 +122,8 @@ public class FlowService {
         companies.get(companyId);
         if (requestedFlowId != null) {
             ExchangeFlow flow = get(companyId, requestedFlowId);
-            if (flow.status() != ExchangeFlow.Status.ACTIVE || !"API".equals(flow.sourceChannel())) {
+            if (flow.status() != ExchangeFlow.Status.ACTIVE || !"API".equals(flow.sourceChannel())
+                    || !"OUT".equals(flow.direction())) {
                 throw new MystixException(ErrorCode.FLOW_NOT_ACTIVE, "Flow " + requestedFlowId + " is " + flow.status());
             }
             return flow;
