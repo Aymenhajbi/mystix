@@ -3,7 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/Icons";
-import { SimulatedBadge, StatusBadge } from "@/components/StatusBadge";
+import { BackdatedBadge, SimulatedBadge, StatusBadge } from "@/components/StatusBadge";
 import { listInvoices } from "@/lib/api";
 import { formatAmount, formatDate, hasLocale } from "@/lib/i18n";
 import { isStatusFilter, matchesFilter, matchesQuery, statusFilters, type StatusFilter } from "@/lib/invoiceView";
@@ -140,7 +140,10 @@ function InvoiceTable({
                   <bdi className={styles.mono}>{invoice.number}</bdi>
                 </Link>
               </th>
-              <td>{formatDate(lang, invoice.issueDate)}</td>
+              <td>
+                {formatDate(lang, invoice.issueDate)}{" "}
+                {invoice.backdated && <BackdatedBadge label={dict.invoice.backdated} />}
+              </td>
               <td>{invoice.buyerName ?? dict.common.none}</td>
               <td className={styles.num}>
                 <bdi>{formatAmount(lang, invoice.payableAmount, invoice.currency)}</bdi>

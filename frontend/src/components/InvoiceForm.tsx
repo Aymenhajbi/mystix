@@ -358,6 +358,11 @@ export function InvoiceForm({
               <option key={r} value={r} />
             ))}
           </datalist>
+          {draft.issueDate !== "" && draft.issueDate < today && (
+            <p className={styles.declared} role="note">
+              {labels.backdatedNote.replace("{date}", draft.issueDate)}
+            </p>
+          )}
           <p id="vat-rates-help" className={styles.formNote} style={{ margin: 0 }}>
             {rates.length > 0
               ? labels.ratesInForce.replace("{date}", draft.issueDate).replace("{rates}", rates.map((r) => `${r} %`).join(", "))

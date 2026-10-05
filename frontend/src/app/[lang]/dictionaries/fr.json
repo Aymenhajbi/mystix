@@ -166,7 +166,9 @@
     "copied": "Copié",
     "copyFailed": "Copie impossible : sélectionnez le texte",
     "fileUnavailable": "Fichier indisponible.",
-    "created": "Facture émise : contrôlée, convertie en UBL 2.1 et soumise à la clearance (simulée)."
+    "created": "Facture émise : contrôlée, convertie en UBL 2.1 et soumise à la clearance (simulée).",
+    "backdated": "Antidatée",
+    "backdatedNote": "Facture antidatée : émise le {issued}, reçue le {received}. Les taux de TVA en vigueur à la date d'émission s'appliquent."
   },
   "logs": {
     "title": "Logs",
@@ -175,6 +177,7 @@
     "filters": {
       "all": "Tout",
       "ERROR": "Erreurs",
+      "WARN": "Avertissements",
       "INFO": "Infos"
     },
     "search": "N° de facture, code d'erreur, request id, message",
@@ -193,12 +196,14 @@
       "INVOICE_REJECTED": "Facture refusée",
       "CLEARANCE_CLEARED": "Clearance acceptée (simulée)",
       "CLEARANCE_REJECTED": "Clearance refusée (simulée)",
-      "CLEARANCE_ERROR": "Clearance indisponible"
+      "CLEARANCE_ERROR": "Clearance indisponible",
+      "INVOICE_BACKDATED": "Facture antidatée",
+      "VAT_RATES_UNCHECKED": "Taux de TVA non contrôlés"
     },
     "stages": {
       "API": "API",
       "MAPPING": "LECTURE",
-      "VALIDATION": "EN 16931",
+      "VALIDATION": "Contrôles",
       "GENERATION": "GÉNÉRATION",
       "STORAGE": "STOCKAGE",
       "CLEARANCE": "CLEARANCE"
@@ -670,6 +675,7 @@
     },
     "pickRate": "Choisir un taux",
     "ratesInForce": "Taux en vigueur le {date} selon le référentiel : {rates}.",
-    "noRates": "Le référentiel TVA n'a aucun taux pour cette date : saisissez le taux."
+    "noRates": "Le référentiel TVA n'a aucun taux pour cette date : saisissez le taux.",
+    "backdatedNote": "Facture antidatée (émise le {date}) : seuls les taux de TVA en vigueur à cette date sont acceptés. Elle sera signalée comme antidatée."
   }
 }

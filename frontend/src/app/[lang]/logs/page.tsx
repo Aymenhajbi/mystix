@@ -14,8 +14,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/logs">): P
   return hasLocale(lang) ? { title: (await getDictionary(lang)).logs.title } : {};
 }
 
-type LevelFilter = "all" | "ERROR" | "INFO";
-const levelFilters: LevelFilter[] = ["all", "ERROR", "INFO"];
+type LevelFilter = "all" | "ERROR" | "WARN" | "INFO";
+const levelFilters: LevelFilter[] = ["all", "ERROR", "WARN", "INFO"];
 
 function matches(entry: LogEntry, level: LevelFilter, q: string) {
   if (level !== "all" && entry.level !== level) return false;

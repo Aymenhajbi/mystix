@@ -4,6 +4,10 @@ package ma.mystix.logs;
 public enum LogEvent {
     INVOICE_ACCEPTED(LogLevel.INFO),
     INVOICE_REPLAYED(LogLevel.INFO),
+    /** Accepted, but issued before the day it was received: the rates of its issue date apply. */
+    INVOICE_BACKDATED(LogLevel.WARN),
+    /** Accepted without a VAT rate check: the referential has no standard rate for the issue date. */
+    VAT_RATES_UNCHECKED(LogLevel.WARN),
     INVOICE_REJECTED(LogLevel.ERROR),
     CLEARANCE_CLEARED(LogLevel.INFO),
     CLEARANCE_REJECTED(LogLevel.ERROR),

@@ -19,6 +19,14 @@ AGENTS.md impose que les taux de TVA viennent d'un référentiel daté, jamais d
    - Le test à blanc (ADR-0008) n'applique pas ce contrôle : les règles de mapping ne touchent pas la TVA, et les échantillons stockés y sont déjà passés à leur réception.
 5. **Portail** : le taux d'une ligne S se choisit dans la liste des taux en vigueur à la date d'émission (liste rechargée si la date change), sans présélection. Si le contrôle est désactivé ou si le référentiel est vide, le taux se saisit librement, avec les taux en vigueur proposés.
 
+6. **Factures antidatées** (décision du fondateur, 2026-10-05) :
+   - **Définition** : une facture est antidatée quand sa date d'émission est antérieure au jour de sa réception (Africa/Casablanca). C'est déduit de faits stockés (`issue_date`, `created_at`), sans seuil inventé, et cela ne change jamais après coup.
+   - **Taux** : la facture est contrôlée sur les taux en vigueur **à sa date d'émission**, comme la loi les applique. Par exemple, une facture émise en 2025 garde les taux de 2025, même reçue en 2026.
+   - **Détection** : champ `backdated` dans l'API (liste et détail), badge « Antidatée » et note avec les dates d'émission et de réception dans le portail. À la réception, un log WARN `INVOICE_BACKDATED` indique les taux appliqués.
+   - **Taux hors période** : blocage `VAT_RATE_UNKNOWN`. Le motif commence par « backdated invoice (issued …, received …) » et l'erreur est journalisée.
+   - **Référentiel sans taux pour la date** : la facture passe, mais un log WARN `VAT_RATES_UNCHECKED` le signale. Rien ne passe en silence, et un référentiel incomplet ne bloque pas.
+   - Le formulaire du portail annonce la facture antidatée dès qu'une date passée est saisie.
+
 ## Options écartées
 | Option | Pourquoi écartée |
 | --- | --- |

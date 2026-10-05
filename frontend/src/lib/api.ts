@@ -35,6 +35,8 @@ export type InvoiceSummary = {
   status: InvoiceStatus;
   clearance: Clearance;
   createdAt: string;
+  /** Issued before the day it was received (Africa/Casablanca): the VAT rates of its issue date applied. */
+  backdated: boolean;
 };
 
 export type InvoiceDetail = Omit<InvoiceSummary, "clearance"> & {
@@ -82,6 +84,8 @@ export type LogLevel = "INFO" | "WARN" | "ERROR";
 export type LogEvent =
   | "INVOICE_ACCEPTED"
   | "INVOICE_REPLAYED"
+  | "INVOICE_BACKDATED"
+  | "VAT_RATES_UNCHECKED"
   | "INVOICE_REJECTED"
   | "CLEARANCE_CLEARED"
   | "CLEARANCE_REJECTED"

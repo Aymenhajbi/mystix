@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { FileViewer, type ViewerFile } from "@/components/FileViewer";
 import { Icon } from "@/components/Icons";
 import { LogList } from "@/components/LogList";
-import { SimulatedBadge, StatusBadge } from "@/components/StatusBadge";
+import { BackdatedBadge, SimulatedBadge, StatusBadge } from "@/components/StatusBadge";
 import { fetchArtifactText, getInvoice, listLogs, type ArtifactKind } from "@/lib/api";
 import { highlightLine, prettyJson } from "@/lib/highlight";
 import { formatAmount, formatDate, formatDateTime, hasLocale, intlTag } from "@/lib/i18n";
@@ -106,7 +106,13 @@ export default async function InvoicePage({ params, searchParams }: PageProps<"/
               <bdi className={styles.mono}>{invoice.number}</bdi>
               <StatusBadge status={invoice.status} label={statusLabel(invoice.status)} />
               {invoice.clearance.simulated && <SimulatedBadge label={dict.common.simulatedBadge} />}
+              {invoice.backdated && <BackdatedBadge label={d.backdated} />}
             </h1>
+            {invoice.backdated && (
+              <p className={styles.formNote} style={{ margin: "4px 0 0" }}>
+                {t(d.backdatedNote, { issued: formatDate(lang, invoice.issueDate), received: formatDateTime(lang, invoice.createdAt) })}
+              </p>
+            )}
             <div className={styles.meta}>
               <span>{invoice.buyerName ?? dict.common.none}</span>
               <span>

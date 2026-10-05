@@ -1,22 +1,30 @@
 package ma.mystix.invoice;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Currency;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import ma.mystix.canonical.Invoice;
+import ma.mystix.canonical.VatCategoryCode;
 import ma.mystix.format.ubl.En16931Validator;
 import ma.mystix.format.ubl.UblMappingSpec;
 import ma.mystix.flow.ExchangeFlow;
 import ma.mystix.flow.FlowService;
 import ma.mystix.logs.ProcessingLog;
 import ma.mystix.mapping.MappingVersionService;
+import ma.mystix.referential.VatReferential;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
+import ma.mystix.shared.time.TimeConfig;
 import ma.mystix.tenant.CompanyService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -54,9 +62,12 @@ class InvoiceController {
     private final FlowService flows;
     private final MappingVersionService mappings;
     private final CompanyService companies;
+    private final VatReferential vatRates;
+    private final Clock clock;
 
     InvoiceController(InvoiceService service, InvoiceLineage lineage, ProcessingLog logs, InvoiceIntake intake,
-                      FlowService flows, MappingVersionService mappings, CompanyService companies) {
+                      FlowService flows, MappingVersionService mappings, CompanyService companies,
+                      VatReferential vatRates, Clock clock) {
         this.service = service;
         this.lineage = lineage;
         this.logs = logs;
@@ -64,6 +75,8 @@ class InvoiceController {
         this.flows = flows;
         this.mappings = mappings;
         this.companies = companies;
+        this.vatRates = vatRates;
+        this.clock = clock;
     }
 
     /**
@@ -80,10 +93,15 @@ class InvoiceController {
         try {
             // Flow first: its published rules (ADR-0008) apply before any field check.
             ExchangeFlow flow = flows.forSubmission(companyId, flowId);
-            submission = service.submit(companyId, flow, body,
-                    intake.read(body, mappings.publishedRules(companyId, flow.id()), new InvoiceIntake.Policy(
-                            companies.enforcedSellerIce(companyId).orElse(null),
-                            companies.settings(companyId).enforceVatRates())));
+            LocalDate receivedOn = LocalDate.now(clock.withZone(TimeConfig.BUSINESS_ZONE));
+            boolean checkVatRates = companies.settings(companyId).enforceVatRates();
+            Invoice canonical = intake.read(body, mappings.publishedRules(companyId, flow.id()),
+                    new InvoiceIntake.Policy(companies.enforcedSellerIce(companyId).orElse(null), checkVatRates,
+                            receivedOn));
+            submission = service.submit(companyId, flow, body, canonical);
+            if (!submission.replayed()) {
+                warnings(companyId, submission.invoice(), canonical, checkVatRates, receivedOn);
+            }
         } catch (MystixException e) {
             logs.submissionRejected(companyId, intake.numberOf(body), e, body);
             throw e;
@@ -122,18 +140,18 @@ class InvoiceController {
     /** List item. {@code payableAmount} is a decimal string at the currency's precision, null for old invoices. */
     record InvoiceSummary(UUID id, String number, LocalDate issueDate, String buyerName, String currency,
                           String payableAmount, String status, ClearanceView clearance, OffsetDateTime createdAt,
-                          UUID flowId) {
+                          UUID flowId, boolean backdated) {
 
         static InvoiceSummary from(StoredInvoice i) {
             return new InvoiceSummary(i.id(), i.number(), i.issueDate(), i.buyerName(), i.currency(),
-                    amount(i), i.status(), ClearanceView.from(i), i.createdAt(), i.flowId());
+                    amount(i), i.status(), ClearanceView.from(i), i.createdAt(), i.flowId(), i.backdated());
         }
     }
 
     record InvoiceResponse(UUID id, String number, LocalDate issueDate, String buyerName, String currency,
                            String payableAmount, String status, String canonicalVersion, OffsetDateTime createdAt,
                            ClearanceView clearance, List<StoredInvoice.ArtifactInfo> artifacts,
-                           List<StoredInvoice.StatusEvent> history) {
+                           List<StoredInvoice.StatusEvent> history, boolean backdated) {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -149,7 +167,31 @@ class InvoiceController {
         return new InvoiceResponse(invoice.id(), invoice.number(), invoice.issueDate(), invoice.buyerName(),
                 invoice.currency(), amount(invoice), invoice.status(), invoice.canonicalVersion(),
                 invoice.createdAt(), ClearanceView.from(invoice),
-                service.artifacts(companyId, id), service.history(companyId, id));
+                service.artifacts(companyId, id), service.history(companyId, id), invoice.backdated());
+    }
+
+    /**
+     * Warnings on an accepted invoice: backdated (with the rates that applied) and VAT rates that could not be
+     * checked because the referential has no rate for the issue date. Neither blocks the invoice.
+     */
+    private void warnings(UUID companyId, StoredInvoice stored, Invoice invoice, boolean checkVatRates,
+                          LocalDate receivedOn) {
+        String country = invoice.seller().address().countryCode();
+        Optional<List<BigDecimal>> rates = vatRates.standardRates(country, invoice.issueDate());
+        boolean standardLines = invoice.lines().stream().anyMatch(l -> l.vat().code() == VatCategoryCode.S);
+        if (invoice.issueDate().isBefore(receivedOn)) {
+            String vat = !checkVatRates ? "VAT rate check disabled for this environment"
+                    : rates.map(r -> "VAT rates in force on the issue date applied ("
+                            + r.stream().map(x -> x.stripTrailingZeros().toPlainString() + " %")
+                            .collect(Collectors.joining(", ")) + ")")
+                    .orElse("no VAT rate in the referential for the issue date");
+            logs.invoiceBackdated(companyId, stored.id(), stored.number(), "Backdated invoice: issued "
+                    + invoice.issueDate() + ", received " + receivedOn + "; " + vat);
+        }
+        if (checkVatRates && standardLines && rates.isEmpty()) {
+            logs.vatRatesUnchecked(companyId, stored.id(), stored.number(), "VAT rates not checked: the referential"
+                    + " has no standard rate in force on " + invoice.issueDate() + " in " + country);
+        }
     }
 
     private static String amount(StoredInvoice invoice) {

@@ -212,11 +212,12 @@ class InvoiceApiTests {
 
         List<Map<String, Object>> entries = logs(sellerCompany, "?invoiceId=" + id);
 
-        assertThat(entries).extracting(e -> e.get("event"))
+        // Warnings (backdated fixture, VAT referential empty for its date) may come along; they do not change
+        // the acceptance events, and every entry carries the caller's request id.
+        assertThat(entries).filteredOn(e -> "INFO".equals(e.get("level"))).extracting(e -> e.get("event"))
                 .containsExactly("CLEARANCE_CLEARED", "INVOICE_ACCEPTED");
         assertThat(entries).allSatisfy(e -> assertThat(e)
                 .containsEntry("requestId", "erp-batch-0001")
-                .containsEntry("level", "INFO")
                 .containsEntry("invoiceNumber", "FA-LOG-OK-1"));
     }
 
@@ -648,6 +649,47 @@ class InvoiceApiTests {
                 .retrieve().toEntity(Map.class);
         assertThat(off.getBody()).containsEntry("enforceVatRates", false).containsEntry("enforceSellerIce", true);
         assertThat(submit(company, fourteen, byte[].class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void backdatedInvoicesKeepTheRatesOfTheirIssueDateAndAreFlagged() {
+        // Synthetic 2025 rates: a 2025 invoice received today is backdated and checked against them.
+        for (String rate : List.of("20", "10")) {
+            assertThat(http.post().uri("/api/v1/admin/vat-rates")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("countryCode", "MA", "categoryCode", "S", "ratePercent", rate,
+                            "validFrom", "2025-01-01", "validTo", "2025-12-31", "legalReference", "TEST synthetic"))
+                    .retrieve().toEntity(Map.class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        }
+        UUID company = companies.register(new Ice("000000012000012"), "Environnement Antidate SARL", null).id();
+        String issued2025 = withNumber("FA-BACK-1").replace("2026-09-15", "2025-06-15")
+                .replace("2026-10-15", "2025-07-15").replace("\"ice\": \"000000001000011\",", "");
+
+        ResponseEntity<byte[]> accepted = submit(company, issued2025, byte[].class);
+        assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String id = accepted.getHeaders().getFirst("X-Mystix-Invoice-Id");
+        Map<String, Object> listed = getList("/api/v1/invoices", company).stream()
+                .filter(i -> id.equals(i.get("id"))).findFirst().orElseThrow();
+        assertThat(listed).containsEntry("backdated", true);
+        assertThat(logs(company, "?level=WARN")).anySatisfy(e -> assertThat(e)
+                .containsEntry("event", "INVOICE_BACKDATED")
+                .satisfies(x -> assertThat((String) x.get("message"))
+                        .contains("issued 2025-06-15").contains("10 %, 20 %")));
+
+        // A rate outside the 2025 rates is blocked, and the reason says the invoice is backdated.
+        ResponseEntity<Map> blocked = submit(company, issued2025.replace("FA-BACK-1", "FA-BACK-2")
+                .replace("\"ratePercent\": \"10.00\"", "\"ratePercent\": 14"), Map.class);
+        assertThat(blocked.getBody()).containsEntry("errorCode", "VAT_RATE_UNKNOWN");
+        assertThat(((List<Map<String, Object>>) blocked.getBody().get("fieldErrors")).getFirst().get("reason"))
+                .asString().startsWith("backdated invoice (issued 2025-06-15");
+
+        // No rate in the referential for 2024: accepted, but with a warning; nothing passes silently.
+        ResponseEntity<byte[]> unchecked = submit(company, issued2025.replace("FA-BACK-1", "FA-BACK-3")
+                .replace("2025-06-15", "2024-06-15").replace("2025-07-15", "2024-07-15"), byte[].class);
+        assertThat(unchecked.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(logs(company, "?level=WARN")).extracting(e -> e.get("event"))
+                .contains("VAT_RATES_UNCHECKED");
     }
 
     @Test

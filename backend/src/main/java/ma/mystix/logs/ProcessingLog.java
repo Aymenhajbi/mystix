@@ -47,6 +47,14 @@ public class ProcessingLog {
                 "Same invoice received again: stored result returned, nothing reprocessed", null, null);
     }
 
+    public void invoiceBackdated(UUID companyId, UUID invoiceId, String number, String message) {
+        write(companyId, LogEvent.INVOICE_BACKDATED, "VALIDATION", null, number, invoiceId, message, null, null);
+    }
+
+    public void vatRatesUnchecked(UUID companyId, UUID invoiceId, String number, String message) {
+        write(companyId, LogEvent.VAT_RATES_UNCHECKED, "VALIDATION", null, number, invoiceId, message, null, null);
+    }
+
     public void clearance(UUID companyId, UUID invoiceId, String number, LogEvent event, String message) {
         write(companyId, event, "CLEARANCE", null, number, invoiceId, message, null, null);
     }

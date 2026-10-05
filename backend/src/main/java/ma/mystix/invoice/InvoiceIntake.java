@@ -1,6 +1,7 @@
 package ma.mystix.invoice;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -45,10 +46,11 @@ class InvoiceIntake {
      *
      * @param enforcedSellerIce the company ICE when the seller identity rule is on (ADR-0009), else {@code null}
      * @param checkVatRates     standard rates must be in force on the issue date (ADR-0010)
+     * @param receivedOn        day of reception (Africa/Casablanca), to explain a backdated invoice; may be null
      */
-    record Policy(String enforcedSellerIce, boolean checkVatRates) {
+    record Policy(String enforcedSellerIce, boolean checkVatRates, LocalDate receivedOn) {
         /** Dry runs: flow rules only; stored samples already went through the company rules. */
-        static final Policy NONE = new Policy(null, false);
+        static final Policy NONE = new Policy(null, false, null);
     }
 
     Invoice read(byte[] body, List<MappingRule> rules) {
@@ -58,7 +60,7 @@ class InvoiceIntake {
     Invoice read(byte[] body, List<MappingRule> rules, Policy policy) {
         InvoiceRequest request = validated(sellerIdentity(applyRules(parse(body), rules), policy.enforcedSellerIce()));
         if (policy.checkVatRates()) {
-            checkVatRates(request);
+            checkVatRates(request, policy.receivedOn());
         }
         return InvoiceRequestMapper.toCanonical(request);
     }
@@ -66,20 +68,24 @@ class InvoiceIntake {
     /**
      * Each standard-rated (S) line carries a rate in force on the issue date in the seller's country. When the
      * referential has no rate for that country and date, nothing is checked: an empty referential never blocks.
+     * A backdated invoice is checked against the rates of its issue date, as the law applies them.
      */
-    void checkVatRates(InvoiceRequest r) {
+    void checkVatRates(InvoiceRequest r, LocalDate receivedOn) {
         String country = r.seller().address().countryCode();
         Optional<List<BigDecimal>> inForce = vatRates.standardRates(country, r.issueDate());
         if (inForce.isEmpty()) {
             return;
         }
         List<BigDecimal> rates = inForce.get();
+        String backdated = receivedOn != null && r.issueDate().isBefore(receivedOn)
+                ? "backdated invoice (issued " + r.issueDate() + ", received " + receivedOn + "): "
+                : "";
         List<ApiError.FieldViolation> violations = new ArrayList<>();
         for (int i = 0; i < r.lines().size(); i++) {
             InvoiceRequest.VatRequest vat = r.lines().get(i).vat();
             if ("S".equals(vat.category()) && rates.stream().noneMatch(x -> x.compareTo(vat.ratePercent()) == 0)) {
-                violations.add(new ApiError.FieldViolation("lines[" + i + "].vat.ratePercent",
-                        vat.ratePercent().stripTrailingZeros().toPlainString() + " % is not a standard VAT rate in force on "
+                violations.add(new ApiError.FieldViolation("lines[" + i + "].vat.ratePercent", backdated
+                        + vat.ratePercent().stripTrailingZeros().toPlainString() + " % is not a standard VAT rate in force on "
                                 + r.issueDate() + " in " + country + " (in force: "
                                 + rates.stream().map(x -> x.stripTrailingZeros().toPlainString()).collect(Collectors.joining(", "))
                                 + ")"));

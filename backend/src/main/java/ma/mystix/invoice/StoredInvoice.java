@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import ma.mystix.shared.time.TimeConfig;
+
 /**
  * An accepted invoice, always read within its company.
  *
@@ -26,6 +28,14 @@ public record StoredInvoice(UUID id, UUID companyId, String number, LocalDate is
     public static final String STATUS_CLEARANCE_REJECTED = "CLEARANCE_REJECTED";
     /** History-only status: the gateway could not be reached; the invoice stays VALIDATED. */
     public static final String EVENT_CLEARANCE_ERROR = "CLEARANCE_ERROR";
+
+    /**
+     * Issued before the day it was received (Africa/Casablanca): a backdated invoice. Derived from stored facts,
+     * so it never changes afterwards.
+     */
+    public boolean backdated() {
+        return issueDate.isBefore(createdAt.atZoneSameInstant(TimeConfig.BUSINESS_ZONE).toLocalDate());
+    }
 
     /** Metadata of a stored artefact, without its content. */
     public record ArtifactInfo(ArtifactKind kind, String mediaType, String sha256, long size) {
