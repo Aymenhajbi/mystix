@@ -200,6 +200,9 @@ function Cockpit({
                 <h2 id="send-title">{c.send}</h2>
               </div>
               <div className={styles.how}>
+                <Link href={`/${lang}/invoices/new`} className={`${styles.btn} ${styles.btnPrimary}`}>
+                  {dict.newInvoice.title}
+                </Link>
                 <span>{c.sendHint}</span>
                 <code className={styles.code}>
                   {"POST /api/v1/invoices\nX-Mystix-Company-Id: <id>\nContent-Type: application/json"}

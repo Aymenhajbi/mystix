@@ -37,6 +37,11 @@ export default async function InvoicesPage({ params, searchParams }: PageProps<"
     <>
       <div className={styles.pageHead}>
         <h1>{dict.invoices.title}</h1>
+        <div className={styles.right}>
+          <Link href={`/${lang}/invoices/new`} className={`${styles.btn} ${styles.btnPrimary}`}>
+            {dict.newInvoice.title}
+          </Link>
+        </div>
       </div>
 
       {result.kind === "no-company" && <p className={styles.message} role="alert">{dict.common.devCompanyMissing}</p>}
