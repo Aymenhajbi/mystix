@@ -596,6 +596,61 @@ class InvoiceApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void standardRatesMustBeInForceOnTheIssueDateUnlessTheEnvironmentTurnsTheCheckOff() {
+        // Synthetic rates in a year no other test uses, so the referential stays empty for them.
+        for (String rate : List.of("20", "10")) {
+            ResponseEntity<Map> added = http.post().uri("/api/v1/admin/vat-rates")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("countryCode", "MA", "categoryCode", "S", "ratePercent", rate,
+                            "validFrom", "2031-01-01", "validTo", "2031-12-31", "legalReference", "TEST synthetic"))
+                    .retrieve().toEntity(Map.class);
+            assertThat(added.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        }
+        ResponseEntity<Map> duplicate = http.post().uri("/api/v1/admin/vat-rates")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("countryCode", "MA", "categoryCode", "S", "ratePercent", "20.00",
+                        "validFrom", "2031-01-01", "legalReference", "TEST synthetic"))
+                .retrieve().toEntity(Map.class);
+        assertThat(duplicate.getBody()).containsEntry("errorCode", "VAT_RATE_EXISTS");
+        ResponseEntity<Map> invalid = http.post().uri("/api/v1/admin/vat-rates")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("countryCode", "MA", "categoryCode", "X", "ratePercent", "12",
+                        "validFrom", "2031-02-01", "validTo", "2031-01-01", "legalReference", " "))
+                .retrieve().toEntity(Map.class);
+        assertThat(invalid.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(fields(invalid)).containsExactlyInAnyOrder("categoryCode", "validTo", "legalReference");
+
+        List<Map<String, Object>> inForce = http.get().uri("/api/v1/referential/vat-rates?date=2031-06-15")
+                .retrieve().body(List.class);
+        assertThat(inForce).extracting(r -> ((Number) r.get("ratePercent")).doubleValue()).containsExactly(10.0, 20.0);
+        assertThat(http.get().uri("/api/v1/referential/vat-rates?date=2032-01-01").retrieve().body(List.class))
+                .isEmpty();
+
+        UUID company = companies.register(new Ice("000000011000011"), "Environnement TVA SARL", null).id();
+        String dated = withNumber("FA-VAT-1").replace("2026-09-15", "2031-06-15").replace("2026-10-15", "2031-07-15")
+                .replace("\"ice\": \"000000001000011\",", "");
+        ResponseEntity<byte[]> inForceRates = submit(company, dated, byte[].class);
+        assertThat(inForceRates.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        String fourteen = dated.replace("FA-VAT-1", "FA-VAT-2").replace("\"ratePercent\": \"10.00\"",
+                "\"ratePercent\": 14");
+        assertThat(fourteen).contains("\"ratePercent\": 14");
+        ResponseEntity<Map> unknown = submit(company, fourteen, Map.class);
+        assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(unknown.getBody()).containsEntry("errorCode", "VAT_RATE_UNKNOWN");
+        assertThat(fields(unknown)).containsExactly("lines[2].vat.ratePercent");
+
+        // Turned off by the environment (partial update: the seller identity rule stays on).
+        ResponseEntity<Map> off = http.put().uri("/api/v1/companies/{id}/settings", company)
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON).body(Map.of("enforceVatRates", false))
+                .retrieve().toEntity(Map.class);
+        assertThat(off.getBody()).containsEntry("enforceVatRates", false).containsEntry("enforceSellerIce", true);
+        assertThat(submit(company, fourteen, byte[].class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    @Test
     void statsCountSubmissionsPerEventAndStage() {
         long acceptedBefore = stat(sellerCompany, "INVOICE_ACCEPTED", "STORAGE", null);
         long mappingBefore = stat(sellerCompany, "INVOICE_REJECTED", "MAPPING", "INVOICE_REJECTED");

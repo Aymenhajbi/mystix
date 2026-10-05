@@ -81,8 +81,9 @@ class InvoiceController {
             // Flow first: its published rules (ADR-0008) apply before any field check.
             ExchangeFlow flow = flows.forSubmission(companyId, flowId);
             submission = service.submit(companyId, flow, body,
-                    intake.read(body, mappings.publishedRules(companyId, flow.id()),
-                            companies.enforcedSellerIce(companyId).orElse(null)));
+                    intake.read(body, mappings.publishedRules(companyId, flow.id()), new InvoiceIntake.Policy(
+                            companies.enforcedSellerIce(companyId).orElse(null),
+                            companies.settings(companyId).enforceVatRates())));
         } catch (MystixException e) {
             logs.submissionRejected(companyId, intake.numberOf(body), e, body);
             throw e;

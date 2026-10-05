@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import styles from "@/app/[lang]/portal.module.css";
-import { createInvoiceAction, type InvoiceDraft } from "@/app/[lang]/invoices/actions";
+import { createInvoiceAction, vatRatesAction, type InvoiceDraft } from "@/app/[lang]/invoices/actions";
 import type { Dictionary } from "@/app/[lang]/dictionaries";
 import type { ApiErrorBody, Partner } from "@/lib/api";
 
@@ -36,13 +36,24 @@ export function InvoiceForm({
   seller,
   customers,
   today,
+  initialRates,
+  enforceVatRates,
 }: {
   lang: "fr" | "ar";
   labels: Labels;
   seller: { legalName: string; ice: string; taxIdentifier: string | null };
   customers: Partner[];
   today: string;
+  /** Standard rates in force on the issue date (dated referential); empty when it has none. */
+  initialRates: string[];
+  enforceVatRates: boolean;
 }) {
+  const [rates, setRates] = useState<string[]>(initialRates);
+  const [, startRates] = useTransition();
+  const changeIssueDate = (value: string) => {
+    set("issueDate", value);
+    startRates(async () => setRates(await vatRatesAction(value)));
+  };
   const [draft, setDraft] = useState<InvoiceDraft>({
     number: "",
     issueDate: today,
@@ -125,6 +136,49 @@ export function InvoiceForm({
     );
   };
 
+  /**
+   * Rate of a standard-rated line: a list of the rates in force on the issue date when the environment checks
+   * them, else a free field with those rates as suggestions. Nothing is preselected: the user chooses.
+   */
+  const rateField = (i: number, line: Line) => {
+    const path = `lines[${i}].vat.ratePercent`;
+    if (!(enforceVatRates && rates.length > 0)) {
+      return input(path, labels.vatRate, line.vatRate, (v) => setLine(i, { vatRate: v }), {
+        required: true,
+        inputMode: "decimal",
+        dir: "ltr",
+        list: rates.length > 0 ? "vat-rates" : undefined,
+      });
+    }
+    const id = fieldId(path);
+    const problem = fieldErrors.get(path);
+    return (
+      <div className={styles.field}>
+        <label htmlFor={id}>{labels.vatRate}</label>
+        <select
+          id={id}
+          value={rates.includes(line.vatRate) ? line.vatRate : ""}
+          onChange={(e) => setLine(i, { vatRate: e.target.value })}
+          required
+          aria-invalid={problem ? true : undefined}
+          aria-describedby={problem ? `${id}-error` : `vat-rates-help`}
+        >
+          <option value="">{labels.pickRate}</option>
+          {rates.map((r) => (
+            <option key={r} value={r}>
+              {r} %
+            </option>
+          ))}
+        </select>
+        {problem && (
+          <small id={`${id}-error`} className={styles.fieldError}>
+            {labels.invalid} <span className={styles.mono}>({problem})</span>
+          </small>
+        )}
+      </div>
+    );
+  };
+
   return (
     <form onSubmit={submit} className={styles.stack} noValidate>
       {error && (
@@ -168,7 +222,7 @@ export function InvoiceForm({
         <div className={styles.form}>
           <div className={styles.formRow}>
             {input("number", labels.number, draft.number, (v) => set("number", v), { required: true, maxLength: 100, placeholder: labels.numberPlaceholder, dir: "ltr" })}
-            {input("issueDate", labels.issueDate, draft.issueDate, (v) => set("issueDate", v), { type: "date", required: true })}
+            {input("issueDate", labels.issueDate, draft.issueDate, changeIssueDate, { type: "date", required: true })}
             {input("dueDate", labels.dueDate, draft.dueDate, (v) => set("dueDate", v), { type: "date" })}
             {input("currency", labels.currency, draft.currency, (v) => set("currency", v), { required: true, maxLength: 3, pattern: "[A-Za-z]{3}", dir: "ltr" })}
           </div>
@@ -272,7 +326,7 @@ export function InvoiceForm({
                   </select>
                 </label>
                 {line.vatCategory === "S"
-                  ? input(`lines[${i}].vat.ratePercent`, labels.vatRate, line.vatRate, (v) => setLine(i, { vatRate: v }), { required: true, inputMode: "decimal", dir: "ltr" })
+                  ? rateField(i, line)
                   : (
                     <p className={styles.formNote} style={{ alignSelf: "end" }}>
                       {labels.vatZNote}
@@ -299,6 +353,16 @@ export function InvoiceForm({
               {labels.addLine}
             </button>
           </div>
+          <datalist id="vat-rates">
+            {rates.map((r) => (
+              <option key={r} value={r} />
+            ))}
+          </datalist>
+          <p id="vat-rates-help" className={styles.formNote} style={{ margin: 0 }}>
+            {rates.length > 0
+              ? labels.ratesInForce.replace("{date}", draft.issueDate).replace("{rates}", rates.map((r) => `${r} %`).join(", "))
+              : labels.noRates}
+          </p>
         </div>
       </section>
 

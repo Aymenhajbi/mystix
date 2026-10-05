@@ -495,7 +495,10 @@
       "enforceSellerIceHelp": "Le vendeur de chaque facture est cette société : un ICE vendeur absent est complété par {ice}, un ICE différent est refusé (SELLER_ICE_MISMATCH).",
       "offWarning": "Règle désactivée : l'ICE vendeur est pris tel qu'envoyé, ou absent. À réserver à un intégrateur qui émet pour plusieurs entités.",
       "save": "Enregistrer les paramètres",
-      "saved": "Paramètres enregistrés."
+      "saved": "Paramètres enregistrés.",
+      "enforceVatRates": "Contrôler les taux de TVA (recommandé)",
+      "enforceVatRatesHelp": "Une ligne au taux normal ou réduit (S) doit porter un taux en vigueur à la date d'émission, selon le référentiel TVA daté ; sinon la facture est refusée (VAT_RATE_UNKNOWN). Sans taux au référentiel pour cette date, rien n'est contrôlé.",
+      "vatOffWarning": "Contrôle des taux désactivé : tout taux entre 0 et 100 % est accepté. Le portail continue de proposer les taux en vigueur."
     }
   },
   "studio": {
@@ -662,7 +665,11 @@
       "NO_COMPANY": "Aucun environnement client actif : choisissez-en un dans Environnements clients.",
       "API_UNREACHABLE": "L'API Mystix ne répond pas. Réessayez dans un instant.",
       "INTERNAL_ERROR": "L'émission a échoué de façon inattendue.",
-      "default": "La facture n'a pas pu être émise."
-    }
+      "default": "La facture n'a pas pu être émise.",
+      "VAT_RATE_UNKNOWN": "Un taux de TVA n'est pas en vigueur à la date d'émission."
+    },
+    "pickRate": "Choisir un taux",
+    "ratesInForce": "Taux en vigueur le {date} selon le référentiel : {rates}.",
+    "noRates": "Le référentiel TVA n'a aucun taux pour cette date : saisissez le taux."
   }
 }

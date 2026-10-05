@@ -65,6 +65,7 @@ export async function updateSettingsAction(form: FormData) {
   const base = `/${lang}/clients/${companyId}`;
   const result = await sendFlowMutation<CompanySettings>(companyId, "PUT", `/api/v1/companies/${companyId}/settings`, {
     enforceSellerIce: form.get("enforceSellerIce") === "on",
+    enforceVatRates: form.get("enforceVatRates") === "on",
   });
   redirect(result.ok ? `${base}?settings=1#settings` : `${base}?error=${encodeURIComponent(result.errorCode)}#settings`);
 }

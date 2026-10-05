@@ -3,7 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { InvoiceForm } from "@/components/InvoiceForm";
-import { getCompany, listPartners, portalCompanyId } from "@/lib/api";
+import { getCompany, getCompanySettings, listPartners, portalCompanyId, standardVatRates } from "@/lib/api";
 import { hasLocale } from "@/lib/i18n";
 import { getDictionary } from "../../dictionaries";
 import styles from "../../portal.module.css";
@@ -28,7 +28,13 @@ export default async function NewInvoicePage({ params }: PageProps<"/[lang]/invo
   if (!companyId) {
     return <p className={styles.message} role="alert">{dict.common.devCompanyMissing}</p>;
   }
-  const [company, partners] = await Promise.all([getCompany(companyId), listPartners(companyId)]);
+  const today = todayInCasablanca();
+  const [company, partners, settings, rates] = await Promise.all([
+    getCompany(companyId),
+    listPartners(companyId),
+    getCompanySettings(companyId),
+    standardVatRates(today),
+  ]);
   if (company.kind !== "ok") {
     return <p className={styles.message} role="alert">{dict.common.apiUnreachable}</p>;
   }
@@ -58,7 +64,9 @@ export default async function NewInvoicePage({ params }: PageProps<"/[lang]/invo
         labels={n}
         seller={{ legalName: company.data.legalName, ice: company.data.ice, taxIdentifier: company.data.taxIdentifier }}
         customers={customers}
-        today={todayInCasablanca()}
+        today={today}
+        initialRates={rates}
+        enforceVatRates={settings.kind === "ok" ? settings.data.enforceVatRates : true}
       />
     </div>
   );

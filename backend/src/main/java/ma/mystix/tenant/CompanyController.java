@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import ma.mystix.shared.error.ErrorCode;
@@ -70,10 +69,14 @@ class CompanyController {
     @PutMapping("/{id}/settings")
     CompanySettings updateSettings(@RequestHeader(COMPANY) UUID caller, @PathVariable UUID id,
                                    @Valid @RequestBody SettingsRequest request) {
-        return service.updateSettings(own(caller, id), new CompanySettings(request.enforceSellerIce()));
+        CompanySettings current = service.settings(own(caller, id));
+        return service.updateSettings(id, new CompanySettings(
+                request.enforceSellerIce() != null ? request.enforceSellerIce() : current.enforceSellerIce(),
+                request.enforceVatRates() != null ? request.enforceVatRates() : current.enforceVatRates()));
     }
 
-    record SettingsRequest(@NotNull Boolean enforceSellerIce) {
+    /** Partial update: an absent setting keeps its value. */
+    record SettingsRequest(Boolean enforceSellerIce, Boolean enforceVatRates) {
     }
 
     /** Another environment's settings are reported as not found, like any foreign resource. */

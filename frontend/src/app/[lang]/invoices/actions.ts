@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getCompany, portalCompanyId, submitInvoice, type ApiErrorBody } from "@/lib/api";
+import { getCompany, portalCompanyId, standardVatRates, submitInvoice, type ApiErrorBody } from "@/lib/api";
 import { hasLocale } from "@/lib/i18n";
 
 /** What the portal form sends. Amounts stay strings: the backend parses them as BigDecimal. */
@@ -32,6 +32,11 @@ export type InvoiceDraft = {
     vatRate: string;
   }[];
 };
+
+/** Standard VAT rates in force on the issue date, for the rate picker. */
+export async function vatRatesAction(date: string): Promise<string[]> {
+  return standardVatRates(date);
+}
 
 const blank = (v: string) => (v.trim() === "" ? null : v.trim());
 /** Accepts "12,50" as typed on a French keyboard; the backend only reads "12.50". */
