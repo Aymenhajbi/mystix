@@ -545,3 +545,66 @@ export async function submitInvoice(companyId: string, body: unknown): Promise<S
     return failure("API_UNREACHABLE");
   }
 }
+
+// ---------- stock (ADR-0011) ----------
+
+export const STOCK_STATES = ["AVAILABLE", "RESERVED", "IN_TRANSIT", "QUARANTINE", "CONSIGNMENT"] as const;
+export type StockState = (typeof STOCK_STATES)[number];
+
+/** Quantities are decimals (3 places) from NUMERIC(18,3); they are displayed, never summed across items. */
+export type StockPosition = {
+  sku: string;
+  location: string;
+  states: Record<StockState, number>;
+  onHand: number;
+  availableToPromise: number;
+  updatedAt: string | null;
+};
+
+export type StockMovement = {
+  eventId: string;
+  eventType: string;
+  documentNumber: string | null;
+  sku: string;
+  location: string;
+  fromState: StockState | null;
+  toState: StockState | null;
+  quantity: number;
+  occurredAt: string;
+};
+
+export type StockAlert = {
+  eventId: string;
+  kind: "RECEIPT_DISCREPANCY" | "INVENTORY_VARIANCE";
+  sku: string;
+  location: string;
+  expected: number | null;
+  actual: number | null;
+  message: string;
+  recordedAt: string;
+};
+
+export type StockSnapshot = {
+  eventId: string;
+  documentNumber: string | null;
+  asOf: string;
+  recordedAt: string;
+  linesCompared: number;
+  linesMatched: number;
+};
+
+const stockQuery = (params: Record<string, string | undefined>) => {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v) p.set(k, v);
+  const s = p.toString();
+  return s ? `?${s}` : "";
+};
+
+export const listStockPositions = (sku?: string, location?: string) =>
+  companyGet<StockPosition[]>(`/api/v1/stock/positions${stockQuery({ sku, location })}`);
+export const listStockMovements = (sku?: string, location?: string, limit = 100) =>
+  companyGet<StockMovement[]>(`/api/v1/stock/movements${stockQuery({ sku, location, limit: String(limit) })}`);
+export const listStockAlerts = (sku?: string, location?: string, limit = 20) =>
+  companyGet<StockAlert[]>(`/api/v1/stock/alerts${stockQuery({ sku, location, limit: String(limit) })}`);
+export const listStockSnapshots = (limit = 10) =>
+  companyGet<StockSnapshot[]>(`/api/v1/stock/snapshots?limit=${limit}`);

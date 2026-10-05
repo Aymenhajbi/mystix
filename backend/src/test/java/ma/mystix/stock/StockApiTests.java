@@ -129,6 +129,14 @@ class StockApiTests {
                 line("SKU-S", Map.of("state", "QUARANTINE", "quantity", 0))));
         assertThat(again.getBody()).containsEntry("replayed", true).containsEntry("linesMatched", 1);
         assertPosition("SKU-S", Map.of("AVAILABLE", 38.0, "RESERVED", 10.0), 48.0, 38.0);
+
+        // Read side: accuracy history and the item's alerts only.
+        assertThat(list(company, "/api/v1/stock/snapshots")).anySatisfy(s -> assertThat(s)
+                .containsEntry("documentNumber", "INVRPT-S").containsEntry("linesCompared", 2)
+                .containsEntry("linesMatched", 1));
+        assertThat(list(company, "/api/v1/stock/alerts?sku=SKU-S")).isNotEmpty()
+                .allSatisfy(a -> assertThat(a).containsEntry("sku", "SKU-S"));
+        assertThat(list(other, "/api/v1/stock/snapshots")).isEmpty();
     }
 
     @Test

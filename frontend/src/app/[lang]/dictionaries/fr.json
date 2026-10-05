@@ -14,7 +14,8 @@
     "logs": "Logs",
     "flow": "Flux en direct",
     "mapping": "Mapping",
-    "clients": "Environnements clients"
+    "clients": "Environnements clients",
+    "stock": "Stock"
   },
   "top": {
     "search": "N° de facture, client, référence de clearance…",
@@ -701,5 +702,87 @@
     "ratesInForce": "Taux en vigueur le {date} selon le référentiel : {rates}.",
     "noRates": "Le référentiel TVA n'a aucun taux pour cette date : saisissez le taux.",
     "backdatedNote": "Facture antidatée (émise le {date}) : seuls les taux de TVA en vigueur à cette date sont acceptés. Elle sera signalée comme antidatée."
+  },
+  "stock": {
+    "title": "Stock",
+    "lead": "Positions par article et emplacement, sur cinq états. Le stock physique additionne disponible, réservé et quarantaine ; le stock disponible à la vente (ATP) additionne disponible et transit : le réservé en est déjà sorti.",
+    "engineNote": "Les mouvements arrivent par l'API d'événements stock (DESADV, RECADV, ORDERS, INVRPT en JSON canonique). La lecture des messages EDIFACT arrive au Lot 6.",
+    "empty": "Aucun stock pour ce périmètre. Envoyez un premier événement : POST /api/v1/stock/events.",
+    "states": {
+      "AVAILABLE": "Disponible",
+      "RESERVED": "Réservé",
+      "IN_TRANSIT": "En transit",
+      "QUARANTINE": "Quarantaine",
+      "CONSIGNMENT": "Consignation"
+    },
+    "stateHelp": {
+      "AVAILABLE": "Libre à la vente ou à la réservation",
+      "RESERVED": "Réservé par une commande, encore en entrepôt",
+      "IN_TRANSIT": "Annoncé par un avis d'expédition, pas encore reçu",
+      "QUARANTINE": "Bloqué : contrôle qualité, casse, refus",
+      "CONSIGNMENT": "Notre stock chez le client"
+    },
+    "onHand": "Stock physique",
+    "onHandFormula": "Disponible + Réservé + Quarantaine",
+    "atp": "ATP",
+    "atpLong": "Disponible à la vente (ATP)",
+    "atpFormula": "Disponible + En transit",
+    "sku": "Article",
+    "location": "Emplacement",
+    "updated": "Mis à jour",
+    "split": "Répartition",
+    "filterSku": "Article (SKU, GTIN)",
+    "filterLocation": "Emplacement",
+    "filter": "Filtrer",
+    "reset": "Tout afficher",
+    "positionsCaption": "Positions par article et emplacement",
+    "count": "{count} position(s)",
+    "open": "Ouvrir l'article {sku} à {location}",
+    "kpiPositions": "Positions",
+    "kpiPositionsSub": "articles × emplacements",
+    "kpiQuarantine": "En quarantaine",
+    "kpiQuarantineSub": "positions avec du stock bloqué",
+    "kpiAlerts": "Alertes",
+    "kpiAlertsSub": "litiges : {receipt} · écarts : {variance}",
+    "kpiAccuracy": "Exactitude d'inventaire",
+    "kpiAccuracySub": "dernier inventaire : {matched} lignes conformes sur {compared}",
+    "kpiAccuracyNone": "aucun inventaire (INVRPT) reçu",
+    "alerts": "Alertes",
+    "alertsHint": "Litiges fournisseur à la réception, écarts constatés par inventaire",
+    "noAlerts": "Aucune alerte.",
+    "alertKinds": {
+      "RECEIPT_DISCREPANCY": "Litige fournisseur",
+      "INVENTORY_VARIANCE": "Écart d'inventaire"
+    },
+    "expectedActual": "attendu {expected} · constaté {actual}",
+    "snapshots": "Inventaires (INVRPT)",
+    "snapshotsHint": "Taux d'exactitude : lignes sans écart / lignes comparées",
+    "noSnapshots": "Aucun inventaire reçu.",
+    "snapshotLine": "{document} · photographie du {asOf}",
+    "item": {
+      "back": "Stock",
+      "title": "{sku} · {location}",
+      "movements": "Mouvements du registre",
+      "movementsHint": "Registre append-only : chaque ligne vient d'un événement daté",
+      "noMovements": "Aucun mouvement.",
+      "when": "Date d'effet",
+      "event": "Événement",
+      "document": "Document",
+      "movement": "Mouvement",
+      "quantity": "Quantité",
+      "outside": "hors stock",
+      "alerts": "Alertes de l'article",
+      "notFound": "Aucune position pour cet article à cet emplacement."
+    },
+    "events": {
+      "SHIPMENT_NOTICE_IN": "Avis d'expédition reçu (DESADV)",
+      "RECEIPT": "Réception (RECADV)",
+      "ORDER": "Commande (ORDERS)",
+      "SHIPMENT_OUT": "Expédition client (DESADV)",
+      "STATUS_CHANGE": "Changement de statut (INVRPT)",
+      "ADJUSTMENT": "Ajustement (INVRPT)",
+      "SNAPSHOT": "Inventaire (INVRPT)"
+    },
+    "announcedAccepted": "annoncé {expected} · accepté {actual}"
   }
 }

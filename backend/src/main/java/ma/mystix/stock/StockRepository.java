@@ -230,16 +230,38 @@ class StockRepository {
                     String message, OffsetDateTime recordedAt) {
     }
 
-    List<AlertRow> alerts(UUID companyId, int limit) {
+    List<AlertRow> alerts(UUID companyId, String sku, String location, int limit) {
         return jdbc.sql("""
                         SELECT event_id, kind, sku, location, expected, actual, message, recorded_at FROM stock_alert
-                        WHERE company_id = :c ORDER BY recorded_at DESC, id LIMIT :limit
+                        WHERE company_id = :c AND (CAST(:sku AS VARCHAR) IS NULL OR sku = :sku)
+                          AND (CAST(:location AS VARCHAR) IS NULL OR location = :location)
+                        ORDER BY recorded_at DESC, id LIMIT :limit
                         """)
-                .param("c", companyId).param("limit", limit)
+                .param("c", companyId).param("sku", sku).param("location", location).param("limit", limit)
                 .query((rs, n) -> new AlertRow(rs.getObject("event_id", UUID.class), rs.getString("kind"),
                         rs.getString("sku"), rs.getString("location"), rs.getBigDecimal("expected"),
                         rs.getBigDecimal("actual"), rs.getString("message"),
                         rs.getObject("recorded_at", OffsetDateTime.class)))
+                .list();
+    }
+
+    /** An inventory snapshot and its accuracy (lines without variance / lines compared). */
+    record SnapshotRow(UUID eventId, String documentNumber, OffsetDateTime asOf, OffsetDateTime recordedAt,
+                       int linesCompared, int linesMatched) {
+    }
+
+    List<SnapshotRow> snapshots(UUID companyId, int limit) {
+        return jdbc.sql("""
+                        SELECT id, document_number, occurred_at, recorded_at, lines_compared, lines_matched
+                        FROM stock_event
+                        WHERE company_id = :c AND type = 'SNAPSHOT' AND lines_compared IS NOT NULL
+                        ORDER BY occurred_at DESC, recorded_at DESC LIMIT :limit
+                        """)
+                .param("c", companyId).param("limit", limit)
+                .query((rs, n) -> new SnapshotRow(rs.getObject("id", UUID.class), rs.getString("document_number"),
+                        rs.getObject("occurred_at", OffsetDateTime.class),
+                        rs.getObject("recorded_at", OffsetDateTime.class), rs.getInt("lines_compared"),
+                        rs.getInt("lines_matched")))
                 .list();
     }
 
