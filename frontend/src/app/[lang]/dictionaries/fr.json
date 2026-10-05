@@ -706,7 +706,7 @@
   "stock": {
     "title": "Stock",
     "lead": "Positions par article et emplacement, sur cinq états. Le stock physique additionne disponible, réservé et quarantaine ; le stock disponible à la vente (ATP) additionne disponible et transit : le réservé en est déjà sorti.",
-    "engineNote": "Les mouvements arrivent par l'API d'événements stock (DESADV, RECADV, ORDERS, INVRPT en JSON canonique). La lecture des messages EDIFACT arrive au Lot 6.",
+    "engineNote": "Les mouvements arrivent par l'API d'événements stock en JSON canonique, ou en EDIFACT D96A (DESADV, RECADV, ORDERS, INVRPT) : POST /api/v1/stock/edifact.",
     "empty": "Aucun stock pour ce périmètre. Envoyez un premier événement : POST /api/v1/stock/events.",
     "states": {
       "AVAILABLE": "Disponible",
