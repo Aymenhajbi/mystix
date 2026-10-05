@@ -487,6 +487,15 @@
         "BANK": "Banque",
         "OTHER": "Autre"
       }
+    },
+    "settings": {
+      "title": "Paramètres de l'environnement",
+      "hint": "Règles appliquées aux factures de ce client",
+      "enforceSellerIce": "Imposer l'identité du vendeur (recommandé)",
+      "enforceSellerIceHelp": "Le vendeur de chaque facture est cette société : un ICE vendeur absent est complété par {ice}, un ICE différent est refusé (SELLER_ICE_MISMATCH).",
+      "offWarning": "Règle désactivée : l'ICE vendeur est pris tel qu'envoyé, ou absent. À réserver à un intégrateur qui émet pour plusieurs entités.",
+      "save": "Enregistrer les paramètres",
+      "saved": "Paramètres enregistrés."
     }
   },
   "studio": {

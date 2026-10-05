@@ -29,6 +29,20 @@ class CompanyRepository {
                 .update();
     }
 
+    Optional<CompanySettings> settings(UUID id) {
+        return jdbc.sql("SELECT enforce_seller_ice FROM company WHERE id = :id")
+                .param("id", id)
+                .query((rs, n) -> new CompanySettings(rs.getBoolean("enforce_seller_ice")))
+                .optional();
+    }
+
+    int updateSettings(UUID id, CompanySettings settings) {
+        return jdbc.sql("UPDATE company SET enforce_seller_ice = :enforce WHERE id = :id")
+                .param("enforce", settings.enforceSellerIce())
+                .param("id", id)
+                .update();
+    }
+
     Optional<Company> findById(UUID id) {
         return jdbc.sql("""
                 SELECT id, ice, legal_name, tax_identifier, created_at

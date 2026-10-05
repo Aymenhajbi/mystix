@@ -24,7 +24,6 @@ import ma.mystix.shared.Sha256;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
-import ma.mystix.tenant.Company;
 import ma.mystix.tenant.CompanyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,13 +71,8 @@ public class InvoiceService {
     }
 
     public Submission submit(UUID companyId, ExchangeFlow flow, byte[] rawRequest, Invoice invoice) {
-        Company company = companies.get(companyId);
-        if (invoice.seller().ice() != null && !invoice.seller().ice().equals(company.ice().value())) {
-            throw new MystixException(ErrorCode.INVOICE_REJECTED, "Seller ICE differs from company " + companyId,
-                    List.of(new ApiError.FieldViolation("seller.ice",
-                            "must match the ICE of the company submitting the invoice")),
-                    List.of(), null);
-        }
+        // Seller identity (seller ICE = company ICE) is checked at intake, where each environment can turn it off.
+        companies.get(companyId);
 
         byte[] canonical = CanonicalJson.write(invoice);
         String canonicalSha256 = Sha256.hex(canonical);

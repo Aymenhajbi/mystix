@@ -321,6 +321,12 @@ export type Partner = {
 
 export const listPartners = (companyId: string) => companyGet<Partner[]>("/api/v1/partners", companyId);
 
+/** Environment settings; enforceSellerIce: the seller ICE of every invoice is the company ICE (default true). */
+export type CompanySettings = { enforceSellerIce: boolean };
+
+export const getCompanySettings = (companyId: string) =>
+  companyGet<CompanySettings>(`/api/v1/companies/${encodeURIComponent(companyId)}/settings`, companyId);
+
 export const listFlows = (companyId: string) => companyGet<ExchangeFlow[]>("/api/v1/flows", companyId);
 
 export const getFlow = (companyId: string, flowId: string) =>
@@ -370,7 +376,7 @@ export type MutationResult<T> = { ok: true; data: T } | { ok: false; errorCode: 
 /** Writes for the flow screens (called from server actions only). */
 export async function sendFlowMutation<T>(
   companyId: string,
-  method: "POST" | "PATCH",
+  method: "POST" | "PATCH" | "PUT",
   path: string,
   body: unknown,
 ): Promise<MutationResult<T>> {

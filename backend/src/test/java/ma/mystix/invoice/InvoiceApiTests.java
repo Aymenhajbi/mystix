@@ -552,6 +552,50 @@ class InvoiceApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void sellerIceIsTheCompanyIceUnlessTheEnvironmentTurnsTheRuleOff() {
+        UUID company = companies.register(new Ice("000000010000010"), "Environnement Vendeur SARL", null).id();
+        String fixtureSellerIce = "\"ice\": \"000000001000011\"";
+        assertThat(validRequest).contains(fixtureSellerIce);
+
+        // On by default.
+        ResponseEntity<Map> settings = http.get().uri("/api/v1/companies/{id}/settings", company)
+                .header("X-Mystix-Company-Id", company.toString()).retrieve().toEntity(Map.class);
+        assertThat(settings.getBody()).containsEntry("enforceSellerIce", true);
+
+        // A missing seller ICE is completed with the company ICE.
+        String withoutIce = withNumber("FA-SELLER-1").replace(fixtureSellerIce + ",", "");
+        ResponseEntity<byte[]> completed = submit(company, withoutIce, byte[].class);
+        assertThat(completed.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(new String(completed.getBody(), StandardCharsets.UTF_8))
+                .contains("<cbc:CompanyID>000000010000010</cbc:CompanyID>")
+                .doesNotContain("000000001000011");
+
+        // Another seller ICE is rejected, not replaced.
+        ResponseEntity<Map> mismatch = submit(company, withNumber("FA-SELLER-2"), Map.class);
+        assertThat(mismatch.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(mismatch.getBody()).containsEntry("errorCode", "SELLER_ICE_MISMATCH");
+        assertThat(fields(mismatch)).containsExactly("seller.ice");
+
+        // Another environment can neither read nor change these settings.
+        assertThat(http.put().uri("/api/v1/companies/{id}/settings", company)
+                .header("X-Mystix-Company-Id", otherCompany.toString())
+                .contentType(MediaType.APPLICATION_JSON).body(Map.of("enforceSellerIce", false))
+                .retrieve().toEntity(Map.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Turned off by the environment itself: the seller ICE is taken as sent.
+        ResponseEntity<Map> off = http.put().uri("/api/v1/companies/{id}/settings", company)
+                .header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON).body(Map.of("enforceSellerIce", false))
+                .retrieve().toEntity(Map.class);
+        assertThat(off.getBody()).containsEntry("enforceSellerIce", false);
+        ResponseEntity<byte[]> free = submit(company, withNumber("FA-SELLER-2"), byte[].class);
+        assertThat(free.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(new String(free.getBody(), StandardCharsets.UTF_8))
+                .contains("<cbc:CompanyID>000000001000011</cbc:CompanyID>");
+    }
+
+    @Test
     void statsCountSubmissionsPerEventAndStage() {
         long acceptedBefore = stat(sellerCompany, "INVOICE_ACCEPTED", "STORAGE", null);
         long mappingBefore = stat(sellerCompany, "INVOICE_REJECTED", "MAPPING", "INVOICE_REJECTED");
@@ -640,7 +684,7 @@ class InvoiceApiTests {
         ResponseEntity<Map> response = submit(otherCompany, withNumber("FA-WRONG-SELLER"), Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).containsEntry("errorCode", "INVOICE_REJECTED");
+        assertThat(response.getBody()).containsEntry("errorCode", "SELLER_ICE_MISMATCH");
         assertThat(fields(response)).containsExactly("seller.ice");
     }
 

@@ -32,6 +32,11 @@ public enum ErrorCode {
             new LocalizedText("Corrigez les champs signalés (identifiants, montants, dates) puis renvoyez la facture.",
                     "صحّح الحقول المشار إليها (المعرّفات، المبالغ، التواريخ) ثم أعد إرسال الفاتورة.")),
 
+    SELLER_ICE_MISMATCH(HttpStatus.BAD_REQUEST, Stage.VALIDATION, false,
+            new LocalizedText("L'ICE du vendeur n'est pas celui de votre société.",
+                    "ICE البائع ليس ICE شركتك."),
+            new LocalizedText("Retirez l'ICE vendeur (il sera repris de votre société) ou corrigez-le. Un intégrateur qui émet pour plusieurs entités peut désactiver cette règle dans les paramètres de l'environnement.",
+                    "احذف ICE البائع (سيؤخذ من شركتك) أو صحّحه. يمكن للمُدمِج الذي يُصدر لعدة كيانات تعطيل هذه القاعدة في إعدادات البيئة.")),
     INVOICE_RULES_VIOLATED(HttpStatus.UNPROCESSABLE_CONTENT, Stage.VALIDATION, false,
             new LocalizedText("La facture ne respecte pas les règles de la norme EN 16931.",
                     "الفاتورة لا تحترم قواعد المعيار EN 16931."),
