@@ -21,7 +21,8 @@ export async function portalCompanyId(): Promise<string | null> {
   return isUuid(configured) ? configured : null;
 }
 
-export type InvoiceStatus = "VALIDATED" | "CLEARED" | "CLEARANCE_REJECTED";
+/** PENDING_VALIDATION: backdated, waiting for the administrator (ADR-0010). */
+export type InvoiceStatus = "PENDING_VALIDATION" | "VALIDATION_REJECTED" | "VALIDATED" | "CLEARED" | "CLEARANCE_REJECTED";
 
 export type Clearance = { reference: string | null; simulated: boolean | null; at: string | null };
 
@@ -35,6 +36,8 @@ export type InvoiceSummary = {
   status: InvoiceStatus;
   clearance: Clearance;
   createdAt: string;
+  /** Issued before the day it was received (Africa/Casablanca): the VAT rates of its issue date applied. */
+  backdated: boolean;
 };
 
 export type InvoiceDetail = Omit<InvoiceSummary, "clearance"> & {
@@ -82,6 +85,10 @@ export type LogLevel = "INFO" | "WARN" | "ERROR";
 export type LogEvent =
   | "INVOICE_ACCEPTED"
   | "INVOICE_REPLAYED"
+  | "INVOICE_BACKDATED"
+  | "VAT_RATES_UNCHECKED"
+  | "INVOICE_VALIDATION_APPROVED"
+  | "INVOICE_VALIDATION_REJECTED"
   | "INVOICE_REJECTED"
   | "CLEARANCE_CLEARED"
   | "CLEARANCE_REJECTED"
@@ -321,8 +328,34 @@ export type Partner = {
 
 export const listPartners = (companyId: string) => companyGet<Partner[]>("/api/v1/partners", companyId);
 
-/** Environment settings; enforceSellerIce: the seller ICE of every invoice is the company ICE (default true). */
-export type CompanySettings = { enforceSellerIce: boolean };
+/** Environment settings, both on by default: seller ICE = company ICE (ADR-0009), VAT rates in force (ADR-0010). */
+export type CompanySettings = { enforceSellerIce: boolean; enforceVatRates: boolean };
+
+export type VatRate = {
+  id: string;
+  countryCode: string;
+  categoryCode: string;
+  ratePercent: number;
+  validFrom: string;
+  validTo: string | null;
+  legalReference: string;
+};
+
+/** Standard (S) rates in force on a date, as decimal strings ("20"), from the dated referential. */
+export async function standardVatRates(date: string, country = "MA"): Promise<string[]> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/api/v1/referential/vat-rates?country=${encodeURIComponent(country)}&date=${date}`,
+      { cache: "no-store", headers: { Accept: "application/json" }, signal: AbortSignal.timeout(5000) },
+    );
+    if (!response.ok) return [];
+    const rates = (await response.json()) as VatRate[];
+    return [...new Set(rates.filter((r) => r.categoryCode === "S").map((r) => String(Number(r.ratePercent))))];
+  } catch {
+    return [];
+  }
+}
 
 export const getCompanySettings = (companyId: string) =>
   companyGet<CompanySettings>(`/api/v1/companies/${encodeURIComponent(companyId)}/settings`, companyId);

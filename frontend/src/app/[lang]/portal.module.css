@@ -2593,3 +2593,45 @@
   font-size: 12.5px;
   line-height: 1.45;
 }
+
+/* ---------- backdated invoices waiting for validation ---------- */
+.warnPanel {
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  border-inline-start-width: 4px;
+  background: var(--warn-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.warnPanel h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: var(--warn);
+}
+
+.warnPanel p {
+  margin: 0 0 6px;
+}
+
+.warnPanel ul {
+  margin: 0 0 8px;
+  padding-inline-start: 20px;
+}
+
+.warnPanel a {
+  font-weight: 600;
+}
+
+.decision {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.btnDanger {
+  border-color: var(--crit);
+  color: var(--crit);
+}

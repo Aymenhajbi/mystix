@@ -5,12 +5,13 @@ import { notFound } from "next/navigation";
 import { FileViewer, type ViewerFile } from "@/components/FileViewer";
 import { Icon } from "@/components/Icons";
 import { LogList } from "@/components/LogList";
-import { SimulatedBadge, StatusBadge } from "@/components/StatusBadge";
+import { BackdatedBadge, SimulatedBadge, StatusBadge } from "@/components/StatusBadge";
 import { fetchArtifactText, getInvoice, listLogs, type ArtifactKind } from "@/lib/api";
 import { highlightLine, prettyJson } from "@/lib/highlight";
 import { formatAmount, formatDate, formatDateTime, hasLocale, intlTag } from "@/lib/i18n";
 import { processingSteps } from "@/lib/invoiceView";
 import { getDictionary, t } from "../../dictionaries";
+import { decideValidationAction } from "../actions";
 import styles from "../../portal.module.css";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/invoices/[id]">): Promise<Metadata> {
@@ -28,7 +29,10 @@ const fileNames: Record<ArtifactKind, string> = {
 
 export default async function InvoicePage({ params, searchParams }: PageProps<"/[lang]/invoices/[id]">) {
   const { lang, id } = await params;
-  const created = (await searchParams).created === "1";
+  const query = await searchParams;
+  const created = query.created === "1";
+  const decided = typeof query.decided === "string" ? query.decided : null;
+  const decisionError = typeof query.error === "string" ? query.error : null;
   if (!hasLocale(lang)) notFound();
   await connection();
   const dict = await getDictionary(lang);
@@ -95,8 +99,43 @@ export default async function InvoicePage({ params, searchParams }: PageProps<"/
     <div className={styles.stack}>
       {created && (
         <p className={styles.notice} role="status">
-          {d.created}
+          {invoice.status === "PENDING_VALIDATION" ? d.createdPending : d.created}
         </p>
+      )}
+      {decided && (
+        <p className={styles.notice} role="status">
+          {decided === "approved" ? d.validation.approved : d.validation.rejected}
+        </p>
+      )}
+      {decisionError && (
+        <p className={styles.message} role="alert">
+          {t(d.validation.error, { code: decisionError })}
+        </p>
+      )}
+      {invoice.status === "PENDING_VALIDATION" && (
+        <section className={styles.warnPanel} aria-labelledby="validation-title">
+          <h2 id="validation-title">{d.validation.title}</h2>
+          <p>{t(d.validation.lead, { issued: formatDate(lang, invoice.issueDate), received: formatDateTime(lang, invoice.createdAt) })}</p>
+          <form action={decideValidationAction} className={styles.form} style={{ padding: 0 }}>
+            <input type="hidden" name="lang" value={lang} />
+            <input type="hidden" name="invoiceId" value={invoice.id} />
+            <label className={styles.field}>
+              <span>{d.validation.comment}</span>
+              <textarea name="comment" maxLength={500} rows={2} />
+            </label>
+            <div className={styles.decision}>
+              <button type="submit" name="decision" value="approve" className={`${styles.btn} ${styles.btnPrimary}`}>
+                {d.validation.approve}
+              </button>
+              <button type="submit" name="decision" value="reject" className={`${styles.btn} ${styles.btnDanger}`}>
+                {d.validation.reject}
+              </button>
+              <span className={styles.muted} style={{ fontSize: 12.5 }}>
+                {d.validation.note}
+              </span>
+            </div>
+          </form>
+        </section>
       )}
       <section className={styles.panel}>
         <div className={styles.detailHead}>
@@ -106,7 +145,13 @@ export default async function InvoicePage({ params, searchParams }: PageProps<"/
               <bdi className={styles.mono}>{invoice.number}</bdi>
               <StatusBadge status={invoice.status} label={statusLabel(invoice.status)} />
               {invoice.clearance.simulated && <SimulatedBadge label={dict.common.simulatedBadge} />}
+              {invoice.backdated && <BackdatedBadge label={d.backdated} />}
             </h1>
+            {invoice.backdated && (
+              <p className={styles.formNote} style={{ margin: "4px 0 0" }}>
+                {t(d.backdatedNote, { issued: formatDate(lang, invoice.issueDate), received: formatDateTime(lang, invoice.createdAt) })}
+              </p>
+            )}
             <div className={styles.meta}>
               <span>{invoice.buyerName ?? dict.common.none}</span>
               <span>

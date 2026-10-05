@@ -296,9 +296,29 @@ export default async function ClientEnvironmentPage({ params, searchParams }: Pa
                 <small id="enforce-help">{t(c.settings.enforceSellerIceHelp, { ice: company.data.ice })}</small>
               </span>
             </div>
+            <div className={styles.check}>
+              <input
+                id="enforce-vat-rates"
+                type="checkbox"
+                name="enforceVatRates"
+                defaultChecked={settings.data.enforceVatRates}
+                aria-describedby="vat-help"
+              />
+              <span>
+                <label htmlFor="enforce-vat-rates">
+                  <b>{c.settings.enforceVatRates}</b>
+                </label>
+                <small id="vat-help">{c.settings.enforceVatRatesHelp}</small>
+              </span>
+            </div>
             {!settings.data.enforceSellerIce && (
               <p className={styles.declared} role="note">
                 {c.settings.offWarning}
+              </p>
+            )}
+            {!settings.data.enforceVatRates && (
+              <p className={styles.declared} role="note">
+                {c.settings.vatOffWarning}
               </p>
             )}
             <div className={styles.formActions}>

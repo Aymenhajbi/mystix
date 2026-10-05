@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { JournalPanel, type JournalRow } from "@/components/JournalPanel";
 import { LogList } from "@/components/LogList";
 import { INVOICE_WINDOW, listInvoices, listLogs, type InvoiceSummary, type LogEntry } from "@/lib/api";
-import { formatAmount, formatDateTime, hasLocale, intlTag, type Locale } from "@/lib/i18n";
+import { formatAmount, formatDate, formatDateTime, hasLocale, intlTag, type Locale } from "@/lib/i18n";
 import { cockpitStats, journal } from "@/lib/invoiceView";
 import { getDictionary, t, type Dictionary } from "./dictionaries";
 import styles from "./portal.module.css";
@@ -67,9 +67,22 @@ function Cockpit({
     dateTime: e.at,
     severity: e.severity,
     severityLabel: dict.status[e.status],
-    stage: e.status === "VALIDATED" ? c.stagePending : c.stageClearance,
+    stage:
+      e.status === "PENDING_VALIDATION" || e.status === "VALIDATION_REJECTED"
+        ? c.stageValidation
+        : e.status === "VALIDATED"
+          ? c.stagePending
+          : c.stageClearance,
     event: `${e.number} · ${
-      e.status === "CLEARED" ? c.eventCleared : e.status === "CLEARANCE_REJECTED" ? c.eventRejected : c.eventPending
+      e.status === "CLEARED"
+        ? c.eventCleared
+        : e.status === "CLEARANCE_REJECTED"
+          ? c.eventRejected
+          : e.status === "PENDING_VALIDATION"
+            ? c.eventToValidate
+            : e.status === "VALIDATION_REJECTED"
+              ? c.eventValidationRejected
+              : c.eventPending
     }`,
     detail: [e.buyerName, e.payableAmount ? formatAmount(lang, e.payableAmount, e.currency) : null]
       .filter(Boolean)
@@ -85,10 +98,34 @@ function Cockpit({
     { label: c.stepRejected, value: stats.rejected, tone: styles.barCrit },
     { label: c.stepPending, value: stats.pending, tone: styles.barWarn },
   ];
-  const toHandle = stats.rejected + stats.pending;
+  const toHandle = stats.rejected + stats.pending + stats.toValidate.length;
 
   return (
     <div className={styles.stack}>
+      {stats.toValidate.length > 0 && (
+        <section className={styles.warnPanel} aria-labelledby="to-validate-title">
+          <h2 id="to-validate-title">{t(c.toValidateTitle, { count: stats.toValidate.length })}</h2>
+          <p>{c.toValidateLead}</p>
+          <ul>
+            {stats.toValidate.slice(0, 5).map((i) => (
+              <li key={i.id}>
+                <Link href={`/${lang}/invoices/${i.id}`} className={styles.mono}>
+                  {i.number}
+                </Link>{" "}
+                · {t(c.toValidateItem, { issued: formatDate(lang, i.issueDate), received: formatDateTime(lang, i.createdAt) })}
+                {i.buyerName ? ` · ${i.buyerName}` : ""}
+                {i.payableAmount ? (
+                  <>
+                    {" · "}
+                    <bdi>{formatAmount(lang, i.payableAmount, i.currency)}</bdi>
+                  </>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <Link href={`/${lang}/invoices?status=toValidate`}>{c.toValidateAll}</Link>
+        </section>
+      )}
       <section className={styles.strip} aria-label={c.stripLabel}>
         <div>
           <span className={styles.lbl}>{c.invoices}</span>
@@ -115,7 +152,9 @@ function Cockpit({
         <div>
           <span className={styles.lbl}>{c.toHandle}</span>
           <span className={`${styles.big} ${toHandle > 0 ? styles.tCrit : ""}`}>{integer.format(toHandle)}</span>
-          <span className={styles.sub}>{t(c.toHandleSub, { rejected: stats.rejected, pending: stats.pending })}</span>
+          <span className={styles.sub}>
+            {t(c.toHandleSub, { rejected: stats.rejected, pending: stats.pending, toValidate: stats.toValidate.length })}
+          </span>
         </div>
         <div>
           <span className={styles.lbl}>{c.amount}</span>

@@ -24,6 +24,7 @@ import ma.mystix.shared.Sha256;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
+import ma.mystix.shared.time.TimeConfig;
 import ma.mystix.tenant.CompanyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,8 +85,12 @@ public class InvoiceService {
 
         InvoiceTotals totals = calculator.calculate(invoice);
         byte[] ubl = toUbl(invoice, totals);
+        OffsetDateTime now = OffsetDateTime.now(clock);
+        // A backdated invoice is stored and checked like any other, but waits for an administrator before clearance.
+        boolean backdated = invoice.issueDate().isBefore(now.atZoneSameInstant(TimeConfig.BUSINESS_ZONE).toLocalDate());
         StoredInvoice stored = new StoredInvoice(UUID.randomUUID(), companyId, invoice.number(), invoice.issueDate(),
-                StoredInvoice.STATUS_VALIDATED, CanonicalVersion.CURRENT, canonicalSha256, OffsetDateTime.now(clock),
+                backdated ? StoredInvoice.STATUS_PENDING_VALIDATION : StoredInvoice.STATUS_VALIDATED,
+                CanonicalVersion.CURRENT, canonicalSha256, now,
                 null, null, null, invoice.buyer().name(), invoice.currency().getCurrencyCode(),
                 totals.payableAmount(), flow.id());
         Map<ArtifactKind, byte[]> artifacts = new EnumMap<>(ArtifactKind.class);
@@ -102,7 +107,27 @@ public class InvoiceService {
         logs.invoiceAccepted(companyId, stored.id(), stored.number(),
                 "Invoice accepted: UBL 2.1 generated (" + ubl.length + " bytes), XSD valid, EN 16931 "
                         + En16931Validator.ARTEFACTS_VERSION + " compliant, stored with RAW, CANONICAL and OUT");
-        return new Submission(clear(stored, ubl), ubl, false);
+        return new Submission(backdated ? stored : clear(stored, ubl), ubl, false);
+    }
+
+    /**
+     * Administrator decision on a backdated invoice: approved, it goes to clearance; rejected, it stops there.
+     * TODO(auth): restricted to the environment administrator role (Lot 8).
+     */
+    public StoredInvoice decideValidation(UUID companyId, UUID invoiceId, boolean approve, String comment) {
+        StoredInvoice invoice = get(companyId, invoiceId);
+        String note = comment == null || comment.isBlank() ? "" : ": " + comment.strip();
+        String detail = (approve ? "Backdated invoice approved by the administrator"
+                : "Backdated invoice rejected by the administrator") + note;
+        if (!repository.decideValidation(companyId, invoiceId,
+                approve ? StoredInvoice.STATUS_VALIDATED : StoredInvoice.STATUS_VALIDATION_REJECTED, detail,
+                OffsetDateTime.now(clock))) {
+            throw new MystixException(ErrorCode.INVOICE_NOT_PENDING_VALIDATION,
+                    "Invoice " + invoiceId + " is " + invoice.status() + ", not pending validation");
+        }
+        logs.validationDecided(companyId, invoiceId, invoice.number(), approve, detail);
+        StoredInvoice decided = get(companyId, invoiceId);
+        return approve ? clear(decided, artifact(companyId, invoiceId, ArtifactKind.OUT)) : decided;
     }
 
     /** Most recent invoices of the company first. */

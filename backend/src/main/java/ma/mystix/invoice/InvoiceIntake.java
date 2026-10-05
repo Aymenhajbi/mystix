@@ -1,17 +1,22 @@
 package ma.mystix.invoice;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import ma.mystix.canonical.Invoice;
 import ma.mystix.mapping.MappingRule;
 import ma.mystix.mapping.RuleEngine;
+import ma.mystix.referential.VatReferential;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
@@ -28,22 +33,68 @@ class InvoiceIntake {
 
     private final JsonMapper json;
     private final Validator validator;
+    private final VatReferential vatRates;
 
-    InvoiceIntake(JsonMapper json, Validator validator) {
+    InvoiceIntake(JsonMapper json, Validator validator, VatReferential vatRates) {
         this.json = json;
         this.validator = validator;
-    }
-
-    Invoice read(byte[] body, List<MappingRule> rules) {
-        return read(body, rules, null);
+        this.vatRates = vatRates;
     }
 
     /**
-     * @param enforcedSellerIce the company ICE when the seller identity rule is on, else {@code null}
+     * Per-company rules applied at intake.
+     *
+     * @param enforcedSellerIce the company ICE when the seller identity rule is on (ADR-0009), else {@code null}
+     * @param checkVatRates     standard rates must be in force on the issue date (ADR-0010)
+     * @param receivedOn        day of reception (Africa/Casablanca), to explain a backdated invoice; may be null
      */
-    Invoice read(byte[] body, List<MappingRule> rules, String enforcedSellerIce) {
-        return InvoiceRequestMapper.toCanonical(validated(sellerIdentity(applyRules(parse(body), rules),
-                enforcedSellerIce)));
+    record Policy(String enforcedSellerIce, boolean checkVatRates, LocalDate receivedOn) {
+        /** Dry runs: flow rules only; stored samples already went through the company rules. */
+        static final Policy NONE = new Policy(null, false, null);
+    }
+
+    Invoice read(byte[] body, List<MappingRule> rules) {
+        return read(body, rules, Policy.NONE);
+    }
+
+    Invoice read(byte[] body, List<MappingRule> rules, Policy policy) {
+        InvoiceRequest request = validated(sellerIdentity(applyRules(parse(body), rules), policy.enforcedSellerIce()));
+        if (policy.checkVatRates()) {
+            checkVatRates(request, policy.receivedOn());
+        }
+        return InvoiceRequestMapper.toCanonical(request);
+    }
+
+    /**
+     * Each standard-rated (S) line carries a rate in force on the issue date in the seller's country. When the
+     * referential has no rate for that country and date, nothing is checked: an empty referential never blocks.
+     * A backdated invoice is checked against the rates of its issue date, as the law applies them.
+     */
+    void checkVatRates(InvoiceRequest r, LocalDate receivedOn) {
+        String country = r.seller().address().countryCode();
+        Optional<List<BigDecimal>> inForce = vatRates.standardRates(country, r.issueDate());
+        if (inForce.isEmpty()) {
+            return;
+        }
+        List<BigDecimal> rates = inForce.get();
+        String backdated = receivedOn != null && r.issueDate().isBefore(receivedOn)
+                ? "backdated invoice (issued " + r.issueDate() + ", received " + receivedOn + "): "
+                : "";
+        List<ApiError.FieldViolation> violations = new ArrayList<>();
+        for (int i = 0; i < r.lines().size(); i++) {
+            InvoiceRequest.VatRequest vat = r.lines().get(i).vat();
+            if ("S".equals(vat.category()) && rates.stream().noneMatch(x -> x.compareTo(vat.ratePercent()) == 0)) {
+                violations.add(new ApiError.FieldViolation("lines[" + i + "].vat.ratePercent", backdated
+                        + vat.ratePercent().stripTrailingZeros().toPlainString() + " % is not a standard VAT rate in force on "
+                                + r.issueDate() + " in " + country + " (in force: "
+                                + rates.stream().map(x -> x.stripTrailingZeros().toPlainString()).collect(Collectors.joining(", "))
+                                + ")"));
+            }
+        }
+        if (!violations.isEmpty()) {
+            throw new MystixException(ErrorCode.VAT_RATE_UNKNOWN, "VAT rate not in force on " + r.issueDate(),
+                    violations, List.of(), null);
+        }
     }
 
     /**
