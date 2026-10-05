@@ -47,6 +47,7 @@ Monolithe modulaire. Un package de premier niveau = un module ; un module n'acc�
 | `canonical` | Modèle canonique versionné (pur Java, sans Spring) |
 | `format.*` | Parsers, mappers, generators par format (`ubl`, `cii`, `idoc`, `edifact`, `csv`) |
 | `referential` | Référentiels datés : TVA, devises, unités, pays |
+| `stock` | Registre de mouvements, cinq états de stock, réconciliation INVRPT (ADR-0011) |
 | `clearance` | `ClearanceGateway` + implémentation **simulée** (ADR-0001) |
 | `queue` | `MessageQueue`, outbox, retry, DLQ |
 | `connector.*` | AS2, SFTP, webhooks |

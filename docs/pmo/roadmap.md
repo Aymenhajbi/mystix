@@ -17,6 +17,7 @@
 | 6 | Connecteurs : EDIFACT/EANCOM entrant, SFTP, AS2, SAP, ACK/NACK | Prévu | Lots 2 et 4 | AS2 : les 9 contrôles du test factice passent contre `tools/as2-test` via la bibliothèque retenue (ADR-0004) |
 | 7 | Mapping Studio | **Partiel** (2026-10-02) : versions de mapping par flux, test à blanc bloquant, éditeur glisser-déposer (ADR-0008). Reste : diff et rollback | Lots 1, 2 | Publication bloquée si une fixture échoue ; diff et rollback fonctionnels |
 | 8 | Plateforme de production : OTel, OIDC, Vault, sauvegardes, CI/CD | Prévu | Lots 4–5 | Restauration de sauvegarde testée ; clés privées hors base |
+| 10 | Stock : registre de mouvements, 5 états (disponible, réservé, transit, quarantaine, consignation), ATP, réconciliation INVRPT (ADR-0011) | **Partiel** (2026-10-05) : moteur et API sur événements canoniques. Reste : parseurs DESADV/RECADV/ORDERS/INVRPT (Lot 6), valorisation, écrans | Lots 1, 6 (EDIFACT) | Un snapshot INVRPT aligne le stock sans écraser les flux postérieurs ; écart tracé |
 | 9 | Adaptateur DGI réel | **Hypothèse** | Publication des spécifications DGI | Non planifiable avant publication. Jusque-là : `ClearanceGateway` simulée (ADR-0001) |
 
 ## Chemin critique proposé
