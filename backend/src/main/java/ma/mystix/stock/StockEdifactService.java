@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import ma.mystix.flow.FlowService;
 import ma.mystix.format.edifact.EdifactException;
 import ma.mystix.format.edifact.EdifactParser;
 import ma.mystix.shared.Sha256;
@@ -30,13 +31,16 @@ public class StockEdifactService {
 
     private final StockService stock;
     private final CompanyService companies;
+    private final FlowService flows;
     private final Validator validator;
     private final JdbcClient jdbc;
     private final Clock clock;
 
-    StockEdifactService(StockService stock, CompanyService companies, Validator validator, JdbcClient jdbc, Clock clock) {
+    StockEdifactService(StockService stock, CompanyService companies, FlowService flows, Validator validator,
+                        JdbcClient jdbc, Clock clock) {
         this.stock = stock;
         this.companies = companies;
+        this.flows = flows;
         this.validator = validator;
         this.jdbc = jdbc;
         this.clock = clock;
@@ -51,12 +55,22 @@ public class StockEdifactService {
                                  List<ApiError.FieldViolation> fieldErrors) {
     }
 
-    public record Receipt(String sender, String interchangeReference, int accepted, int rejected,
-                          List<MessageOutcome> messages) {
+    /**
+     * @param flowId    the client's flow the interchange came through, {@code null} when none was named
+     * @param direction direction of that flow (IN or OUT), used for DESADV messages
+     */
+    public record Receipt(String sender, String interchangeReference, UUID flowId, String direction, int accepted,
+                          int rejected, List<MessageOutcome> messages) {
     }
 
-    public Receipt receive(UUID companyId, byte[] body, String direction, String defaultLocation) {
+    /**
+     * @param flowId the client's IN or OUT flow; it must belong to the company. Its direction gives the meaning of a
+     *               DESADV (IN: despatch advice from a supplier, OUT: our despatch to a customer).
+     *               TODO(Lot 6): stock document types in the flow catalog, and an ACTIVE flow required, like invoices.
+     */
+    public Receipt receive(UUID companyId, byte[] body, UUID flowId, String defaultLocation) {
         companies.get(companyId);
+        String direction = flowId == null ? null : flows.get(companyId, flowId).direction();
         EdifactParser.Interchange interchange;
         try {
             interchange = EdifactParser.parse(body);
@@ -70,8 +84,8 @@ public class StockEdifactService {
             outcomes.add(receive(companyId, interchange, message, direction, defaultLocation));
         }
         int rejected = (int) outcomes.stream().filter(o -> "REJECTED".equals(o.status())).count();
-        return new Receipt(interchange.sender(), interchange.controlReference(), outcomes.size() - rejected, rejected,
-                outcomes);
+        return new Receipt(interchange.sender(), interchange.controlReference(), flowId, direction,
+                outcomes.size() - rejected, rejected, outcomes);
     }
 
     private MessageOutcome receive(UUID companyId, EdifactParser.Interchange interchange, EdifactParser.Message message,

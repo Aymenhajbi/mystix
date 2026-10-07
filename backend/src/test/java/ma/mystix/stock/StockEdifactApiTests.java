@@ -46,10 +46,24 @@ class StockEdifactApiTests {
 
     RestClient http;
     UUID company;
+    UUID other;
+    /** IN flow declared for supplier despatch advices; the OUT API flow comes with every new company. */
+    UUID inFlow;
+    UUID outFlow;
 
     @BeforeAll
-    void registerCompany() {
+    void registerCompanyAndFlows() {
         company = companies.register(new Ice("000000030000030"), "Entrepot EDI Synthetique SARL", null).id();
+        other = companies.register(new Ice("000000031000031"), "Autre Entrepot EDI SARL", null).id();
+        http = RestClient.builder().baseUrl("http://localhost:" + port)
+                .defaultStatusHandler(status -> true, (request, response) -> { }).build();
+        outFlow = UUID.fromString((String) flows(company).getFirst().get("id"));
+        Map<?, ?> created = http.post().uri("/api/v1/flows").header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "Avis d'expedition fournisseurs", "direction", "IN", "sourceChannel", "AS2",
+                        "sourceFormat", "UBL_2_1", "targetFormat", "IDOC_INVOIC02", "targetChannel", "SFTP"))
+                .retrieve().body(Map.class);
+        inFlow = UUID.fromString((String) created.get("id"));
     }
 
     @BeforeEach
@@ -62,31 +76,31 @@ class StockEdifactApiTests {
     @SuppressWarnings("unchecked")
     void d96aMessagesDriveTheStockFromDespatchToInventory() throws IOException {
         // DESADV from the supplier: 100 + 40 in transit at the delivery party (NAD+DP).
-        Map<String, Object> desadv = receive("desadv-in.edi", "?direction=IN").getBody();
-        assertThat(desadv).containsEntry("accepted", 1).containsEntry("rejected", 0);
+        Map<String, Object> desadv = receive("desadv-in.edi", "", inFlow).getBody();
+        assertThat(desadv).containsEntry("accepted", 1).containsEntry("rejected", 0).containsEntry("direction", "IN");
         assertThat(message(desadv)).containsEntry("status", "APPLIED").containsEntry("documentNumber", "DESADV-EDI-1");
         assertState("6111000000048", "IN_TRANSIT", 100);
 
         // RECADV: QTY+194 accepted 92, QTY+124 damaged 5, QTY+119 short 3; second line QTY+48 received 40.
-        receive("recadv.edi", "");
+        receive("recadv.edi", "", null);
         assertState("6111000000048", "AVAILABLE", 92);
         assertState("6111000000048", "QUARANTINE", 5);
         assertState("6111000000048", "IN_TRANSIT", 0);
         assertState("6111000000055", "AVAILABLE", 40);
 
         // ORDERS without a location in the message: the default location of the call is used.
-        receive("orders.edi", "?location=" + WAREHOUSE);
+        receive("orders.edi", "?location=" + WAREHOUSE, null);
         assertState("6111000000048", "RESERVED", 30);
         assertState("6111000000048", "AVAILABLE", 62);
 
         // INVRPT adjustments: INV 4501 = 1 out of accepted (7491 = 1), 2 into damaged (7491 = 2).
-        Map<String, Object> adjustment = receive("invrpt-adjustment.edi", "").getBody();
+        Map<String, Object> adjustment = receive("invrpt-adjustment.edi", "", null).getBody();
         assertThat(asMap(message(adjustment).get("result"))).containsEntry("type", "ADJUSTMENT");
         assertState("6111000000048", "AVAILABLE", 60);
         assertState("6111000000048", "QUARANTINE", 7);
 
         // INVRPT snapshot (QTY+145 / QTY+17 with INV 7491, LOC+18): 58 available counted, 2 lost.
-        Map<String, Object> snapshot = receive("invrpt-snapshot.edi", "").getBody();
+        Map<String, Object> snapshot = receive("invrpt-snapshot.edi", "", null).getBody();
         Map<String, Object> result = asMap(message(snapshot).get("result"));
         assertThat(result).containsEntry("type", "SNAPSHOT").containsEntry("linesCompared", 4)
                 .containsEntry("linesMatched", 3);
@@ -96,8 +110,11 @@ class StockEdifactApiTests {
         assertState("6111000000048", "QUARANTINE", 7);
 
         // The same interchange again: replayed, nothing applied twice.
-        Map<String, Object> again = receive("desadv-in.edi", "?direction=IN").getBody();
+        Map<String, Object> again = receive("desadv-in.edi", "", inFlow).getBody();
         assertThat(message(again)).containsEntry("status", "REPLAYED");
+        // The same interchange cannot change meaning through the OUT flow: refused, nothing applied.
+        assertThat(message(receive("desadv-in.edi", "?location=" + WAREHOUSE, outFlow).getBody()))
+                .containsEntry("status", "REJECTED").containsEntry("errorCode", "STOCK_EVENT_CONFLICT");
         assertState("6111000000048", "IN_TRANSIT", 0);
 
         // Each message is kept byte for byte, line breaks included.
@@ -111,7 +128,7 @@ class StockEdifactApiTests {
     @Test
     void eachMessageIsJudgedOnItsOwn() throws IOException {
         // Two messages, two independent outcomes: the second ORDERS carries QTY+12 instead of QTY+21.
-        Map<String, Object> receipt = receive("orders-two-messages.edi", "?location=SITE-MIX").getBody();
+        Map<String, Object> receipt = receive("orders-two-messages.edi", "?location=SITE-MIX", null).getBody();
         assertThat(receipt).containsEntry("accepted", 0).containsEntry("rejected", 2);
         // Nothing in stock at SITE-MIX: the first order is refused for insufficient stock, not silently reserved.
         List<Map<String, Object>> messages = messages(receipt);
@@ -121,12 +138,34 @@ class StockEdifactApiTests {
     }
 
     @Test
-    void aDespatchAdviceNeedsItsDirectionAndABadInterchangeIsRefusedWhole() throws IOException {
-        Map<String, Object> noDirection = receive("desadv-in.edi", "").getBody();
-        assertThat(message(noDirection)).containsEntry("status", "REJECTED")
+    void theClientsFlowGivesTheMeaningOfADespatchAdvice() throws IOException {
+        // Without a flow the despatch advice has no meaning: rejected, and the reason names the header.
+        Map<String, Object> noFlow = receive("desadv-in.edi", "", null).getBody();
+        assertThat(message(noFlow)).containsEntry("status", "REJECTED")
                 .containsEntry("errorCode", "EDIFACT_MAPPING_FAILED");
+        assertThat((String) message(noFlow).get("errorDetail")).contains("X-Mystix-Flow-Id");
 
-        ResponseEntity<Map> bad = receive("orders-bad-count.edi", "");
+        // Through the OUT flow the same structure is our despatch: reserved stock must leave (none here).
+        // Another interchange (own control reference) with the same content, through the OUT flow.
+        byte[] outbound = new String(fixture("desadv-in.edi"), StandardCharsets.ISO_8859_1)
+                .replace("DES0001", "DES9001").getBytes(StandardCharsets.ISO_8859_1);
+        Map<String, Object> out = receiveBytes(outbound, "?location=SITE-OUT", outFlow).getBody();
+        assertThat(out).containsEntry("direction", "OUT");
+        assertThat(message(out)).containsEntry("status", "REJECTED").containsEntry("errorCode", "STOCK_INSUFFICIENT");
+        assertThat((String) message(out).get("errorDetail")).contains("RESERVED");
+
+        // A flow of another client is not found.
+        ResponseEntity<Map> foreign = http.post().uri("/api/v1/stock/edifact")
+                .header("X-Mystix-Company-Id", other.toString()).header("X-Mystix-Flow-Id", inFlow.toString())
+                .contentType(MediaType.parseMediaType("application/edifact")).body(fixture("desadv-in.edi"))
+                .retrieve().toEntity(Map.class);
+        assertThat(foreign.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(foreign.getBody()).containsEntry("errorCode", "FLOW_NOT_FOUND");
+    }
+
+    @Test
+    void aBadInterchangeIsRefusedWhole() throws IOException {
+        ResponseEntity<Map> bad = receive("orders-bad-count.edi", "", null);
         assertThat(bad.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(bad.getBody()).containsEntry("errorCode", "EDIFACT_INVALID");
         assertThat(fieldOf(bad)).isEqualTo("segment 6 UNT");
@@ -134,12 +173,24 @@ class StockEdifactApiTests {
 
     // ---------- helpers ----------
 
-    private ResponseEntity<Map> receive(String fixture, String query) throws IOException {
-        return http.post().uri("/api/v1/stock/edifact" + query)
+    private ResponseEntity<Map> receive(String fixture, String query, UUID flowId) throws IOException {
+        return receiveBytes(fixture(fixture), query, flowId);
+    }
+
+    private ResponseEntity<Map> receiveBytes(byte[] body, String query, UUID flowId) {
+        var request = http.post().uri("/api/v1/stock/edifact" + query)
                 .header("X-Mystix-Company-Id", company.toString())
-                .contentType(MediaType.parseMediaType("application/edifact"))
-                .body(fixture(fixture))
-                .retrieve().toEntity(Map.class);
+                .contentType(MediaType.parseMediaType("application/edifact"));
+        if (flowId != null) {
+            request = request.header("X-Mystix-Flow-Id", flowId.toString());
+        }
+        return request.body(body).retrieve().toEntity(Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> flows(UUID companyId) {
+        return http.get().uri("/api/v1/flows").header("X-Mystix-Company-Id", companyId.toString())
+                .retrieve().body(List.class);
     }
 
     @SuppressWarnings("unchecked")
