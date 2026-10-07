@@ -72,7 +72,7 @@ export function LoginArt({ label, caption, chips }: { label: string; caption: st
     card.current?.style.setProperty("--art-b", b);
     card.current?.style.setProperty("--art-c", c);
     if (tag.current) {
-      tag.current.textContent = `№ ${String(variant.seed).padStart(4, "0")} · ${PATTERNS[variant.pattern]}`;
+      tag.current.textContent = `N° ${String(variant.seed).padStart(4, "0")} · ${PATTERNS[variant.pattern]}`;
     }
     let disposed = false;
     let cleanup: () => void = () => {};
