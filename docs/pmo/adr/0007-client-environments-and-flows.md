@@ -12,7 +12,7 @@ Chaque client de Mystix a ses propres flux : sources, formats, mappings et desti
 2. **Provisionnement** : chaque nouvelle société reçoit le flux « Factures API vers UBL 2.1 » actif (événement `CompanyRegistered`). La migration V6 crée ce flux pour les sociétés existantes et y rattache leurs factures.
 3. **Entrée d'une facture** : le flux nommé par `X-Mystix-Flow-Id`, sinon le premier flux API actif de la société. Un flux en brouillon ou en pause refuse (`FLOW_NOT_ACTIVE`).
 4. **Catalogue honnête** : les options sont marquées disponibles ou prévues (avec le lot). Un flux ne peut utiliser que des options disponibles ; le mapping est choisi d'après le couple source/cible parmi les mappings implémentés.
-5. **Console opérateur** : `GET /api/v1/admin/environments` (toutes sociétés, lecture seule) n'existe que si `mystix.admin.enabled=true`, vrai dans le profil `dev` seulement. Le portail choisit l'environnement actif par un cookie, en repli sur `MYSTIX_PORTAL_COMPANY_ID`.
+5. **Console opérateur** : `GET /api/v1/admin/environments` (toutes sociétés, lecture seule) n'existe que si `mystix.admin.enabled=true`, vrai dans le profil `dev` seulement. Le portail choisit l'environnement actif par un cookie, en repli sur `MYSTIX_PORTAL_COMPANY_ID` (remplacé par la société active de la session, ADR-0013).
 
 ## Options écartées
 | Option | Pourquoi écartée |

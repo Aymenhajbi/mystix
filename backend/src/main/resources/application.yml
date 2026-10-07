@@ -15,6 +15,13 @@ server:
     include-message: never
 
 mystix:
+  auth:
+    # Every /api/v1 call needs a session token (ADR-0013). The dev profile and tests turn it off for API tooling.
+    required: ${MYSTIX_AUTH_REQUIRED:true}
+    max-failed-attempts: 5
+    lock-duration: PT15M
+    session-lifetime: PT12H
+    idle-timeout: PT2H
   admin:
     # Cross-tenant operator endpoints (/api/v1/admin). Off by default; on in the dev profile only.
     # TODO(auth): operator role required once authentication exists (Lot 8).

@@ -2,6 +2,7 @@ package ma.mystix.tenant;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,6 +37,12 @@ public class CompanyService {
         }
         events.publishEvent(new CompanyRegistered(company));
         return company;
+    }
+
+    /** Every environment (platform operators see all of them). */
+    @Transactional(readOnly = true)
+    public List<Company> list() {
+        return repository.findAll();
     }
 
     @Transactional(readOnly = true)
