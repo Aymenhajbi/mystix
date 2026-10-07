@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,12 +49,15 @@ class InvoiceApiTests {
     String validRequest;
     UUID sellerCompany;
     UUID otherCompany;
+    /** Receives the invoices of the backdated VAT rate matrix. */
+    UUID rateCompany;
 
     @BeforeAll
     void registerCompanies() {
         // Same ICE as the seller of the reference fixture.
         sellerCompany = companies.register(new Ice("000000001000011"), "Fournisseur Synthetique SARL", null).id();
         otherCompany = companies.register(new Ice("000000003000033"), "Autre Societe Synthetique", null).id();
+        rateCompany = companies.register(new Ice("000000013000013"), "Environnement Taux SARL", null).id();
     }
 
     @BeforeEach
@@ -724,6 +729,69 @@ class InvoiceApiTests {
         return http.get().uri("/api/v1/invoices/{id}", invoiceId)
                 .header("X-Mystix-Company-Id", company.toString())
                 .retrieve().body(Map.class);
+    }
+
+    /**
+     * Backdated invoices are checked against the VAT rates in force on their issue date (V12, Grant Thornton notes
+     * on LF 2021-2026). The test clock starts on 2026-09-15: every earlier date is backdated and, when compliant,
+     * waits for the administrator; a non-compliant rate is blocked with the rates of that period.
+     */
+    @ParameterizedTest(name = "{0} at {1} % -> {2}")
+    @CsvSource({
+            // before the reform: 7, 10, 14, 20
+            "2023-06-15, 14, CONFORME",
+            "2023-06-15, 16, NON_CONFORME",
+            // 2024: 7, 8, 10, 11, 12, 13, 14, 16, 20
+            "2024-03-15, 16, CONFORME",
+            "2024-03-15, 8, CONFORME",
+            "2024-03-15, 18, NON_CONFORME",
+            "2024-03-15, 9, NON_CONFORME",
+            // 2025: 7, 9, 10, 12, 14, 15, 18, 20
+            "2025-06-15, 18, CONFORME",
+            "2025-06-15, 9, CONFORME",
+            "2025-06-15, 16, NON_CONFORME",
+            "2025-06-15, 13, NON_CONFORME",
+            // boundary of the reform: 9 % stops on 2025-12-31
+            "2025-12-31, 9, CONFORME",
+            "2026-01-01, 9, NON_CONFORME",
+            // 2026 (backdated before the test clock): 10, 20
+            "2026-01-15, 10, CONFORME",
+            "2026-01-15, 14, NON_CONFORME",
+            // issued on the day it is received: not backdated
+            "2026-09-15, 10, CONFORME",
+            "2026-09-15, 14, NON_CONFORME"
+    })
+    @SuppressWarnings("unchecked")
+    void backdatedInvoicesAreCheckedAgainstTheVatRatesOfTheirIssueDate(String issueDate, String rate, String expected) {
+        boolean backdated = issueDate.compareTo("2026-09-15") < 0;
+        String request = withNumber("FA-RATE-" + issueDate + "-" + rate)
+                .replace("\"issueDate\": \"2026-09-15\"", "\"issueDate\": \"" + issueDate + "\"")
+                .replace(FIXTURE_SELLER_ICE + ",", "")
+                .replace(RATE_TEN, "\"ratePercent\": " + rate);
+        assertThat(request).contains("\"issueDate\": \"" + issueDate + "\"").contains("\"ratePercent\": " + rate);
+
+        if ("CONFORME".equals(expected)) {
+            ResponseEntity<byte[]> accepted = submit(rateCompany, request, byte[].class);
+            assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            // Backdated: held for the administrator; same day: straight to (simulated) clearance.
+            assertThat(accepted.getHeaders().getFirst("X-Mystix-Status"))
+                    .isEqualTo(backdated ? "PENDING_VALIDATION" : "CLEARED");
+            assertThat(invoice(rateCompany, accepted.getHeaders().getFirst("X-Mystix-Invoice-Id")))
+                    .containsEntry("backdated", backdated);
+        } else {
+            ResponseEntity<Map> rejected = submit(rateCompany, request, Map.class);
+            assertThat(rejected.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(rejected.getBody()).containsEntry("errorCode", "VAT_RATE_UNKNOWN");
+            Map<String, Object> violation = ((List<Map<String, Object>>) rejected.getBody().get("fieldErrors")).getFirst();
+            assertThat(violation).containsEntry("field", "lines[2].vat.ratePercent");
+            String reason = (String) violation.get("reason");
+            assertThat(reason).contains(rate + " % is not a standard VAT rate in force on " + issueDate).contains("in force:");
+            if (backdated) {
+                assertThat(reason).startsWith("backdated invoice (issued " + issueDate);
+            } else {
+                assertThat(reason).doesNotContain("backdated");
+            }
+        }
     }
 
     @Test

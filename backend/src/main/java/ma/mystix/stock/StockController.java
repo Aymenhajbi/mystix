@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 class StockController {
 
     private static final String COMPANY = "X-Mystix-Company-Id";
+    private static final String FLOW = "X-Mystix-Flow-Id";
     private static final int MAX_LIMIT = 500;
 
     private final StockService stock;
@@ -62,16 +63,16 @@ class StockController {
      * A UN/EDIFACT D96A interchange of DESADV, RECADV, ORDERS or INVRPT messages (ADR-0012). Each message is applied
      * on its own; the response gives the outcome per message.
      *
-     * @param direction IN (from a supplier) or OUT (to a customer), needed for DESADV messages
-     * @param location  stock location used when a message names none
+     * @param flowId   the client's exchange flow ({@code X-Mystix-Flow-Id}); its direction (IN from a supplier, OUT to
+     *                 a customer) gives the meaning of a DESADV, which has the same structure both ways
+     * @param location stock location used when a message names none
      */
     @PostMapping(value = "/edifact", consumes = {"application/edifact", MediaType.TEXT_PLAIN_VALUE,
             MediaType.APPLICATION_OCTET_STREAM_VALUE}, produces = MediaType.APPLICATION_JSON_VALUE)
     StockEdifactService.Receipt edifact(@RequestHeader(COMPANY) UUID companyId, @RequestBody byte[] body,
-                                       @RequestParam(required = false) String direction,
+                                       @RequestHeader(value = FLOW, required = false) UUID flowId,
                                        @RequestParam(required = false) String location) {
-        return edifact.receive(companyId, body, direction == null ? null : direction.strip().toUpperCase(),
-                location);
+        return edifact.receive(companyId, body, flowId, location);
     }
 
     @GetMapping(value = "/positions", produces = MediaType.APPLICATION_JSON_VALUE)

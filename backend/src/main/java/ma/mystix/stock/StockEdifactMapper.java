@@ -67,7 +67,8 @@ final class StockEdifactMapper {
     }
 
     /**
-     * @param direction       IN or OUT, needed for a DESADV only (the same structure serves both ways)
+     * @param direction       direction of the client's flow (IN or OUT), needed for a DESADV only (the same structure
+     *                        serves both ways)
      * @param defaultLocation used when the message names no location
      */
     static StockEventRequest map(EdifactParser.Interchange interchange, EdifactParser.Message message,
@@ -147,7 +148,8 @@ final class StockEdifactMapper {
     private static StockEventRequest desadv(Header h, List<Line> lines, String key, String direction,
                                             String defaultLocation) {
         if (!"IN".equals(direction) && !"OUT".equals(direction)) {
-            throw new MappingException("UNH", "a DESADV needs the direction of the flow (IN from a supplier, OUT to a customer)");
+            throw new MappingException("UNH", "a DESADV needs the client's IN or OUT flow (header X-Mystix-Flow-Id): "
+                    + "IN for a despatch advice from a supplier, OUT for our despatch to a customer");
         }
         boolean in = "IN".equals(direction);
         List<StockEventRequest.Line> out = new ArrayList<>();

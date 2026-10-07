@@ -47,11 +47,17 @@ Le moteur de stock (ADR-0011) reçoit des événements canoniques. Il faut lire 
      - sinon le GLN du NAD : DP puis ST pour les réceptions, SF pour les expéditions et commandes, WH pour les inventaires ;
      - sinon l'emplacement par défaut passé à l'API.
    - **Dates sans fuseau** (formats 102, 203, 204) : lues en Africa/Casablanca, fuseau métier.
-4. **API** : `POST /api/v1/stock/edifact?direction=IN|OUT&location=…` reçoit une interchange.
+4. **API** : `POST /api/v1/stock/edifact?location=…`, avec l'en-tête `X-Mystix-Flow-Id` (amendement 1), reçoit une interchange.
    - Chaque message est appliqué dans **sa propre transaction**, et la réponse donne le résultat message par message.
    - Une erreur de syntaxe de l'interchange la refuse en entier (`EDIFACT_INVALID`, 400).
 
+## Amendement 1 — 2026-10-07 : sens du DESADV donné par le flux du client
+Décision du fondateur : le sens d'un DESADV n'est plus passé en paramètre. Il vient du **flux IN/OUT de l'environnement client**, nommé par l'en-tête `X-Mystix-Flow-Id` (comme pour les factures).
+- Flux **IN** : avis d'expédition d'un fournisseur (`SHIPMENT_NOTICE_IN`). Flux **OUT** : notre expédition vers un client (`SHIPMENT_OUT`).
+- Le flux doit appartenir à l'environnement, sinon `FLOW_NOT_FOUND` (404). Sans flux, un DESADV est refusé, avec un motif qui nomme l'en-tête ; les RECADV, ORDERS et INVRPT n'en ont pas besoin.
+- Une même interchange déjà appliquée ne peut pas changer de sens : renvoyée par l'autre flux, elle est refusée (`STOCK_EVENT_CONFLICT`).
+- Reste à faire (Lot 6) : types de document « stock » dans le catalogue des flux, et flux ACTIF exigé comme pour les factures. Aujourd'hui, seul le sens du flux est lu.
+
 ## Hypothèses à confirmer
 - Profils EANCOM des partenaires : les messages D96A EANCOM (UNH …:EAN00x) sont acceptés, sans contrôle des règles propres à EANCOM.
-- Direction d'un DESADV : elle est passée par l'API (une même structure sert aux deux sens). Le flux IN/OUT de l'environnement pourra la fournir.
 - Pas d'accusé de réception CONTRL ni APERAK à ce stade.
