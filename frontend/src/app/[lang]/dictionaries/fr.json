@@ -41,7 +41,7 @@
     "hint": "↑ ↓ pour choisir, Entrée pour ouvrir, Échap pour fermer"
   },
   "common": {
-    "devCompanyMissing": "Portail en mode développement : aucune société n'est configurée. Définissez MYSTIX_PORTAL_COMPANY_ID dans frontend/.env.local (identifiant d'une société créée via l'API), puis relancez le portail.",
+    "devCompanyMissing": "Aucun environnement client n'est rattaché à votre compte. Demandez à un administrateur de vous y donner accès.",
     "apiUnreachable": "L'API Mystix est injoignable. Vérifiez que le backend est démarré, puis rechargez la page.",
     "simulatedBadge": "Simulée",
     "none": "—",
@@ -784,5 +784,48 @@
       "SNAPSHOT": "Inventaire (INVRPT)"
     },
     "announcedAccepted": "annoncé {expected} · accepté {actual}"
+  },
+  "auth": {
+    "loginEyebrow": "Portail Mystix",
+    "loginTitle": "Connexion",
+    "loginLead": "Accédez à vos flux EDI, à vos factures électroniques et au suivi de la clearance.",
+    "setupEyebrow": "Première installation",
+    "setupTitle": "Créer le compte administrateur",
+    "setupLead": "Ce compte opérateur gère toutes les sociétés de l'installation. Cette page se ferme dès qu'il existe.",
+    "displayName": "Nom affiché",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "confirm": "Confirmer le mot de passe",
+    "show": "Afficher le mot de passe",
+    "hide": "Masquer le mot de passe",
+    "capsLock": "Verrouillage des majuscules activé.",
+    "submit": "Se connecter",
+    "setupSubmit": "Créer le compte et se connecter",
+    "submitting": "Vérification…",
+    "forgot": "Mot de passe oublié : contactez l'administrateur de votre environnement.",
+    "sessionNote": "Session de 12 h au plus, fermée après 2 h d'inactivité. Compte verrouillé 15 min après 5 échecs.",
+    "brandTag": "Mystix · EDI, facture électronique et clearance",
+    "strength": [
+      "Au moins 12 caractères",
+      "Trop court",
+      "Correct",
+      "Bon",
+      "Robuste"
+    ],
+    "errors": {
+      "PASSWORD_MISMATCH": "Les deux mots de passe ne correspondent pas.",
+      "API_UNREACHABLE": "Le serveur Mystix ne répond pas. Réessayez dans un instant.",
+      "default": "Échec de l'opération ({code})."
+    },
+    "artLabel": "Réseau d'échanges Mystix",
+    "artCaption": "Chaque échange, de la réception à la clearance, tracé à la seconde.",
+    "artChips": [
+      "UBL 2.1 · EN 16931",
+      "EDIFACT D96A",
+      "Clearance DGI simulée"
+    ],
+    "account": "Compte",
+    "operator": "Opérateur",
+    "logout": "Se déconnecter"
   }
 }

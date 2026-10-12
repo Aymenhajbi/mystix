@@ -1,6 +1,7 @@
 package ma.mystix.tenant;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,6 +46,17 @@ class CompanyRepository {
                 .param("vat", settings.enforceVatRates())
                 .param("id", id)
                 .update();
+    }
+
+    List<Company> findAll() {
+        return jdbc.sql("SELECT id, ice, legal_name, tax_identifier, created_at FROM company ORDER BY legal_name, ice")
+                .query((rs, n) -> new Company(
+                        rs.getObject("id", UUID.class),
+                        new Ice(rs.getString("ice")),
+                        rs.getString("legal_name"),
+                        rs.getString("tax_identifier"),
+                        rs.getObject("created_at", OffsetDateTime.class)))
+                .list();
     }
 
     Optional<Company> findById(UUID id) {

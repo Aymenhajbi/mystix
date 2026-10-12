@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { CommandPalette, type PaletteItem } from "@/components/CommandPalette";
 import { Wordmark } from "@/components/Icons";
 import { LocaleSwitch } from "@/components/LocaleSwitch";
 import { MobileNav, Rail } from "@/components/Rail";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
-import { fetchBackendHealth, getPortalCompany, listInvoices } from "@/lib/api";
+import { fetchBackendHealth, getMe, getPortalCompany, listInvoices } from "@/lib/api";
 import { direction, formatAmount, hasLocale, locales } from "@/lib/i18n";
+import { isPublicPath, PATH_HEADER } from "@/lib/routes";
 import { getDictionary } from "./dictionaries";
+import { logoutAction } from "./login/actions";
 import "../globals.css";
 import styles from "./portal.module.css";
 
@@ -33,6 +36,11 @@ const plexArabic = IBM_Plex_Sans_Arabic({
   display: "swap",
 });
 
+function initials(name: string) {
+  const parts = name.trim().split(/s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase() || "?";
+}
+
 export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
 }
@@ -49,6 +57,36 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   if (!hasLocale(lang)) notFound();
   await connection();
   const dict = await getDictionary(lang);
+  const htmlProps = {
+    lang,
+    dir: direction(lang),
+    className: `${plexSans.variable} ${plexMono.variable} ${plexArabic.variable}`,
+    suppressHydrationWarning: true,
+  };
+  const head = (
+    <head>
+      <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+    </head>
+  );
+
+  // Sign-in pages (ADR-0013) have their own frame and must not call the session-bound APIs.
+  const path = (await headers()).get(PATH_HEADER) ?? "";
+  if (isPublicPath(path)) {
+    return (
+      <html {...htmlProps}>
+        {head}
+        <body>
+          <a href="#main" className="skip-link">
+            {dict.nav.skip}
+          </a>
+          {children}
+        </body>
+      </html>
+    );
+  }
+
+  const me = await getMe();
+  if (!me) redirect(`/${lang}/login?next=${encodeURIComponent(path || `/${lang}`)}`);
   const [health, company, invoices] = await Promise.all([fetchBackendHealth(), getPortalCompany(), listInvoices()]);
 
   const navLabels = {
@@ -90,15 +128,8 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     health.status === "UP" ? dict.top.apiUp : health.status === "DOWN" ? dict.top.apiDown : dict.top.apiUnreachable;
 
   return (
-    <html
-      lang={lang}
-      dir={direction(lang)}
-      className={`${plexSans.variable} ${plexMono.variable} ${plexArabic.variable}`}
-      suppressHydrationWarning
-    >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
+    <html {...htmlProps}>
+      {head}
       <body>
         <a href="#main" className="skip-link">
           {dict.nav.skip}
@@ -142,6 +173,26 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
                   ariaLabel={dict.nav.switchToLabel}
                   className={styles.textButton}
                 />
+                <details className={styles.account}>
+                  <summary aria-label={`${dict.auth.account} : ${me.displayName}`}>
+                    <span className={styles.avatar} aria-hidden="true">
+                      {initials(me.displayName)}
+                    </span>
+                  </summary>
+                  <div className={styles.accountMenu}>
+                    <p className={styles.accountName}>{me.displayName}</p>
+                    <p className={styles.accountMail} dir="ltr">
+                      {me.email}
+                    </p>
+                    {me.operator && <span className={`${styles.chip} ${styles.chipNeutral}`}>{dict.auth.operator}</span>}
+                    <form action={logoutAction}>
+                      <input type="hidden" name="lang" value={lang} />
+                      <button type="submit" className={styles.logout}>
+                        {dict.auth.logout}
+                      </button>
+                    </form>
+                  </div>
+                </details>
               </div>
               <MobileNav lang={lang} labels={navLabels} />
             </header>

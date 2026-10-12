@@ -41,7 +41,8 @@ Monolithe modulaire. Un package de premier niveau = un module ; un module n'acc�
 
 | Package | Rôle |
 | --- | --- |
-| `tenant` | Sociétés (`company`), utilisateurs, rôles |
+| `tenant` | Sociétés (`company`) |
+| `auth` | Comptes, rattachements aux sociétés, sessions, filtre d'accès (ADR-0013) |
 | `invoice` | API facture : JSON → canonique → UBL 2.1, contrôles XSD et EN 16931 |
 | `message` | Messages, artefacts, machine d'états, historique |
 | `canonical` | Modèle canonique versionné (pur Java, sans Spring) |
@@ -107,7 +108,7 @@ Vérifiées le 2026-09-29 sur Windows 11 (PowerShell, depuis la racine du dépô
 | Frontend : lancer | `cd frontend; npm run dev` (http://localhost:3000, redirige vers `/fr` ou `/ar`) |
 | Logs métier (par société) | Portail `/fr/logs`, ou `GET /api/v1/logs?level=ERROR` (en-tête `X-Mystix-Company-Id`) |
 | Logs serveur | `backend/logs/mystix-backend.log` (rotation quotidienne et à 10 Mo) ; chercher le `X-Request-Id` affiché dans le portail |
-| Portail : configurer | `Copy-Item frontend\.env.example frontend\.env.local`, puis `MYSTIX_PORTAL_COMPANY_ID` = id d'une société (provisoire, avant authentification) |
+| Portail : premier compte | Sur une base vide, ouvrir `/fr/setup` : crée l'opérateur, puis la page se ferme (ADR-0013) |
 
 ## 9. Documentation
 

@@ -2,3 +2,6 @@
 mystix:
   admin:
     enabled: true
+  auth:
+    # API tooling on a developer workstation (curl with X-Mystix-Company-Id). The portal always uses sessions.
+    required: false

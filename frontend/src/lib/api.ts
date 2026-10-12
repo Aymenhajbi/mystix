@@ -1,24 +1,123 @@
 /**
- * Server-side client of the Mystix backend. Only imported by Server Components and Route Handlers:
- * the company identifier never reaches the browser.
- *
- * TODO(auth): the active client environment comes from the "mystix-company" cookie set by the environment picker,
- * or MYSTIX_PORTAL_COMPANY_ID, until authentication exists (Lot 8).
+ * Server-side client of the Mystix backend. Only imported by Server Components, Route Handlers and Server Actions:
+ * the session token and the company identifier never reach the browser. Every call carries the session token
+ * (ADR-0013); the backend derives the environment from the session.
  */
+import { cache } from "react";
 import { cookies } from "next/headers";
 
-export const COMPANY_COOKIE = "mystix-company";
+/** HttpOnly cookie holding the session token (ADR-0013); never readable by browser scripts. */
+export const SESSION_COOKIE = "mystix-session";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isUuid = (v: string | undefined | null): v is string => !!v && UUID.test(v);
 export const apiBaseUrl =
   process.env.MYSTIX_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
-/** Active client environment: the picker's cookie, else the configured default. */
+/** Every backend call carries the session token, when there is one. */
+async function backendFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const headers = new Headers(init.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return fetch(url, { ...init, headers });
+}
+
+export type SessionEnvironment = { id: string; ice: string; legalName: string };
+
+/** The signed-in user (GET /api/v1/auth/me). */
+export type Me = {
+  userId: string;
+  email: string;
+  displayName: string;
+  operator: boolean;
+  activeCompany: SessionEnvironment | null;
+  companies: SessionEnvironment[];
+  expiresAt: string;
+};
+
+/** The signed-in user, once per request; null without a valid session. */
+export const getMe = cache(async (): Promise<Me | null> => {
+  if (!(await cookies()).get(SESSION_COOKIE)?.value) return null;
+  try {
+    const response = await backendFetch(`${apiBaseUrl}/api/v1/auth/me`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(5000),
+    });
+    return response.ok ? ((await response.json()) as Me) : null;
+  } catch {
+    return null;
+  }
+});
+
+/** True until the first account exists. */
+export async function setupNeeded(): Promise<boolean | null> {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/v1/auth/setup`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    return response.ok ? ((await response.json()) as { setupNeeded: boolean }).setupNeeded : null;
+  } catch {
+    return null;
+  }
+}
+
+export type AuthResult =
+  | { ok: true; token: string; expiresAt: string }
+  | { ok: false; errorCode: string; message: { fr: string; ar: string } | null; fields: string[] };
+
+/** Sign-in or first administrator: the token comes back once, for an HttpOnly cookie. Server actions only. */
+export async function authenticate(path: "/api/v1/auth/login" | "/api/v1/auth/setup", body: unknown): Promise<AuthResult> {
+  try {
+    const response = await fetch(`${apiBaseUrl}${path}`, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15000),
+    });
+    const json = (await response.json().catch(() => null)) as
+      | { token?: string; expiresAt?: string; errorCode?: string; userMessage?: { fr: string; ar: string }; fieldErrors?: { field: string }[] }
+      | null;
+    if (response.ok && json?.token && json.expiresAt) return { ok: true, token: json.token, expiresAt: json.expiresAt };
+    return {
+      ok: false,
+      errorCode: json?.errorCode ?? "INTERNAL_ERROR",
+      message: json?.userMessage ?? null,
+      fields: (json?.fieldErrors ?? []).map((e) => e.field),
+    };
+  } catch {
+    return { ok: false, errorCode: "API_UNREACHABLE", message: null, fields: [] };
+  }
+}
+
+/** Ends the session on the server (the cookie is removed by the caller). */
+export async function endSession(): Promise<void> {
+  try {
+    await backendFetch(`${apiBaseUrl}/api/v1/auth/logout`, { method: "POST", signal: AbortSignal.timeout(5000) });
+  } catch {
+    // The cookie goes anyway; the server session expires on its own.
+  }
+}
+
+/** Switches the environment of the session; false when refused. */
+export async function switchSessionCompany(companyId: string): Promise<boolean> {
+  try {
+    const response = await backendFetch(`${apiBaseUrl}/api/v1/auth/session/company`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ companyId }),
+      signal: AbortSignal.timeout(5000),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Active client environment: always the session's (ADR-0013); none without a session. */
 export async function portalCompanyId(): Promise<string | null> {
-  const fromCookie = (await cookies()).get(COMPANY_COOKIE)?.value;
-  if (isUuid(fromCookie)) return fromCookie;
-  const configured = process.env.MYSTIX_PORTAL_COMPANY_ID?.trim();
-  return isUuid(configured) ? configured : null;
+  return (await getMe())?.activeCompany?.id ?? null;
 }
 
 /** PENDING_VALIDATION: backdated, waiting for the administrator (ADR-0010). */
@@ -57,7 +156,7 @@ export type ApiResult<T> =
 
 export async function fetchBackendHealth(): Promise<BackendHealth> {
   try {
-    const response = await fetch(`${apiBaseUrl}/actuator/health`, {
+    const response = await backendFetch(`${apiBaseUrl}/actuator/health`, {
       cache: "no-store",
       signal: AbortSignal.timeout(3000),
     });
@@ -164,7 +263,7 @@ export async function fetchLogPayload(id: string): Promise<ApiResult<ArrayBuffer
   const company = await portalCompanyId();
   if (!company) return { kind: "no-company" };
   try {
-    const response = await fetch(`${apiBaseUrl}/api/v1/logs/${encodeURIComponent(id)}/payload`, {
+    const response = await backendFetch(`${apiBaseUrl}/api/v1/logs/${encodeURIComponent(id)}/payload`, {
       cache: "no-store",
       headers: { "X-Mystix-Company-Id": company },
       signal: AbortSignal.timeout(5000),
@@ -184,7 +283,7 @@ export async function fetchArtifactText(id: string, kind: ArtifactKind): Promise
   const company = await portalCompanyId();
   if (!company) return { kind: "no-company" };
   try {
-    const response = await fetch(`${apiBaseUrl}/api/v1/invoices/${encodeURIComponent(id)}/artifacts/${kind}`, {
+    const response = await backendFetch(`${apiBaseUrl}/api/v1/invoices/${encodeURIComponent(id)}/artifacts/${kind}`, {
       cache: "no-store",
       headers: { "X-Mystix-Company-Id": company },
       signal: AbortSignal.timeout(5000),
@@ -204,7 +303,7 @@ export async function fetchInvoiceUbl(id: string): Promise<ApiResult<ArrayBuffer
   const company = await portalCompanyId();
   if (!company) return { kind: "no-company" };
   try {
-    const response = await fetch(`${apiBaseUrl}/api/v1/invoices/${encodeURIComponent(id)}/artifacts/OUT`, {
+    const response = await backendFetch(`${apiBaseUrl}/api/v1/invoices/${encodeURIComponent(id)}/artifacts/OUT`, {
       cache: "no-store",
       headers: { "X-Mystix-Company-Id": company },
       signal: AbortSignal.timeout(5000),
@@ -221,7 +320,7 @@ async function companyGet<T>(path: string, forCompany?: string): Promise<ApiResu
   const company = forCompany ?? (await portalCompanyId());
   if (!company) return { kind: "no-company" };
   try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
+    const response = await backendFetch(`${apiBaseUrl}${path}`, {
       cache: "no-store",
       headers: { "X-Mystix-Company-Id": company, Accept: "application/json" },
       signal: AbortSignal.timeout(5000),
@@ -254,7 +353,7 @@ export type Environment = {
 /** Operator list of client environments; "not-found" when the operator console is disabled. */
 export async function listEnvironments(): Promise<ApiResult<Environment[]>> {
   try {
-    const response = await fetch(`${apiBaseUrl}/api/v1/admin/environments`, {
+    const response = await backendFetch(`${apiBaseUrl}/api/v1/admin/environments`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(5000),
@@ -345,8 +444,7 @@ export type VatRate = {
 export async function standardVatRates(date: string, country = "MA"): Promise<string[]> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
   try {
-    const response = await fetch(
-      `${apiBaseUrl}/api/v1/referential/vat-rates?country=${encodeURIComponent(country)}&date=${date}`,
+    const response = await backendFetch(`${apiBaseUrl}/api/v1/referential/vat-rates?country=${encodeURIComponent(country)}&date=${date}`,
       { cache: "no-store", headers: { Accept: "application/json" }, signal: AbortSignal.timeout(5000) },
     );
     if (!response.ok) return [];
@@ -414,7 +512,7 @@ export async function sendFlowMutation<T>(
   body: unknown,
 ): Promise<MutationResult<T>> {
   try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
+    const response = await backendFetch(`${apiBaseUrl}${path}`, {
       method,
       cache: "no-store",
       headers: { "X-Mystix-Company-Id": companyId, "Content-Type": "application/json", Accept: "application/json" },
@@ -473,7 +571,7 @@ export async function sendMappingCommand(
   body?: unknown,
 ): Promise<MutationResult<MappingVersionDto> & { fields?: { field: string; reason: string }[] }> {
   try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
+    const response = await backendFetch(`${apiBaseUrl}${path}`, {
       method,
       cache: "no-store",
       headers: {
@@ -515,7 +613,7 @@ const failure = (errorCode: string): SubmitResult => ({
 /** Submits an invoice request (same contract as POST /api/v1/invoices). Server actions only. */
 export async function submitInvoice(companyId: string, body: unknown): Promise<SubmitResult> {
   try {
-    const response = await fetch(`${apiBaseUrl}/api/v1/invoices`, {
+    const response = await backendFetch(`${apiBaseUrl}/api/v1/invoices`, {
       method: "POST",
       cache: "no-store",
       headers: {

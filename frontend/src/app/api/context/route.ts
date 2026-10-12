@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { COMPANY_COOKIE, isUuid } from "@/lib/api";
+import { isUuid, switchSessionCompany } from "@/lib/api";
 
 /**
- * Selects the active client environment, then redirects.
+ * Switches the environment of the session (ADR-0013), then redirects.
  * GET /api/context?company=<uuid>&next=/fr/clients/<uuid>
- * TODO(auth): replaced by the authenticated principal's environments (Lot 8).
+ * The backend refuses an environment the user does not belong to; the page then shows the current one.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -12,14 +12,6 @@ export async function GET(request: Request) {
   const next = url.searchParams.get("next") ?? "/";
   // Only same-site relative paths: no open redirect.
   const target = next.startsWith("/") && !next.startsWith("//") ? next : "/";
-  const response = NextResponse.redirect(new URL(target, url.origin));
-  if (isUuid(company)) {
-    response.cookies.set(COMPANY_COOKIE, company, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
-  }
-  return response;
+  if (isUuid(company)) await switchSessionCompany(company);
+  return NextResponse.redirect(new URL(target, url.origin));
 }
