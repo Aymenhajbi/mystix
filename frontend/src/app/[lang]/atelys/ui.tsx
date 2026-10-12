@@ -81,15 +81,50 @@ export function Notice({ error, ok, dict }: { error?: string; ok?: string; dict:
   return null;
 }
 
-export function Head({ title, lead, children }: { title: string; lead?: string; children?: ReactNode }) {
+export function Head({
+  title,
+  lead,
+  eyebrow,
+  children,
+}: {
+  title: string;
+  lead?: string;
+  eyebrow?: string;
+  children?: ReactNode;
+}) {
   return (
     <div className={s.head}>
       <div>
+        {eyebrow && <div className={s.eyebrow}>{eyebrow}</div>}
         <h1>{title}</h1>
         {lead && <p>{lead}</p>}
       </div>
       {children && <div className={s.actions}>{children}</div>}
     </div>
+  );
+}
+
+const LIFECYCLE: WorkOrderStatus[] = ["DRAFT", "PLANNED", "RELEASED", "IN_PROGRESS", "COMPLETED", "CLOSED"];
+
+/** Work order lifecycle as a strip of modules; ON_HOLD sits on IN_PROGRESS, CANCELLED stops where it was left. */
+export function Lifecycle({ status, dict }: { status: WorkOrderStatus; dict: Dictionary }) {
+  const labels = dict.atelys.woStatus;
+  const at = status === "ON_HOLD" ? 3 : LIFECYCLE.indexOf(status);
+  return (
+    <>
+      <ol className={s.steps} aria-label={labels[status]}>
+        {LIFECYCLE.map((step, i) => (
+          <li
+            key={step}
+            className={`${s.step} ${i < at ? s.stepDone : i === at ? s.stepNow : ""}`}
+            aria-current={i === at ? "step" : undefined}
+          >
+            {labels[step]}
+          </li>
+        ))}
+      </ol>
+      {(status === "ON_HOLD" || status === "CANCELLED") && <p className={s.stepNote}>{labels[status]}</p>}
+    </>
   );
 }
 
@@ -137,5 +172,31 @@ export function ApiDown({ dict, kind }: { dict: Dictionary; kind: string }) {
     <p className={`${s.notice} ${s.noticeError}`} role="alert">
       {kind === "no-company" ? dict.atelys.common.noCompany : dict.atelys.common.apiError}
     </p>
+  );
+}
+
+/** Stock split of one product in a single bar; decorative, the figures are in the same row. */
+export function StockSplit({
+  available,
+  reserved,
+  blocked,
+  inTransit,
+}: {
+  available: number;
+  reserved: number;
+  blocked: number;
+  inTransit: number;
+}) {
+  const parts = [
+    [Math.max(available, 0), s.splitAvailable],
+    [Math.max(reserved, 0), s.splitReserved],
+    [Math.max(blocked, 0), s.splitBlocked],
+    [Math.max(inTransit, 0), s.splitTransit],
+  ] as const;
+  const total = parts.reduce((sum, [v]) => sum + v, 0);
+  return (
+    <div className={s.split} aria-hidden="true">
+      {total > 0 && parts.map(([v, cls], i) => (v > 0 ? <span key={i} className={cls} style={{ width: `${(v / total) * 100}%` }} /> : null))}
+    </div>
   );
 }

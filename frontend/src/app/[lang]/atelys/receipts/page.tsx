@@ -42,7 +42,7 @@ export default async function ReceiptsPage({ params, searchParams }: PageProps<"
 
   return (
     <>
-      <Head title={R.title} lead={R.lead}>
+      <Head eyebrow={dict.atelys.nav.warehouse} title={R.title} lead={R.lead}>
         <a href="#new" className={s.flashBtn}>
           {R.new}
         </a>

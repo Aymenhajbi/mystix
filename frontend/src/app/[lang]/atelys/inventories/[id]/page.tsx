@@ -37,7 +37,7 @@ export default async function InventoryPage({ params, searchParams }: PageProps<
         <span aria-hidden="true">/</span>
         <span aria-current="page">{c.number}</span>
       </nav>
-      <Head title={c.number} lead={I.lead}>
+      <Head eyebrow={dict.atelys.nav.warehouse} title={c.number} lead={I.lead}>
         <Badge tone={c.status === "APPROVED" ? "ok" : c.status === "SUBMITTED" ? "warn" : "accent"}>{I.status[c.status]}</Badge>
         {open && (
           <ActionForm lang={lang} path={`${api}/submit`} back={page}>

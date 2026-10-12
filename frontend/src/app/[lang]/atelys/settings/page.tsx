@@ -37,7 +37,7 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
 
   return (
     <>
-      <Head title={S.title} lead={S.lead} />
+      <Head eyebrow={dict.atelys.nav.admin} title={S.title} lead={S.lead} />
       <Notice error={one(query.error)} ok={one(query.ok)} dict={dict} />
       <div className={s.grid2}>
         <section className={pstyles.panel}>

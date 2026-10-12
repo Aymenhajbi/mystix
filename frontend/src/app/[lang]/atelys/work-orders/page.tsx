@@ -39,7 +39,7 @@ export default async function WorkOrdersPage({ params, searchParams }: PageProps
 
   return (
     <>
-      <Head title={w.title} lead={w.lead} />
+      <Head eyebrow={dict.atelys.nav.production} title={w.title} lead={w.lead} />
       <Notice error={one(query.error)} ok={one(query.ok)} dict={dict} />
       <nav className={pstyles.dirTabs} aria-label={a.common.filter} style={{ marginBottom: 14 }}>
         <Link href={base} aria-current={!status ? "page" : undefined}>

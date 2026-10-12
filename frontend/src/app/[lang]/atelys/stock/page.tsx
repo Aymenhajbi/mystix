@@ -7,7 +7,7 @@ import { hasLocale } from "@/lib/i18n";
 import { getDictionary } from "../../dictionaries";
 import pstyles from "../../portal.module.css";
 import s from "../atelys.module.css";
-import { ApiDown, Badge, Head, one, Qty, QualityBadge } from "../ui";
+import { ApiDown, Badge, Head, one, Qty, QualityBadge, StockSplit } from "../ui";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/atelys/stock">): Promise<Metadata> {
   const { lang } = await params;
@@ -34,7 +34,7 @@ export default async function AtelysStockPage({ params, searchParams }: PageProp
 
   return (
     <>
-      <Head title={a.stock.title} lead={a.stock.lead} />
+      <Head eyebrow={dict.atelys.nav.warehouse} title={a.stock.title} lead={a.stock.lead} />
       <form className={s.inlineForm} style={{ marginBottom: 16 }} role="search">
         <input name="q" defaultValue={search} placeholder={`${a.common.product}, ${a.common.lot}…`} aria-label={a.common.search} className={s.wide} />
         <select name="site" defaultValue={siteId ?? ""} aria-label={a.common.site}>
@@ -88,6 +88,9 @@ export default async function AtelysStockPage({ params, searchParams }: PageProp
                         </>
                       )}
                     </div>
+                    <div style={{ marginBlockStart: 8, maxWidth: 260 }}>
+                      <StockSplit available={p.available} reserved={p.reserved} blocked={p.blocked} inTransit={p.inTransit} />
+                    </div>
                   </td>
                   <td className={s.num}>
                     <Qty lang={lang} value={p.physical} unit={p.unit} />
@@ -110,6 +113,24 @@ export default async function AtelysStockPage({ params, searchParams }: PageProp
               ))}
             </tbody>
           </table>
+        </div>
+        <div className={`${s.legend} ${s.bodyFlush}`} style={{ flexWrap: "wrap", paddingBlockStart: 12 }}>
+          <span>
+            <i className={s.splitAvailable} />
+            {c.available}
+          </span>
+          <span>
+            <i className={s.splitReserved} />
+            {c.reserved}
+          </span>
+          <span>
+            <i className={s.splitBlocked} />
+            {c.blocked}
+          </span>
+          <span>
+            <i className={s.splitTransit} />
+            {c.inTransit}
+          </span>
         </div>
         <p className={`${s.formula} ${s.bodyFlush}`}>{a.stock.formula}</p>
       </section>

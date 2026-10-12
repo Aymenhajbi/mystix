@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import styles from "@/app/[lang]/atelys/atelys.module.css";
 import type { Dictionary } from "@/app/[lang]/dictionaries";
 import type { Locale } from "@/lib/i18n";
+import { AtelysMark } from "./AtelysMark";
 import { AtelysNav, type AtelysNavGroup } from "./AtelysNav";
 import { MystixWordmark } from "./Icons";
 import { LocaleSwitch } from "./LocaleSwitch";
@@ -57,12 +58,10 @@ export function AtelysShell({
   return (
     <div className={styles.shell}>
       <aside className={styles.side}>
-        <Link href={base} className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true">
-            A
-          </span>
+        <Link href={base} className={styles.brand} aria-label={`${a.brand} · ${a.tagline}`}>
+          <AtelysMark size={34} apex="#B57BFF" />
           <span className={styles.brandText}>
-            <span className={styles.brandName}>{a.brand}</span>
+            <span className={styles.brandName}>atelys</span>
             <span className={styles.brandTag}>{a.tagline}</span>
           </span>
         </Link>

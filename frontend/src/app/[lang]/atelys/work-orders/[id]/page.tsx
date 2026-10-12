@@ -8,7 +8,7 @@ import { hasLocale } from "@/lib/i18n";
 import { getDictionary } from "../../../dictionaries";
 import pstyles from "../../../portal.module.css";
 import s from "../../atelys.module.css";
-import { ActionForm, ApiDown, Badge, Head, Notice, num, one, pct, Qty, WorkOrderBadge, when } from "../../ui";
+import { ActionForm, ApiDown, Badge, Head, Lifecycle, Notice, num, one, pct, Qty, WorkOrderBadge, when } from "../../ui";
 
 /** Same transitions as the backend (WorkOrders.TRANSITIONS); IN_PROGRESS is entered by the first issue or report. */
 const NEXT: Record<WorkOrderStatus, WorkOrderStatus[]> = {
@@ -68,7 +68,7 @@ export default async function WorkOrderPage({ params, searchParams }: PageProps<
         <span aria-hidden="true">/</span>
         <span aria-current="page">{o.number}</span>
       </nav>
-      <Head title={`${o.number} · ${o.productName}`} lead={`${o.sku} · ${w.bom} v${o.bomVersion} · ${w.output} ${o.outputLocation}${o.productionLine ? ` · ${o.productionLine}` : ""}`}>
+      <Head eyebrow={dict.atelys.nav.production} title={`${o.number} · ${o.productName}`} lead={`${o.sku} · ${w.bom} v${o.bomVersion} · ${w.output} ${o.outputLocation}${o.productionLine ? ` · ${o.productionLine}` : ""}`}>
         <WorkOrderBadge status={o.status} dict={dict} />
         {NEXT[o.status].map((target) => (
           <ActionForm key={target} lang={lang} path={`${api}/status`} back={page}>
@@ -80,6 +80,7 @@ export default async function WorkOrderPage({ params, searchParams }: PageProps<
         ))}
       </Head>
       <Notice error={one(query.error)} ok={one(query.ok)} dict={dict} />
+      <Lifecycle status={o.status} dict={dict} />
 
       <div className={s.kpis}>
         <div className={s.kpi}>
