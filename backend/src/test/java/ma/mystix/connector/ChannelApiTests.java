@@ -39,6 +39,33 @@ class ChannelApiTests {
     @Autowired
     CompanyService companies;
 
+    /**
+     * Public certificate only, self-signed for these tests ("Mystix Test partner (fictif)"); its private key was
+     * never kept. Inline because *.pem files are ignored by git, to keep keys out of the repository.
+     */
+    static final String PARTNER_CERTIFICATE = """
+-----BEGIN CERTIFICATE-----
+MIIDMzCCAhugAwIBAgIIOEkhU0N+OiQwDQYJKoZIhvcNAQEMBQAwSDELMAkGA1UE
+BhMCTUExEjAQBgNVBAoTCVN5bnRoZXRpYzElMCMGA1UEAxMcTXlzdGl4IFRlc3Qg
+cGFydG5lciAoZmljdGlmKTAeFw0yNjEwMTIyMDM2MDlaFw0zNjEwMDkyMDM2MDla
+MEgxCzAJBgNVBAYTAk1BMRIwEAYDVQQKEwlTeW50aGV0aWMxJTAjBgNVBAMTHE15
+c3RpeCBUZXN0IHBhcnRuZXIgKGZpY3RpZikwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQCLXq1cep4osy8QlR+3SwsCrvibWDklQHtM5iSIa+wevCMDeU/u
+M7yEr2yPP3fIdkJaeDftNQ6cscY7NCn209XmdsEqJ/s42X2WD0tmPjSDeylVCAP4
+2gHWZP+FVsZ2Wf9bWsQTrr/1tNWvuL02vEpeQIAtiCJ3NS+9hQPZLK8nzlEZG22V
+8k31vEvA2JUyxOfoxj6wP+clKbW9VwyQvlkNZ+TT/WZN4qj4dLRyfSeuiLmY9jpJ
+lbQ57biEbLaMT2Z9U/xw45tF/3sIkIBm8okBeD9XaQY14F4XXfFbWLtkVnKIFCLi
+b66SAPciGcQweasfxufutjecGLe3iiijPiOHAgMBAAGjITAfMB0GA1UdDgQWBBSM
+Ds2ZEzyZb5EEXrEkc6WaTJx2djANBgkqhkiG9w0BAQwFAAOCAQEATBfK7yrO4r/8
+qVkAAh6PNW3aBQAO7UghteoaDelPaBRu7mrxkhnFqf5Ij21w1bLM49aA3VqUxHRF
+xJ5b6s5ZPrunJNVz/SfKLY1qNEllXWBRPfARua83NqtRigEfPEt6x7pFyMhBThq6
+hltg/muNWJEepnSzJ0lfFDxG755uN2gA9C5SEzUVwSktQSRUdHvB05FJOoTS5cH/
+45v7wxfUjdhrs/cabmUzBUBOCx+Ea6IFaktAPpL5dCLi6shcnYFESIaJY7Hb8ITn
+ynoymbPOvfWU+xuzRi/PqnAbpPzO6pWWa55J9Gafr2NH4DaeS00+BC/thRtL/53m
+ZZWhQgmhmg==
+-----END CERTIFICATE-----
+            """;
+
     RestClient http;
     UUID company;
     UUID other;
@@ -131,6 +158,52 @@ class ChannelApiTests {
         assertThat(send(other, "DELETE", "/api/v1/channels/" + id, null).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(send(company, "GET", "/api/v1/channels/" + id, null).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void publicCertificatesAreReadAndPrivateKeysRefused() {
+        String pem = PARTNER_CERTIFICATE;
+        String id = (String) send(company, "POST", "/api/v1/channels", Map.of(
+                "name", "AS2 certificats", "protocol", "AS2", "direction", "IN",
+                "settings", Map.of("localAs2Id", "MYSTIX", "partnerAs2Id", "PARTENAIRE"))).getBody().get("id");
+        String base = "/api/v1/channels/" + id + "/certificates";
+
+        ResponseEntity<Map> added = send(company, "POST", base, Map.of("role", "PARTNER", "certificate", pem));
+        assertThat(added.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat((String) added.getBody().get("subject")).contains("Mystix Test partner (fictif)");
+        assertThat((String) added.getBody().get("sha256Fingerprint")).matches("^([0-9A-F]{2}:){31}[0-9A-F]{2}$");
+        assertThat(added.getBody()).containsEntry("keyAlgorithm", "RSA").containsEntry("keySize", 2048);
+        assertThat(send(company, "POST", base, Map.of("role", "PARTNER", "certificate", pem)).getBody()
+                .get("errorCode")).isEqualTo("CERTIFICATE_DUPLICATE");
+
+        // A private key never gets in, even next to a valid certificate.
+        String withKey = pem + "-----BEGIN PRIVATE KEY-----\nMIIBVQ==\n-----END PRIVATE KEY-----\n";
+        assertThat(send(company, "POST", base, Map.of("role", "OWN", "certificate", withKey)).getBody()
+                .get("errorCode")).isEqualTo("CERTIFICATE_PRIVATE_KEY_REFUSED");
+        assertThat(send(company, "POST", base, Map.of("role", "OWN", "certificate", "not a certificate")).getBody()
+                .get("errorCode")).isEqualTo("CERTIFICATE_INVALID");
+
+        assertThat(list(company, base)).hasSize(1);
+        assertThat(list(company, "/api/v1/channels/certificates")).extracting(c -> c.get("channelId")).contains(id);
+        assertThat(list(other, "/api/v1/channels/certificates")).extracting(c -> c.get("channelId"))
+                .doesNotContain(id);
+        assertThat(send(other, "GET", base, null).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Deleting the channel removes its certificates.
+        send(company, "DELETE", "/api/v1/channels/" + id, null);
+        assertThat(list(company, "/api/v1/channels/certificates")).extracting(c -> c.get("channelId"))
+                .doesNotContain(id);
+    }
+
+    @Test
+    void catalogGroupsTheParameters() {
+        Map catalog = http.get().uri("/api/v1/channels/catalog").retrieve().body(Map.class);
+        List<Map> protocols = (List<Map>) catalog.get("protocols");
+        Map sftp = protocols.stream().filter(p -> "SFTP".equals(p.get("code"))).findFirst().orElseThrow();
+        Map<String, String> groups = new java.util.HashMap<>();
+        ((List<Map>) sftp.get("fields")).forEach(f -> groups.put((String) f.get("key"), (String) f.get("group")));
+        assertThat(groups).containsEntry("host", "CONNECTION").containsEntry("inboundDirectory", "FILES")
+                .containsEntry("hostKeyFingerprint", "SECURITY").containsEntry("archiveDirectory", "ADVANCED");
     }
 
     private List<Map> list(UUID tenant, String uri) {

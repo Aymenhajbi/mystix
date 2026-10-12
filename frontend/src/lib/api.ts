@@ -523,7 +523,11 @@ export function specRows(spec: MappingSpec): LineageRow[] {
   }));
 }
 
-export type MutationResult<T> = { ok: true; data: T } | { ok: false; errorCode: string };
+export type FieldError = { field: string; reason: string };
+
+export type MutationResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; errorCode: string; fieldErrors?: FieldError[] };
 
 /** Writes for the flow screens (called from server actions only). */
 export async function sendFlowMutation<T>(
@@ -540,8 +544,8 @@ export async function sendFlowMutation<T>(
       body: method === "DELETE" ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(5000),
     });
-    const json = (await response.json().catch(() => null)) as (T & { errorCode?: string }) | null;
-    if (!response.ok) return { ok: false, errorCode: json?.errorCode ?? "INTERNAL_ERROR" };
+    const json = (await response.json().catch(() => null)) as (T & { errorCode?: string; fieldErrors?: FieldError[] }) | null;
+    if (!response.ok) return { ok: false, errorCode: json?.errorCode ?? "INTERNAL_ERROR", fieldErrors: json?.fieldErrors ?? [] };
     return { ok: true, data: json as T };
   } catch {
     return { ok: false, errorCode: "API_UNREACHABLE" };

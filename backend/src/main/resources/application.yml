@@ -38,6 +38,11 @@ mystix:
     # Cross-tenant operator endpoints (/api/v1/admin). Off by default; on in the dev profile only.
     # TODO(auth): operator role required once authentication exists (Lot 8).
     enabled: false
+  connector:
+    as2:
+      # Public URL where partners send AS2 messages to Mystix, shown on the exchange sheet. Empty until the AS2
+      # transport is deployed (Lot 6): the sheet then says the URL is to be confirmed.
+      inbound-url: ${MYSTIX_AS2_INBOUND_URL:}
   queue:
     # Work queue in PostgreSQL (ADR-0003). One process or several: SKIP LOCKED and the per-lane lock keep them apart.
     worker-enabled: ${MYSTIX_QUEUE_WORKER_ENABLED:true}

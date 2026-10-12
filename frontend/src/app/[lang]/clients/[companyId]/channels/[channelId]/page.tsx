@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { ChannelEditScreen } from "@/components/channels/ChannelScreens";
+import { ChannelDetailScreen } from "@/components/channels/ChannelScreens";
 import { getCompany, isUuid } from "@/lib/api";
 import { hasLocale } from "@/lib/i18n";
 import { getDictionary } from "../../../../dictionaries";
@@ -33,7 +33,7 @@ export default async function Page({ params, searchParams }: Params) {
     </nav>
   );
   return (
-    <ChannelEditScreen
+    <ChannelDetailScreen
       lang={lang}
       dict={dict}
       companyId={companyId}
