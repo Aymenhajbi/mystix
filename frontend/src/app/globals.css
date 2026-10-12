@@ -162,3 +162,30 @@ a {
     animation: none !important;
   }
 }
+
+/*
+ * Atelys (ADR-0014): production and warehouses, powered by Mystix. Same tokens, flash orange accent.
+ * Brand fill #FF5A1F carries dark text or white marks only at large sizes; text accents use darker or lighter
+ * shades that keep 4.5:1 on their surface.
+ */
+body.atelys {
+  --accent: #c2410c;
+  --accent-soft: #fff1e8;
+  --accent-text: #ffffff;
+  --atelys-flash: #ff5a1f;
+  --atelys-flash-ink: #1c0a02;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body.atelys {
+    --accent: #ff8a4c;
+    --accent-soft: #2e1a10;
+    --accent-text: #1c0a02;
+  }
+}
+
+:root[data-theme="dark"] body.atelys {
+  --accent: #ff8a4c;
+  --accent-soft: #2e1a10;
+  --accent-text: #1c0a02;
+}

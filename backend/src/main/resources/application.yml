@@ -4,6 +4,13 @@ spring:
     name: mystix-backend
   flyway:
     locations: classpath:db/migration
+  datasource:
+    hikari:
+      # Sized for the measured load (docs/pmo/plan-debit.md): saturation came from CPU at 8 to 16 concurrent calls,
+      # so a pool larger than the cores only queues work in PostgreSQL. Override per deployment if needed.
+      maximum-pool-size: ${MYSTIX_DB_POOL_SIZE:16}
+      minimum-idle: 4
+      connection-timeout: 5000
   mvc:
     problemdetails:
       enabled: false

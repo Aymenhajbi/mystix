@@ -9,6 +9,8 @@ Mystix est une plateforme marocaine d'**intégration EDI**, de **facturation él
 Elle reçoit des documents métier (IDoc SAP, EDIFACT/EANCOM, XML, CSV/Excel, saisie portail), les valide, les transforme
 et les émet (UBL 2.1, CII, EANCOM) vers des partenaires (AS2, SFTP, API) et vers la DGI.
 
+Atelys (ADR-0014), « powered by Mystix », ajoute la gestion de production (GPAO) et d'entrepôts (WMS) sur la même plateforme.
+
 Utilisateurs : TPE/PME via un portail web, grands comptes et éditeurs via API et connecteurs, intégrateurs via le Mapping Studio.
 
 ## 2. Stack (imposée, ne pas proposer d'alternative)
@@ -49,6 +51,8 @@ Monolithe modulaire. Un package de premier niveau = un module ; un module n'acc�
 | `format.*` | Parsers, mappers, generators par format (`ubl`, `cii`, `idoc`, `edifact`, `csv`) |
 | `referential` | Référentiels datés : TVA, devises, unités, pays |
 | `stock` | Registre de mouvements, cinq états de stock, réconciliation INVRPT (ADR-0011) |
+| `wms` | Atelys : référentiels, lots, registre et soldes, réservations, réceptions, transferts, inventaires, expéditions (ADR-0014) |
+| `gpao` | Atelys : nomenclatures, ordres de fabrication, consommations, déclarations, résidus, tableau de bord (ADR-0014) |
 | `clearance` | `ClearanceGateway` + implémentation **simulée** (ADR-0001) |
 | `queue` | `MessageQueue`, outbox, retry, DLQ |
 | `connector.*` | AS2, SFTP, webhooks |
@@ -108,6 +112,7 @@ Vérifiées le 2026-09-29 sur Windows 11 (PowerShell, depuis la racine du dépô
 | Frontend : lancer | `cd frontend; npm run dev` (http://localhost:3000, redirige vers `/fr` ou `/ar`) |
 | Logs métier (par société) | Portail `/fr/logs`, ou `GET /api/v1/logs?level=ERROR` (en-tête `X-Mystix-Company-Id`) |
 | Logs serveur | `backend/logs/mystix-backend.log` (rotation quotidienne et à 10 Mo) ; chercher le `X-Request-Id` affiché dans le portail |
+| Atelys : données de démo | En profil dev : `POST /api/v1/atelys/demo` avec l'en-tête `X-Mystix-Company-Id` (données fictives) |
 | Portail : premier compte | Sur une base vide, ouvrir `/fr/setup` : crée l'opérateur, puis la page se ferme (ADR-0013) |
 
 ## 9. Documentation
