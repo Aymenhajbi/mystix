@@ -868,7 +868,8 @@
       "settings": "الإعدادات",
       "production": "الإنتاج",
       "warehouse": "المخزون والمستودعات",
-      "admin": "الإدارة"
+      "admin": "الإدارة",
+      "channels": "القنوات"
     },
     "common": {
       "save": "حفظ",
@@ -1215,5 +1216,113 @@
       "API_UNREACHABLE": "واجهة Mystix لا تستجيب.",
       "default": "فشلت العملية ({code})."
     }
+  },
+  "channels": {
+    "title": "قنوات الاتصال",
+    "lead": "اتصالات AS2 وSFTP وFTP وFTPS وHTTPS وwebhook لهذه البيئة. إعداد واحد مشترك بين Mystix وAtelys.",
+    "transportNote": "يسجّل Mystix الإعداد ويتحقق منه؛ فتح اتصالات AS2 وSFTP وFTP يأتي مع الدفعة 6.",
+    "add": "قناة جديدة",
+    "edit": "تعديل القناة",
+    "empty": "لا توجد قناة مُعدّة لهذه البيئة.",
+    "created": "تم إنشاء القناة.",
+    "saved": "تم حفظ القناة.",
+    "deleted": "تم حذف القناة.",
+    "back": "كل القنوات",
+    "cols": {
+      "name": "الاسم",
+      "protocol": "البروتوكول",
+      "direction": "الاتجاه",
+      "endpoint": "العنوان",
+      "apps": "تستخدمها",
+      "status": "الحالة",
+      "updated": "عُدّلت في"
+    },
+    "directions": {
+      "IN": "استقبال",
+      "OUT": "إرسال",
+      "BOTH": "الاتجاهان"
+    },
+    "statuses": {
+      "DRAFT": "مسودة",
+      "ACTIVE": "نشطة",
+      "DISABLED": "معطّلة"
+    },
+    "protocolHints": {
+      "AS2": "AS2 (RFC 4130): S/MIME موقّع ومشفّر، وإشعار استلام MDN.",
+      "SFTP": "SFTP: عبر SSH، ويُفضّل المفتاح الخاص، مع بصمة مفتاح الخادم.",
+      "FTP": "FTP: غير مشفّر، للشبكات الخاصة فقط؛ الوضع الثنائي لملفات EDI.",
+      "FTPS": "FTPS: FTP عبر TLS، صريح (المنفذ 21) أو ضمني (المنفذ 990).",
+      "HTTPS": "HTTPS: استدعاء واجهة برمجية لدى الشريك.",
+      "WEBHOOK": "Webhook: إشعار بالأحداث عبر HTTPS."
+    },
+    "form": {
+      "general": "القناة",
+      "name": "الاسم",
+      "protocol": "البروتوكول",
+      "direction": "الاتجاه",
+      "partner": "الشريك",
+      "noPartner": "لا أحد (قناة مشتركة)",
+      "status": "الحالة",
+      "apps": "تستخدمها",
+      "mystix": "Mystix (تدفقات EDI والفواتير)",
+      "atelys": "Atelys (الإنتاج والمستودعات)",
+      "settings": "إعدادات البروتوكول",
+      "security": "الأمان",
+      "credentialRef": "مرجع السر",
+      "credentialHelp": "اسم المدخل في الخزنة (كلمة مرور أو مفتاح خاص أو شهادة)، مثل vault:sftp/fournisseur. لا يُدخل السر نفسه هنا أبداً.",
+      "credentialNeeded": "إلزامي لتفعيل هذه القناة.",
+      "defaultValue": "افتراضياً: {value}",
+      "yes": "نعم",
+      "no": "لا",
+      "save": "حفظ",
+      "create": "إنشاء القناة",
+      "delete": "حذف القناة",
+      "deleteConfirm": "حذف هذه القناة نهائياً؟ يجب إعادة إعداد التدفقات التي تستخدمها."
+    },
+    "fields": {
+      "host": "المضيف",
+      "port": "المنفذ",
+      "username": "المستخدم",
+      "inboundDirectory": "مجلد الاستقبال",
+      "outboundDirectory": "مجلد الإيداع",
+      "filePattern": "نمط الملفات",
+      "pollSeconds": "الفحص الدوري (ثوانٍ)",
+      "afterDownload": "بعد القراءة",
+      "archiveDirectory": "مجلد الأرشيف",
+      "authMethod": "المصادقة",
+      "hostKeyFingerprint": "بصمة مفتاح الخادم",
+      "passiveMode": "الوضع السلبي",
+      "transferMode": "وضع النقل",
+      "tlsMode": "TLS",
+      "url": "الرابط",
+      "localAs2Id": "AS2-From (معرّفنا)",
+      "partnerAs2Id": "AS2-To (معرّف الشريك)",
+      "signing": "التوقيع",
+      "encryption": "التشفير",
+      "compression": "الضغط",
+      "mdn": "إشعار MDN",
+      "mdnSigned": "MDN موقّع",
+      "asyncMdnUrl": "رابط MDN غير المتزامن",
+      "partnerCertificateRef": "مرجع شهادة الشريك",
+      "method": "الطريقة",
+      "authType": "المصادقة",
+      "contentType": "نوع المحتوى",
+      "events": "الأحداث"
+    },
+    "errors": {
+      "VALIDATION_FAILED": "إعدادات غير صالحة: تحقّق من الحقول الإلزامية للبروتوكول.",
+      "CHANNEL_NAME_TAKEN": "توجد قناة بنفس الاسم.",
+      "CHANNEL_INCOMPLETE": "لا يمكن تفعيل هذه القناة دون مرجع السر.",
+      "CHANNEL_NOT_FOUND": "القناة غير موجودة.",
+      "PARTNER_NOT_FOUND": "الشريك غير موجود.",
+      "AUTH_FORBIDDEN": "وحده مسؤول البيئة يمكنه تعديل القنوات.",
+      "default": "تعذّر حفظ القناة ({code})."
+    },
+    "summary": "المجموع: {count} · النشطة: {active}",
+    "manage": "إدارة القنوات"
+  },
+  "transition": {
+    "toAtelys": "فتح Atelys",
+    "toMystix": "العودة إلى Mystix"
   }
 }

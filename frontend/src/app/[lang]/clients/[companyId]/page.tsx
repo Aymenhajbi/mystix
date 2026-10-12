@@ -16,6 +16,7 @@ import {
   type FlowDirection,
   type Partner,
 } from "@/lib/api";
+import { channelEndpoint, channelsApi } from "@/lib/channels";
 import { formatDateTime, hasLocale, intlTag, type Locale } from "@/lib/i18n";
 import { getDictionary, t, type Dictionary } from "../../dictionaries";
 import styles from "../../portal.module.css";
@@ -98,13 +99,14 @@ export default async function ClientEnvironmentPage({ params, searchParams }: Pa
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
   const partnerSaved = query.partner === "1";
   const settingsSaved = query.settings === "1";
-  const [company, flows, partners, environments, active, settings] = await Promise.all([
+  const [company, flows, partners, environments, active, settings, channels] = await Promise.all([
     getCompany(companyId),
     listFlows(companyId),
     listPartners(companyId),
     listEnvironments(),
     portalCompanyId(),
     getCompanySettings(companyId),
+    channelsApi.list(companyId),
   ]);
   if (company.kind === "not-found") notFound();
   if (company.kind !== "ok" || flows.kind !== "ok" || partners.kind !== "ok") {
@@ -270,6 +272,44 @@ export default async function ClientEnvironmentPage({ params, searchParams }: Pa
             </button>
           </div>
         </form>
+      </section>
+
+      <section className={styles.panel} aria-labelledby="channels-title" id="channels">
+        <div className={styles.panelHead}>
+          <h2 id="channels-title">{dict.channels.title}</h2>
+          <span className={styles.hint}>
+            {channels.kind === "ok"
+              ? dict.channels.summary
+                  .replace("{count}", String(channels.data.length))
+                  .replace("{active}", String(channels.data.filter((ch) => ch.status === "ACTIVE").length))
+              : dict.common.apiUnreachable}
+          </span>
+          <div className={styles.right}>
+            <Link href={`/${lang}/clients/${companyId}/channels`} className={styles.btn}>
+              {dict.channels.manage}
+            </Link>
+          </div>
+        </div>
+        {channels.kind === "ok" && channels.data.length > 0 ? (
+          <ul className={styles.partnerList}>
+            {channels.data.map((ch) => (
+              <li key={ch.id}>
+                <span className={`${styles.chip} ${styles.chipNeutral}`}>{ch.protocol}</span>
+                <Link href={`/${lang}/clients/${companyId}/channels/${ch.id}`}>
+                  <b>{ch.name}</b>
+                </Link>
+                <span className={styles.muted} style={{ fontSize: 12.5 }}>
+                  {dict.channels.directions[ch.direction]} · {dict.channels.statuses[ch.status]}
+                </span>
+                <span className={styles.partnerIds} dir="ltr">
+                  {channelEndpoint(ch)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.empty}>{dict.channels.empty}</p>
+        )}
       </section>
 
       {settings.kind === "ok" && (

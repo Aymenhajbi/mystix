@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import styles from "@/app/[lang]/atelys/atelys.module.css";
 import type { Dictionary } from "@/app/[lang]/dictionaries";
 import type { Locale } from "@/lib/i18n";
+import { AppArrival, AppSwitchLink } from "./AppSwitch";
 import { AtelysMark } from "./AtelysMark";
 import { AtelysNav, type AtelysNavGroup } from "./AtelysNav";
 import { MystixWordmark } from "./Icons";
@@ -51,12 +52,14 @@ export function AtelysShell({
       title: a.nav.admin,
       items: [
         { href: `${base}/traceability`, label: a.nav.traceability, icon: "traceability" },
+        { href: `${base}/channels`, label: a.nav.channels, icon: "channels" },
         { href: `${base}/settings`, label: a.nav.settings, icon: "settings" },
       ],
     },
   ];
   return (
     <div className={styles.shell}>
+      <AppArrival app="atelys" />
       <aside className={styles.side}>
         <Link href={base} className={styles.brand} aria-label={`${a.brand} · ${a.tagline}`}>
           <AtelysMark size={34} apex="#B57BFF" />
@@ -75,10 +78,16 @@ export function AtelysShell({
         <header className={styles.top}>
           {tenant && <span className={styles.tenant}>{tenant}</span>}
           <span className={styles.spacer} />
-          <Link href={`/${lang}`} className={styles.switch} aria-label={`${a.switchLabel} : ${a.switchToMystix}`}>
+          <AppSwitchLink
+            href={`/${lang}`}
+            to="mystix"
+            label={dict.transition.toMystix}
+            className={styles.switch}
+            ariaLabel={`${a.switchLabel} : ${a.switchToMystix}`}
+          >
             <span className={styles.switchDot} aria-hidden="true" />
             {a.switchToMystix}
-          </Link>
+          </AppSwitchLink>
           <ThemeToggle label={dict.top.theme} names={dict.top.themeNames} />
           <LocaleSwitch current={lang} label={dict.nav.switchTo} ariaLabel={dict.nav.switchToLabel} className={styles.switch} />
           {account}

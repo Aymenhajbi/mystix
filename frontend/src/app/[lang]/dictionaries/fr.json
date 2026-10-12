@@ -868,7 +868,8 @@
       "settings": "Paramètres",
       "production": "Production",
       "warehouse": "Stocks et entrepôts",
-      "admin": "Administration"
+      "admin": "Administration",
+      "channels": "Canaux"
     },
     "common": {
       "save": "Enregistrer",
@@ -1215,5 +1216,113 @@
       "API_UNREACHABLE": "L'API Mystix ne répond pas.",
       "default": "Échec de l'opération ({code})."
     }
+  },
+  "channels": {
+    "title": "Canaux de communication",
+    "lead": "Connexions AS2, SFTP, FTP, FTPS, HTTPS et webhooks de cet environnement. Une seule configuration, partagée par Mystix et Atelys.",
+    "transportNote": "Mystix enregistre et contrôle la configuration ; l'ouverture des connexions AS2, SFTP et FTP arrive avec le lot 6.",
+    "add": "Nouveau canal",
+    "edit": "Modifier le canal",
+    "empty": "Aucun canal configuré pour cet environnement.",
+    "created": "Canal créé.",
+    "saved": "Canal enregistré.",
+    "deleted": "Canal supprimé.",
+    "back": "Tous les canaux",
+    "cols": {
+      "name": "Nom",
+      "protocol": "Protocole",
+      "direction": "Sens",
+      "endpoint": "Adresse",
+      "apps": "Utilisé par",
+      "status": "Statut",
+      "updated": "Modifié le"
+    },
+    "directions": {
+      "IN": "Réception",
+      "OUT": "Émission",
+      "BOTH": "Les deux"
+    },
+    "statuses": {
+      "DRAFT": "Brouillon",
+      "ACTIVE": "Actif",
+      "DISABLED": "Désactivé"
+    },
+    "protocolHints": {
+      "AS2": "AS2 (RFC 4130) : S/MIME signé et chiffré, accusé MDN.",
+      "SFTP": "SFTP : SSH, clé privée de préférence, empreinte de la clé du serveur.",
+      "FTP": "FTP : en clair, à réserver aux réseaux privés ; mode binaire pour l'EDI.",
+      "FTPS": "FTPS : FTP sur TLS, explicite (port 21) ou implicite (port 990).",
+      "HTTPS": "HTTPS : appel d'une API du partenaire.",
+      "WEBHOOK": "Webhook : notification HTTPS d'événements."
+    },
+    "form": {
+      "general": "Canal",
+      "name": "Nom",
+      "protocol": "Protocole",
+      "direction": "Sens",
+      "partner": "Partenaire",
+      "noPartner": "Aucun (canal commun)",
+      "status": "Statut",
+      "apps": "Utilisé par",
+      "mystix": "Mystix (flux EDI et factures)",
+      "atelys": "Atelys (production et entrepôts)",
+      "settings": "Paramètres du protocole",
+      "security": "Sécurité",
+      "credentialRef": "Référence du secret",
+      "credentialHelp": "Alias de l'entrée du coffre (mot de passe, clé privée ou certificat), par exemple vault:sftp/fournisseur. Le secret lui-même n'est jamais saisi ici.",
+      "credentialNeeded": "Obligatoire pour activer ce canal.",
+      "defaultValue": "Par défaut : {value}",
+      "yes": "Oui",
+      "no": "Non",
+      "save": "Enregistrer",
+      "create": "Créer le canal",
+      "delete": "Supprimer le canal",
+      "deleteConfirm": "Supprimer définitivement ce canal ? Les flux qui l'utilisent devront être reconfigurés."
+    },
+    "fields": {
+      "host": "Hôte",
+      "port": "Port",
+      "username": "Utilisateur",
+      "inboundDirectory": "Répertoire de réception",
+      "outboundDirectory": "Répertoire de dépôt",
+      "filePattern": "Masque de fichiers",
+      "pollSeconds": "Scrutation (secondes)",
+      "afterDownload": "Après lecture",
+      "archiveDirectory": "Répertoire d'archive",
+      "authMethod": "Authentification",
+      "hostKeyFingerprint": "Empreinte de la clé serveur",
+      "passiveMode": "Mode passif",
+      "transferMode": "Mode de transfert",
+      "tlsMode": "TLS",
+      "url": "URL",
+      "localAs2Id": "AS2-From (notre identifiant)",
+      "partnerAs2Id": "AS2-To (identifiant du partenaire)",
+      "signing": "Signature",
+      "encryption": "Chiffrement",
+      "compression": "Compression",
+      "mdn": "Accusé MDN",
+      "mdnSigned": "MDN signé",
+      "asyncMdnUrl": "URL du MDN asynchrone",
+      "partnerCertificateRef": "Référence du certificat partenaire",
+      "method": "Méthode",
+      "authType": "Authentification",
+      "contentType": "Type de contenu",
+      "events": "Événements"
+    },
+    "errors": {
+      "VALIDATION_FAILED": "Paramètres invalides : vérifiez les champs obligatoires du protocole.",
+      "CHANNEL_NAME_TAKEN": "Un canal porte déjà ce nom.",
+      "CHANNEL_INCOMPLETE": "Ce canal ne peut pas être actif sans référence du secret.",
+      "CHANNEL_NOT_FOUND": "Canal introuvable.",
+      "PARTNER_NOT_FOUND": "Partenaire introuvable.",
+      "AUTH_FORBIDDEN": "Seul un administrateur de l'environnement peut modifier les canaux.",
+      "default": "Le canal n'a pas pu être enregistré ({code})."
+    },
+    "summary": "Total : {count} · actifs : {active}",
+    "manage": "Gérer les canaux"
+  },
+  "transition": {
+    "toAtelys": "Ouverture d'Atelys",
+    "toMystix": "Retour à Mystix"
   }
 }

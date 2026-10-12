@@ -54,9 +54,17 @@ public class AtelysDemo {
                     .orElse(null);
             return new Result(false, existing.get().id(), wo);
         }
-        catalog.createUnit(companyId, "U", "Unité", "COUNT");
-        catalog.createUnit(companyId, "KG", "Kilogramme", "MASS");
-        catalog.createUnit(companyId, "M3", "Mètre cube", "VOLUME");
+        // The Atelys environment of the company usually has these units already.
+        var units = catalog.units(companyId).stream().map(WmsCatalog.Unit::code).toList();
+        if (!units.contains("U")) {
+            catalog.createUnit(companyId, "U", "Unité", "COUNT");
+        }
+        if (!units.contains("KG")) {
+            catalog.createUnit(companyId, "KG", "Kilogramme", "MASS");
+        }
+        if (!units.contains("M3")) {
+            catalog.createUnit(companyId, "M3", "Mètre cube", "VOLUME");
+        }
 
         WmsCatalog.Site site = catalog.createSite(companyId, "DEMO", "Site de démonstration (fictif)");
         WmsCatalog.Site depot = catalog.createSite(companyId, "DEMO2", "Dépôt de démonstration (fictif)");
