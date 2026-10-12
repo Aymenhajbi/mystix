@@ -91,7 +91,10 @@ class InvoiceController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_XML_VALUE)
     ResponseEntity<byte[]> submit(@RequestHeader(COMPANY_HEADER) UUID companyId,
                                   @RequestHeader(value = FLOW_HEADER, required = false) UUID flowId,
+                                  @RequestHeader(value = "Prefer", required = false) String prefer,
                                   @RequestBody byte[] body) {
+        // RFC 7240: "Prefer: respond-async" asks for clearance in the queue and an immediate 202.
+        boolean async = prefer != null && prefer.toLowerCase(java.util.Locale.ROOT).contains("respond-async");
         InvoiceService.Submission submission;
         try {
             // Flow first: its published rules (ADR-0008) apply before any field check.
@@ -101,7 +104,7 @@ class InvoiceController {
             Invoice canonical = intake.read(body, mappings.publishedRules(companyId, flow.id()),
                     new InvoiceIntake.Policy(companies.enforcedSellerIce(companyId).orElse(null), checkVatRates,
                             receivedOn));
-            submission = service.submit(companyId, flow, body, canonical);
+            submission = service.submit(companyId, flow, body, canonical, async);
             if (!submission.replayed()) {
                 warnings(companyId, submission.invoice(), canonical, checkVatRates, receivedOn);
             }
@@ -113,9 +116,12 @@ class InvoiceController {
             throw e;
         }
         StoredInvoice invoice = submission.invoice();
+        URI location = URI.create("/api/v1/invoices/" + invoice.id());
         ResponseEntity.BodyBuilder response = submission.replayed()
                 ? ResponseEntity.ok()
-                : ResponseEntity.created(URI.create("/api/v1/invoices/" + invoice.id()));
+                : submission.clearanceQueued()
+                        ? ResponseEntity.accepted().location(location).header("Preference-Applied", "respond-async")
+                        : ResponseEntity.created(location);
         response.contentType(MediaType.APPLICATION_XML)
                 .header(INVOICE_ID_HEADER, invoice.id().toString())
                 .header(REPLAYED_HEADER, Boolean.toString(submission.replayed()))

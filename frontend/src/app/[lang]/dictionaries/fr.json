@@ -217,6 +217,7 @@
       "INVOICE_ACCEPTED": "Facture acceptée et conservée",
       "INVOICE_REPLAYED": "Facture renvoyée à l'identique",
       "INVOICE_REJECTED": "Facture refusée",
+      "CLEARANCE_QUEUED": "Clearance mise en file",
       "CLEARANCE_CLEARED": "Clearance acceptée (simulée)",
       "CLEARANCE_REJECTED": "Clearance refusée (simulée)",
       "CLEARANCE_ERROR": "Clearance indisponible",

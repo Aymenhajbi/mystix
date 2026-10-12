@@ -11,6 +11,8 @@ public enum LogEvent {
     INVOICE_VALIDATION_APPROVED(LogLevel.INFO),
     INVOICE_VALIDATION_REJECTED(LogLevel.WARN),
     INVOICE_REJECTED(LogLevel.ERROR),
+    /** Clearance handed to the queue: asynchronous submission (ADR-0003). */
+    CLEARANCE_QUEUED(LogLevel.INFO),
     CLEARANCE_CLEARED(LogLevel.INFO),
     CLEARANCE_REJECTED(LogLevel.ERROR),
     CLEARANCE_ERROR(LogLevel.ERROR);

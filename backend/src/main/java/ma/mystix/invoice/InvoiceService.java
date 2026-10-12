@@ -25,12 +25,15 @@ import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
 import ma.mystix.shared.metrics.StageMetrics;
+import ma.mystix.queue.Job;
+import ma.mystix.queue.MessageQueue;
 import ma.mystix.shared.time.TimeConfig;
 import ma.mystix.tenant.CompanyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Accepts invoices for a company: canonical → totals → UBL 2.1 → XSD → EN 16931 → storage with artefacts.
@@ -54,13 +57,17 @@ public class InvoiceService {
     private final ClearanceGateway clearance;
     private final ProcessingLog logs;
     private final StageMetrics stages;
+    private final MessageQueue queue;
+    private final TransactionTemplate tx;
     private final Clock clock;
 
     InvoiceService(CompanyService companies, InvoiceRepository repository, InvoiceCalculator calculator,
                    UblInvoiceGenerator generator, UblSchemaValidator schemaValidator,
                    En16931Validator rulesValidator, ClearanceGateway clearance, ProcessingLog logs, StageMetrics stages,
-                   Clock clock) {
+                   MessageQueue queue, TransactionTemplate tx, Clock clock) {
         this.stages = stages;
+        this.queue = queue;
+        this.tx = tx;
         this.clearance = clearance;
         this.logs = logs;
         this.companies = companies;
@@ -72,11 +79,27 @@ public class InvoiceService {
         this.clock = clock;
     }
 
-    /** Result of a submission; {@code replayed} is true when the invoice had already been accepted. */
-    public record Submission(StoredInvoice invoice, byte[] ubl, boolean replayed) {
+    /** Queue job that submits one invoice for clearance (ADR-0003); its subject is the invoice id. */
+    public static final String CLEARANCE_JOB = "INVOICE_CLEARANCE";
+    private static final int CLEARANCE_PRIORITY = 5;
+
+    /**
+     * Result of a submission; {@code replayed} is true when the invoice had already been accepted,
+     * {@code clearanceQueued} when its clearance runs in the queue rather than in the request.
+     */
+    public record Submission(StoredInvoice invoice, byte[] ubl, boolean replayed, boolean clearanceQueued) {
     }
 
+    /** Synchronous submission: clearance in the request, as before the queue. */
     public Submission submit(UUID companyId, ExchangeFlow flow, byte[] rawRequest, Invoice invoice) {
+        return submit(companyId, flow, rawRequest, invoice, false);
+    }
+
+    /**
+     * Accepts an invoice. With {@code async}, the clearance job is written in the same transaction as the invoice and
+     * the call returns at once; otherwise clearance runs in the request, and only a gateway failure goes to the queue.
+     */
+    public Submission submit(UUID companyId, ExchangeFlow flow, byte[] rawRequest, Invoice invoice, boolean async) {
         // Seller identity (seller ICE = company ICE) is checked at intake, where each environment can turn it off.
         companies.get(companyId);
 
@@ -103,7 +126,13 @@ public class InvoiceService {
         artifacts.put(ArtifactKind.CANONICAL, canonical);
         artifacts.put(ArtifactKind.OUT, ubl);
         try {
-            stages.time(PIPELINE, "persist", () -> repository.insert(stored, artifacts));
+            boolean enqueue = async && !backdated;
+            stages.time(PIPELINE, "persist", () -> tx.executeWithoutResult(status -> {
+                repository.insert(stored, artifacts);
+                if (enqueue) {
+                    enqueueClearance(stored);
+                }
+            }));
         } catch (DuplicateKeyException e) {
             // A concurrent submission with the same number won the race.
             return replay(repository.findByNumber(companyId, invoice.number()).orElseThrow(() -> e),
@@ -112,7 +141,15 @@ public class InvoiceService {
         logs.invoiceAccepted(companyId, stored.id(), stored.number(),
                 "Invoice accepted: UBL 2.1 generated (" + ubl.length + " bytes), XSD valid, EN 16931 "
                         + En16931Validator.ARTEFACTS_VERSION + " compliant, stored with RAW, CANONICAL and OUT");
-        return new Submission(backdated ? stored : clear(stored, ubl), ubl, false);
+        if (backdated) {
+            return new Submission(stored, ubl, false, false);
+        }
+        if (async) {
+            logs.clearance(companyId, stored.id(), stored.number(), LogEvent.CLEARANCE_QUEUED,
+                    "Clearance queued (asynchronous submission)");
+            return new Submission(stored, ubl, false, true);
+        }
+        return new Submission(clear(stored, ubl), ubl, false, false);
     }
 
     /**
@@ -146,22 +183,47 @@ public class InvoiceService {
     }
 
     /**
-     * Submits a stored invoice for clearance, synchronously for now (the Lot 4 queue will retry failures).
-     * A gateway failure leaves the invoice VALIDATED and is recorded in its history.
+     * Submits a stored invoice for clearance in the request. A gateway failure leaves the invoice VALIDATED, is
+     * recorded in its history, and hands the clearance to the queue, which retries it with backoff (ADR-0003).
      */
     private StoredInvoice clear(StoredInvoice stored, byte[] ubl) {
-        ClearanceResult result;
         try {
-            result = stages.time(PIPELINE, "clearance", () -> clearance.submit(new ClearanceRequest(
-                    stored.companyId(), stored.id(), stored.number(), ubl, Sha256.hex(ubl))));
+            return submitToGateway(stored, ubl);
         } catch (RuntimeException e) {
-            log.warn("Clearance failed for invoice {}", stored.id(), e);
-            repository.appendEvent(stored.companyId(), stored.id(), StoredInvoice.EVENT_CLEARANCE_ERROR,
-                    "Clearance gateway error; invoice stays VALIDATED", OffsetDateTime.now(clock));
+            log.warn("Clearance failed for invoice {}, retry queued", stored.id(), e);
+            tx.executeWithoutResult(status -> {
+                repository.appendEvent(stored.companyId(), stored.id(), StoredInvoice.EVENT_CLEARANCE_ERROR,
+                        "Clearance gateway error; invoice stays VALIDATED, retry queued", OffsetDateTime.now(clock));
+                enqueueClearance(stored);
+            });
             logs.clearance(stored.companyId(), stored.id(), stored.number(), LogEvent.CLEARANCE_ERROR,
-                    "Clearance gateway error (" + e.getClass().getSimpleName() + "); invoice stays VALIDATED");
+                    "Clearance gateway error (" + e.getClass().getSimpleName()
+                            + "); invoice stays VALIDATED, retry queued");
             return stored;
         }
+    }
+
+    /**
+     * Clearance run by the queue. Idempotent: an invoice that is no longer VALIDATED (already cleared or rejected,
+     * or waiting for validation) is left as it is. A gateway failure propagates, so the queue retries it.
+     */
+    public void clearQueued(UUID companyId, UUID invoiceId) {
+        StoredInvoice stored = get(companyId, invoiceId);
+        if (!StoredInvoice.STATUS_VALIDATED.equals(stored.status())) {
+            return;
+        }
+        submitToGateway(stored, artifact(companyId, invoiceId, ArtifactKind.OUT));
+    }
+
+    private void enqueueClearance(StoredInvoice stored) {
+        queue.enqueue(new Job.New(stored.companyId(),
+                stored.flowId() == null ? Job.companyLane(stored.companyId()) : Job.flowLane(stored.flowId()),
+                CLEARANCE_JOB, stored.id(), Map.of("number", stored.number()), CLEARANCE_PRIORITY));
+    }
+
+    private StoredInvoice submitToGateway(StoredInvoice stored, byte[] ubl) {
+        ClearanceResult result = stages.time(PIPELINE, "clearance", () -> clearance.submit(new ClearanceRequest(
+                stored.companyId(), stored.id(), stored.number(), ubl, Sha256.hex(ubl))));
         boolean cleared = result.outcome() == ClearanceResult.Outcome.CLEARED;
         String detail = (result.simulated() ? "SIMULATED clearance: " : "")
                 + (cleared ? "cleared" : result.reason());
@@ -196,7 +258,7 @@ public class InvoiceService {
                     "Invoice number " + existing.number() + " already used with different content");
         }
         logs.invoiceReplayed(existing.companyId(), existing.id(), existing.number());
-        return new Submission(existing, artifact(existing.companyId(), existing.id(), ArtifactKind.OUT), true);
+        return new Submission(existing, artifact(existing.companyId(), existing.id(), ArtifactKind.OUT), true, false);
     }
 
     /** UBL 2.1 for an invoice, checked against the XSD and EN 16931; throws on failure. No side effect. */

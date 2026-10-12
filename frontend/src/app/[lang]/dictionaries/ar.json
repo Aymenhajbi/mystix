@@ -217,6 +217,7 @@
       "INVOICE_ACCEPTED": "فاتورة مقبولة ومحفوظة",
       "INVOICE_REPLAYED": "فاتورة أُعيد إرسالها دون تغيير",
       "INVOICE_REJECTED": "فاتورة مرفوضة",
+      "CLEARANCE_QUEUED": "المصادقة في قائمة الانتظار",
       "CLEARANCE_CLEARED": "مصادقة مقبولة (تجريبية)",
       "CLEARANCE_REJECTED": "مصادقة مرفوضة (تجريبية)",
       "CLEARANCE_ERROR": "المصادقة غير متاحة",
