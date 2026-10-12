@@ -227,6 +227,30 @@ public enum ErrorCode {
             new LocalizedText("Attendez la fin des reprises automatiques, puis rejouez si le traitement reste en échec.",
                     "انتظر انتهاء المحاولات التلقائية، ثم أعد التشغيل إذا بقيت المعالجة فاشلة.")),
 
+    CERTIFICATE_INVALID(HttpStatus.BAD_REQUEST, Stage.API, false,
+            new LocalizedText("Ce fichier n'est pas un certificat X.509 lisible.",
+                    "هذا الملف ليس شهادة X.509 قابلة للقراءة."),
+            new LocalizedText("Fournissez le certificat public au format PEM (-----BEGIN CERTIFICATE-----) ou DER.",
+                    "قدّم الشهادة العامة بصيغة PEM (-----BEGIN CERTIFICATE-----) أو DER.")),
+
+    CERTIFICATE_PRIVATE_KEY_REFUSED(HttpStatus.BAD_REQUEST, Stage.API, false,
+            new LocalizedText("Ce fichier contient une clé privée : il a été refusé et n'a pas été enregistré.",
+                    "يحتوي هذا الملف على مفتاح خاص: تم رفضه ولم يُحفظ."),
+            new LocalizedText("Ne déposez que le certificat public. La clé privée reste dans le coffre de secrets.",
+                    "لا تودع إلا الشهادة العامة. يبقى المفتاح الخاص في خزنة الأسرار.")),
+
+    CERTIFICATE_DUPLICATE(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Ce certificat est déjà rattaché à ce canal.",
+                    "هذه الشهادة مرتبطة بالفعل بهذه القناة."),
+            new LocalizedText("Aucune action nécessaire.",
+                    "لا حاجة لأي إجراء.")),
+
+    CERTIFICATE_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
+            new LocalizedText("Certificat introuvable sur ce canal.",
+                    "الشهادة غير موجودة في هذه القناة."),
+            new LocalizedText("Rechargez la fiche du canal.",
+                    "أعد تحميل بطاقة القناة.")),
+
     CHANNEL_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
             new LocalizedText("Canal de communication introuvable pour ce client.",
                     "قناة الاتصال غير موجودة لهذا الزبون."),

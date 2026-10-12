@@ -19,6 +19,28 @@ final class ChannelSettings {
 
     enum Kind { TEXT, HOST, PORT, SECONDS, FLAG, URL, HTTPS_URL, AS2_ID, PATH, CHOICE }
 
+    /** Where a parameter sits in the configuration screens: what an integrator fills in, in that order. */
+    enum Group { CONNECTION, FILES, SECURITY, ADVANCED }
+
+    private static final Map<String, Group> GROUPS = Map.ofEntries(
+            Map.entry("host", Group.CONNECTION), Map.entry("port", Group.CONNECTION),
+            Map.entry("username", Group.CONNECTION), Map.entry("url", Group.CONNECTION),
+            Map.entry("localAs2Id", Group.CONNECTION), Map.entry("partnerAs2Id", Group.CONNECTION),
+            Map.entry("method", Group.CONNECTION), Map.entry("events", Group.CONNECTION),
+            Map.entry("tlsMode", Group.CONNECTION),
+            Map.entry("inboundDirectory", Group.FILES), Map.entry("outboundDirectory", Group.FILES),
+            Map.entry("filePattern", Group.FILES), Map.entry("pollSeconds", Group.FILES),
+            Map.entry("afterDownload", Group.FILES),
+            Map.entry("authMethod", Group.SECURITY), Map.entry("hostKeyFingerprint", Group.SECURITY),
+            Map.entry("signing", Group.SECURITY), Map.entry("encryption", Group.SECURITY),
+            Map.entry("mdn", Group.SECURITY), Map.entry("mdnSigned", Group.SECURITY),
+            Map.entry("asyncMdnUrl", Group.SECURITY), Map.entry("authType", Group.SECURITY));
+
+    /** Rarely changed parameters (passive mode, archive directory...) are folded under "advanced". */
+    static Group groupOf(String key) {
+        return GROUPS.getOrDefault(key, Group.ADVANCED);
+    }
+
     record Field(String key, Kind kind, boolean required, Object defaultValue, List<String> choices) {
 
         static Field of(String key, Kind kind, boolean required) {

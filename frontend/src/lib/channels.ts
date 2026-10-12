@@ -37,9 +37,12 @@ export type ChannelFieldKind =
   | "PATH"
   | "CHOICE";
 
+export type ChannelFieldGroup = "CONNECTION" | "FILES" | "SECURITY" | "ADVANCED";
+
 export type ChannelField = {
   key: string;
   kind: ChannelFieldKind;
+  group: ChannelFieldGroup;
   required: boolean;
   defaultValue: string | number | boolean | null;
   choices: string[];
@@ -50,7 +53,38 @@ export type ChannelCatalog = {
   directions: ChannelDirection[];
   statuses: ChannelStatus[];
   transport: string;
+  /** Where partners send AS2 to Mystix; null until the AS2 transport is deployed. */
+  as2InboundUrl: string | null;
 };
+
+export type CertificateRole = "OWN" | "PARTNER";
+
+export type ChannelCertificate = {
+  id: string;
+  channelId: string;
+  role: CertificateRole;
+  subject: string;
+  issuer: string;
+  serialNumber: string;
+  keyAlgorithm: string;
+  keySize: number | null;
+  notBefore: string;
+  notAfter: string;
+  sha256Fingerprint: string;
+  pem: string;
+  createdBy: string;
+  createdAt: string;
+};
+
+/** Days before expiry when a certificate starts to be flagged. */
+export const CERTIFICATE_WARNING_DAYS = 30;
+
+export type CertificateHealth = { state: "ok" | "soon" | "expired"; days: number };
+
+export function certificateHealth(c: ChannelCertificate, now = Date.now()): CertificateHealth {
+  const days = Math.floor((new Date(c.notAfter).getTime() - now) / 86_400_000);
+  return { state: days < 0 ? "expired" : days <= CERTIFICATE_WARNING_DAYS ? "soon" : "ok", days };
+}
 
 /** With companyId, the environment chosen in Mystix; without, the active environment of the session (Atelys). */
 export const channelsApi = {
@@ -59,6 +93,10 @@ export const channelsApi = {
     getForCompany<Channel[]>(`/api/v1/channels${app ? `?app=${app}` : ""}`, companyId),
   get: (id: string, companyId?: string) =>
     getForCompany<Channel>(`/api/v1/channels/${encodeURIComponent(id)}`, companyId),
+  certificates: (id: string, companyId?: string) =>
+    getForCompany<ChannelCertificate[]>(`/api/v1/channels/${encodeURIComponent(id)}/certificates`, companyId),
+  allCertificates: (companyId?: string) =>
+    getForCompany<ChannelCertificate[]>("/api/v1/channels/certificates", companyId),
 };
 
 /** The address shown in lists: host and port, or the URL. */

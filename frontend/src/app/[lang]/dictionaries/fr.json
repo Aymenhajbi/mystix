@@ -1307,7 +1307,8 @@
       "method": "Méthode",
       "authType": "Authentification",
       "contentType": "Type de contenu",
-      "events": "Événements"
+      "events": "Événements",
+      "as2Url": "URL AS2 du partenaire"
     },
     "errors": {
       "VALIDATION_FAILED": "Paramètres invalides : vérifiez les champs obligatoires du protocole.",
@@ -1319,7 +1320,119 @@
       "default": "Le canal n'a pas pu être enregistré ({code})."
     },
     "summary": "Total : {count} · actifs : {active}",
-    "manage": "Gérer les canaux"
+    "manage": "Gérer les canaux",
+    "steps": {
+      "protocol": "Protocole",
+      "connection": "Connexion",
+      "security": "Sécurité et activation"
+    },
+    "stepLeads": {
+      "protocol": "Choisissez le protocole, le sens et le partenaire.",
+      "connection": "Où se connecter et quels fichiers échanger.",
+      "security": "Comment l'échange est protégé, puis dans quel état enregistrer le canal."
+    },
+    "stepOf": "Étape {n} sur 3",
+    "next": "Continuer",
+    "previous": "Retour",
+    "groups": {
+      "CONNECTION": "Connexion",
+      "FILES": "Fichiers et scrutation",
+      "SECURITY": "Sécurité",
+      "ADVANCED": "Paramètres avancés"
+    },
+    "protocolCards": {
+      "AS2": "EDI signé et chiffré, accusé MDN",
+      "SFTP": "Fichiers sur SSH",
+      "FTP": "Fichiers en clair, réseau privé",
+      "FTPS": "FTP chiffré par TLS",
+      "HTTPS": "API du partenaire",
+      "WEBHOOK": "Notification d'événements"
+    },
+    "fieldErrors": "Corrigez les champs signalés.",
+    "required": "Obligatoire.",
+    "kindHints": {
+      "HOST": "Nom d'hôte ou adresse IP.",
+      "PORT": "Un port de 1 à 65535.",
+      "SECONDS": "De 30 à 86 400 secondes.",
+      "URL": "Une URL http ou https.",
+      "HTTPS_URL": "Une URL https.",
+      "AS2_ID": "1 à 128 caractères ASCII imprimables (RFC 4130).",
+      "PATH": "Un chemin de 1 à 255 caractères.",
+      "TEXT": "255 caractères au plus.",
+      "FLAG": "Oui ou non.",
+      "CHOICE": "Choisissez une valeur de la liste."
+    },
+    "statusCards": {
+      "DRAFT": "Enregistré, pas encore utilisé par les flux.",
+      "ACTIVE": "Utilisable par les flux.",
+      "DISABLED": "Conservé, mais arrêté."
+    },
+    "recap": "Récapitulatif",
+    "editAction": "Modifier",
+    "configuration": "Configuration",
+    "defaultMark": "par défaut",
+    "notSet": "non renseigné",
+    "dangerTitle": "Suppression",
+    "dangerLead": "Supprime le canal et ses certificats. Les flux qui l'utilisent devront être reconfigurés.",
+    "sharedChannels": "Canaux communs (sans partenaire)",
+    "cardsLead": "Regroupés par partenaire. Un badge signale un certificat expiré ou qui expire bientôt.",
+    "strip": {
+      "total": "Canaux",
+      "active": "Actifs",
+      "draft": "Brouillons",
+      "certificates": "Certificats à renouveler"
+    },
+    "sheet": {
+      "title": "Fiche d'échange",
+      "lead": "À transmettre au partenaire pour qu'il configure son côté. Elle ne contient aucun secret.",
+      "download": "Télécharger la fiche",
+      "ours": "Notre côté (à configurer chez le partenaire)",
+      "theirs": "Côté partenaire (configuré chez nous)",
+      "parameters": "Paramètres d'échange",
+      "toConfirm": "à confirmer à la mise en service",
+      "noOwnCertificate": "aucun certificat Mystix déposé sur ce canal",
+      "noPartnerCertificate": "aucun certificat partenaire déposé",
+      "generated": "Générée le {date} par Mystix. Cette fiche ne contient aucun secret.",
+      "company": "Société",
+      "channel": "Canal",
+      "as2Id": "Identifiant AS2",
+      "inboundUrl": "URL de réception AS2",
+      "certificate": "Certificat",
+      "server": "Serveur",
+      "account": "Compte",
+      "expectedHostKey": "Empreinte attendue de la clé serveur"
+    },
+    "certificates": {
+      "title": "Certificats",
+      "lead": "Certificats publics uniquement. Les clés privées restent dans le coffre de secrets.",
+      "roles": {
+        "OWN": "Notre certificat",
+        "PARTNER": "Certificat du partenaire"
+      },
+      "fingerprint": "Empreinte SHA-256",
+      "validity": "Validité",
+      "validUntil": "jusqu'au {date}",
+      "expired": "Expiré depuis {days} j",
+      "soon": "Expire dans {days} j",
+      "ok": "Valide",
+      "add": "Ajouter un certificat",
+      "file": "Fichier (PEM, CRT, CER ou DER)",
+      "paste": "Ou collez le certificat PEM",
+      "role": "Rôle",
+      "none": "Aucun certificat sur ce canal.",
+      "remove": "Retirer",
+      "removeConfirm": "Retirer ce certificat du canal ?",
+      "added": "Certificat ajouté.",
+      "removed": "Certificat retiré.",
+      "key": "Clé",
+      "issuer": "Émetteur"
+    },
+    "certificateErrors": {
+      "CERTIFICATE_INVALID": "Ce fichier n'est pas un certificat X.509 lisible.",
+      "CERTIFICATE_PRIVATE_KEY_REFUSED": "Ce fichier contient une clé privée : il a été refusé et n'a pas été enregistré.",
+      "CERTIFICATE_DUPLICATE": "Ce certificat est déjà rattaché à ce canal.",
+      "CERTIFICATE_NOT_FOUND": "Certificat introuvable."
+    }
   },
   "transition": {
     "toAtelys": "Ouverture d'Atelys",

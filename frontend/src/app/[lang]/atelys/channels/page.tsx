@@ -18,12 +18,15 @@ export default async function Page({ params, searchParams }: Params) {
   if (!hasLocale(lang)) notFound();
   await connection();
   const [dict, query] = await Promise.all([getDictionary(lang), searchParams]);
+  const base = `/${lang}/atelys/channels`;
+  const crumbs = undefined;
   return (
     <ChannelListScreen
       lang={lang}
       dict={dict}
       app="ATELYS"
-      base={`/${lang}/atelys/channels`}
+      base={base}
+      crumbs={crumbs}
       query={query}
     />
   );

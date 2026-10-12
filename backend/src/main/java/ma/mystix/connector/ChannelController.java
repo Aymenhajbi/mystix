@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import ma.mystix.auth.Access;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,11 +33,19 @@ class ChannelController {
     private static final String COMPANY = "X-Mystix-Company-Id";
 
     private final ChannelService channels;
+    private final CertificateService certificates;
     private final Access access;
+    private final String as2InboundUrl;
 
-    ChannelController(ChannelService channels, Access access) {
+    ChannelController(ChannelService channels, CertificateService certificates, Access access,
+                      @Value("${mystix.connector.as2.inbound-url:}") String as2InboundUrl) {
         this.channels = channels;
+        this.certificates = certificates;
         this.access = access;
+        this.as2InboundUrl = as2InboundUrl == null || as2InboundUrl.isBlank() ? null : as2InboundUrl.strip();
+    }
+
+    record CertificateRequest(CertificateService.Role role, String certificate) {
     }
 
     record ChannelRequest(String name, Channel.Protocol protocol, Channel.Direction direction, UUID partnerId,
@@ -50,14 +59,19 @@ class ChannelController {
         }
     }
 
-    record FieldView(String key, String kind, boolean required, Object defaultValue, List<String> choices) {
+    record FieldView(String key, String kind, String group, boolean required, Object defaultValue,
+                     List<String> choices) {
     }
 
     record ProtocolView(String code, List<FieldView> fields, boolean needsCredential) {
     }
 
+    /**
+     * @param as2InboundUrl where partners send AS2 messages to Mystix, for the exchange sheet; null until the AS2
+     *                      transport is deployed and mystix.connector.as2.inbound-url is set
+     */
     record CatalogView(List<ProtocolView> protocols, List<String> directions, List<String> statuses,
-                       String transport) {
+                       String transport, String as2InboundUrl) {
     }
 
     /** What the configuration form needs: the parameters of each protocol, with their defaults. */
@@ -65,13 +79,42 @@ class ChannelController {
     CatalogView catalog() {
         List<ProtocolView> protocols = Arrays.stream(Channel.Protocol.values())
                 .map(p -> new ProtocolView(p.name(), ChannelSettings.FIELDS.get(p).stream()
-                        .map(f -> new FieldView(f.key(), f.kind().name(), f.required(), f.defaultValue(),
-                                f.choices()))
+                        .map(f -> new FieldView(f.key(), f.kind().name(), ChannelSettings.groupOf(f.key()).name(),
+                                f.required(), f.defaultValue(), f.choices()))
                         .toList(), p != Channel.Protocol.WEBHOOK && p != Channel.Protocol.HTTPS))
                 .toList();
         // TODO(lot-6): AS2, SFTP and FTP/FTPS transports. Until then a channel is a stored, checked configuration.
         return new CatalogView(protocols, Arrays.stream(Channel.Direction.values()).map(Enum::name).toList(),
-                Arrays.stream(Channel.Status.values()).map(Enum::name).toList(), "CONFIGURATION_ONLY");
+                Arrays.stream(Channel.Status.values()).map(Enum::name).toList(), "CONFIGURATION_ONLY", as2InboundUrl);
+    }
+
+    /** Every certificate of the environment, soonest expiry first. */
+    @GetMapping("/certificates")
+    List<CertificateService.Certificate> allCertificates(@RequestHeader(COMPANY) UUID companyId) {
+        return certificates.all(companyId);
+    }
+
+    @GetMapping("/{id}/certificates")
+    List<CertificateService.Certificate> certificates(@RequestHeader(COMPANY) UUID companyId, @PathVariable UUID id) {
+        return certificates.list(companyId, id);
+    }
+
+    @PostMapping(value = "/{id}/certificates", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<CertificateService.Certificate> addCertificate(@RequestHeader(COMPANY) UUID companyId,
+                                                                  @PathVariable UUID id,
+                                                                  @RequestBody CertificateRequest r,
+                                                                  HttpServletRequest request) {
+        access.requireManager(request, companyId);
+        return ResponseEntity.status(201)
+                .body(certificates.add(companyId, id, r.role(), r.certificate(), access.actor(request)));
+    }
+
+    @DeleteMapping("/{id}/certificates/{certificateId}")
+    ResponseEntity<Void> deleteCertificate(@RequestHeader(COMPANY) UUID companyId, @PathVariable UUID id,
+                                           @PathVariable UUID certificateId, HttpServletRequest request) {
+        access.requireManager(request, companyId);
+        certificates.delete(companyId, id, certificateId, access.actor(request));
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping
