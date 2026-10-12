@@ -43,3 +43,4 @@ tmp/
 
 # Server log files and their rotated archives
 backend/logs/
+bench-results.json
