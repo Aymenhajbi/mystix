@@ -335,7 +335,7 @@ async function companyGet<T>(path: string, forCompany?: string): Promise<ApiResu
 }
 
 /** GET on the portal environment, for modules with their own types (Atelys). */
-export const getForCompany = <T,>(path: string) => companyGet<T>(path);
+export const getForCompany = <T,>(path: string, forCompany?: string) => companyGet<T>(path, forCompany);
 
 /** Writes on the portal environment (server actions only). */
 export async function sendForCompany<T>(
@@ -528,7 +528,7 @@ export type MutationResult<T> = { ok: true; data: T } | { ok: false; errorCode: 
 /** Writes for the flow screens (called from server actions only). */
 export async function sendFlowMutation<T>(
   companyId: string,
-  method: "POST" | "PATCH" | "PUT",
+  method: "POST" | "PATCH" | "PUT" | "DELETE",
   path: string,
   body: unknown,
 ): Promise<MutationResult<T>> {
@@ -537,7 +537,7 @@ export async function sendFlowMutation<T>(
       method,
       cache: "no-store",
       headers: { "X-Mystix-Company-Id": companyId, "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(body),
+      body: method === "DELETE" ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(5000),
     });
     const json = (await response.json().catch(() => null)) as (T & { errorCode?: string }) | null;

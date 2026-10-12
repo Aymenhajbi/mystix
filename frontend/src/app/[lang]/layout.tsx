@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Arabic, IBM_Plex_Sans_Condensed } from "next/font/google";
+import { AppArrival, AppSwitchLink, appSwitchInitScript } from "@/components/AppSwitch";
 import { AtelysShell } from "@/components/AtelysShell";
 import { CommandPalette, type PaletteItem } from "@/components/CommandPalette";
 import { Wordmark } from "@/components/Icons";
@@ -57,7 +58,14 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   const { lang } = await params;
   if (!hasLocale(lang)) return {};
   const dict = await getDictionary(lang);
-  return { title: { default: dict.meta.title, template: `%s · ${dict.meta.title}` }, description: dict.meta.description };
+  // Each application has its own tab icon: the Mystix m, or the Atelys Trame.
+  const atelys = isAtelysPath((await headers()).get(PATH_HEADER) ?? "");
+  const icon = atelys ? "/brand/atelys-icon.svg" : "/brand/mystix-icon.svg";
+  return {
+    title: { default: dict.meta.title, template: `%s · ${dict.meta.title}` },
+    description: dict.meta.description,
+    icons: { icon: [{ url: icon, type: "image/svg+xml" }], apple: icon },
+  };
 }
 
 export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {
@@ -74,6 +82,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   const head = (
     <head>
       <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      <script dangerouslySetInnerHTML={{ __html: appSwitchInitScript }} />
     </head>
   );
 
@@ -186,6 +195,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
         <a href="#main" className="skip-link">
           {dict.nav.skip}
         </a>
+        <AppArrival app="mystix" />
         <div className={styles.shell}>
           <Rail lang={lang} labels={navLabels} />
           <div className={styles.frame}>
@@ -226,10 +236,15 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
                   className={styles.textButton}
                 />
                 {account}
-                <Link href={`/${lang}/atelys`} className={styles.appSwitch}>
+                <AppSwitchLink
+                  href={`/${lang}/atelys`}
+                  to="atelys"
+                  label={dict.transition.toAtelys}
+                  className={styles.appSwitch}
+                >
                   <span className={styles.appSwitchDot} aria-hidden="true" />
                   {dict.atelys.switchToAtelys}
-                </Link>
+                </AppSwitchLink>
               </div>
               <MobileNav lang={lang} labels={navLabels} />
             </header>

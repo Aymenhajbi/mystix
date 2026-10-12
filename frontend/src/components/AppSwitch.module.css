@@ -1,0 +1,226 @@
+/* Hand-over between Mystix and Atelys: the destination brand fills the screen while its page loads. */
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  animation: sceneIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.atelys {
+  background:
+    radial-gradient(circle at 50% 42%, rgb(255 90 31 / 0.18), transparent 46%),
+    radial-gradient(color-mix(in srgb, #ffffff 9%, transparent) 1px, transparent 1.2px) 0 0 / 24px 24px,
+    #141016;
+}
+
+.mystix {
+  background:
+    radial-gradient(circle at 50% 42%, rgb(181 123 255 / 0.28), transparent 50%),
+    linear-gradient(160deg, #2a0b4a, #12081f 70%);
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.name {
+  font-family: var(--font-plex-condensed), var(--font-sans);
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-block-start: 6px;
+}
+
+.mystix .name {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.62);
+}
+
+.label:lang(ar) {
+  font-family: var(--font-sans);
+  letter-spacing: 0;
+  font-size: 13px;
+}
+
+.track {
+  width: 160px;
+  height: 3px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.12);
+  overflow: hidden;
+  margin-block-start: 8px;
+}
+
+.track > span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: 3px;
+  animation: sweep 900ms cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+
+.atelys .track > span {
+  background: #ff5a1f;
+}
+
+.mystix .track > span {
+  background: #b57bff;
+}
+
+/* Atelys: the twelve modules of the Trame land one after the other, the Mystix apex last. */
+.trame svg rect {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.build .trame svg rect {
+  animation: module 420ms cubic-bezier(0.2, 0.9, 0.25, 1.25) both;
+}
+
+.build .trame svg rect:nth-child(1) { animation-delay: 520ms; }
+.build .trame svg rect:nth-child(2) { animation-delay: 300ms; }
+.build .trame svg rect:nth-child(3) { animation-delay: 340ms; }
+.build .trame svg rect:nth-child(4) { animation-delay: 160ms; }
+.build .trame svg rect:nth-child(5) { animation-delay: 200ms; }
+.build .trame svg rect:nth-child(6) { animation-delay: 240ms; }
+.build .trame svg rect:nth-child(7) { animation-delay: 280ms; }
+.build .trame svg rect:nth-child(8) { animation-delay: 320ms; }
+.build .trame svg rect:nth-child(9) { animation-delay: 80ms; }
+.build .trame svg rect:nth-child(10) { animation-delay: 120ms; }
+.build .trame svg rect:nth-child(11) { animation-delay: 0ms; }
+.build .trame svg rect:nth-child(12) { animation-delay: 40ms; }
+
+/* Mystix: the violet tile opens, the monogram settles, a ring spreads. */
+.tile {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: #8500de;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 18px 50px rgb(133 0 222 / 0.45);
+}
+
+.tile svg {
+  width: 52px;
+  height: 52px;
+}
+
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 26px;
+  border: 2px solid #b57bff;
+  opacity: 0;
+}
+
+.build .tile {
+  animation: tile 520ms cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+
+.build .tile svg {
+  animation: monogram 420ms 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.build .tile::after,
+.hold .tile::after {
+  animation: ring 1200ms 300ms ease-out infinite;
+}
+
+.build .name,
+.build .label {
+  animation: rise 420ms 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.hold {
+  animation: none;
+}
+
+.leave {
+  animation: sceneOut 400ms cubic-bezier(0.6, 0, 0.4, 1) both;
+}
+
+.leave .center {
+  animation: centerOut 400ms cubic-bezier(0.6, 0, 0.4, 1) both;
+}
+
+@keyframes sceneIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sceneOut {
+  from { clip-path: inset(0 0 0 0); }
+  to { clip-path: inset(0 0 100% 0); }
+}
+
+@keyframes centerOut {
+  to { transform: translateY(-24px); opacity: 0; }
+}
+
+@keyframes module {
+  from { transform: scale(0.2) translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes tile {
+  from { transform: scale(0.6) rotate(-8deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes monogram {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes ring {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes rise {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes sweep {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(260%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene,
+  .scene *,
+  .scene *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .leave {
+    animation: sceneFade 200ms linear both !important;
+  }
+}
+
+@keyframes sceneFade {
+  to { opacity: 0; }
+}
