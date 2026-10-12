@@ -66,8 +66,7 @@ class AtelysApiTests {
         http = RestClient.builder().baseUrl("http://localhost:" + port)
                 .defaultStatusHandler(status -> true, (request, response) -> { }).build();
         company = companies.register(new Ice("000000040000040"), "Scierie Fictive Test SARL", null).id();
-        post("/api/v1/wms/units", Map.of("code", "U", "name", "Unité", "dimension", "COUNT"));
-        post("/api/v1/wms/units", Map.of("code", "KG", "name", "Kilogramme", "dimension", "MASS"));
+        // U and KG come with the Atelys environment of every new company.
         post("/api/v1/wms/units", Map.of("code", "BOTTE", "name", "Botte", "dimension", "COUNT"));
         site = id(post("/api/v1/wms/sites", Map.of("code", "S1", "name", "Site test")));
         depot = id(post("/api/v1/wms/sites", Map.of("code", "S2", "name", "Dépôt test")));

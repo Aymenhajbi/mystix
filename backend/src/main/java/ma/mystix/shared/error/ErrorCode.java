@@ -215,6 +215,24 @@ public enum ErrorCode {
             new LocalizedText("Choisissez un autre nom.",
                     "اختر اسماً آخر.")),
 
+    CHANNEL_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
+            new LocalizedText("Canal de communication introuvable pour ce client.",
+                    "قناة الاتصال غير موجودة لهذا الزبون."),
+            new LocalizedText("Vérifiez le canal choisi ; il a peut-être été supprimé.",
+                    "تحقّق من القناة المختارة؛ ربما تم حذفها.")),
+
+    CHANNEL_NAME_TAKEN(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Un canal porte déjà ce nom pour ce client.",
+                    "توجد قناة بنفس الاسم لهذا الزبون."),
+            new LocalizedText("Choisissez un autre nom.",
+                    "اختر اسماً آخر.")),
+
+    CHANNEL_INCOMPLETE(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Ce canal ne peut pas être actif sans référence d'identifiants.",
+                    "لا يمكن تفعيل هذه القناة دون مرجع بيانات الاعتماد."),
+            new LocalizedText("Renseignez l'alias du secret (mot de passe, clé ou certificat) dans le coffre, ou gardez le canal en brouillon.",
+                    "أدخل اسم السر (كلمة المرور أو المفتاح أو الشهادة) في الخزنة، أو احتفظ بالقناة كمسودة.")),
+
     FLOW_NOT_EXECUTABLE(HttpStatus.CONFLICT, Stage.API, false,
             new LocalizedText("Ce flux est déclaré mais ses briques ne sont pas encore livrées : il ne peut pas être activé.",
                     "هذا التدفق مُعلن لكن مكوّناته لم تُسلَّم بعد: لا يمكن تفعيله."),
