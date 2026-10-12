@@ -9,3 +9,8 @@ export function isPublicPath(pathname: string) {
   const page = pathname.split("/")[2] ?? "";
   return pathname.split("/").filter(Boolean).length === 2 && PUBLIC_PAGES.includes(page);
 }
+
+/** True for /{lang}/atelys and its pages (ADR-0014). */
+export function isAtelysPath(pathname: string) {
+  return /^\/(fr|ar)\/atelys(\/|$)/.test(pathname);
+}

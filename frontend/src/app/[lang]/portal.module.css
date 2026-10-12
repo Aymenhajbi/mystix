@@ -2869,3 +2869,32 @@
   color: var(--muted);
   font-weight: 400;
 }
+
+/* ---------- app switch to Atelys (ADR-0014) ---------- */
+
+.appSwitch {
+  height: 40px;
+  padding-inline: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.appSwitch:hover {
+  border-color: #ff5a1f;
+  color: var(--text);
+}
+
+.appSwitchDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff5a1f;
+}

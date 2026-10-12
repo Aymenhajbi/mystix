@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { AtelysShell } from "@/components/AtelysShell";
 import { CommandPalette, type PaletteItem } from "@/components/CommandPalette";
 import { Wordmark } from "@/components/Icons";
 import { LocaleSwitch } from "@/components/LocaleSwitch";
@@ -11,7 +12,7 @@ import { MobileNav, Rail } from "@/components/Rail";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
 import { fetchBackendHealth, getMe, getPortalCompany, listInvoices } from "@/lib/api";
 import { direction, formatAmount, hasLocale, locales } from "@/lib/i18n";
-import { isPublicPath, PATH_HEADER } from "@/lib/routes";
+import { isAtelysPath, isPublicPath, PATH_HEADER } from "@/lib/routes";
 import { getDictionary } from "./dictionaries";
 import { logoutAction } from "./login/actions";
 import "../globals.css";
@@ -87,6 +88,50 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
 
   const me = await getMe();
   if (!me) redirect(`/${lang}/login?next=${encodeURIComponent(path || `/${lang}`)}`);
+  const account = (
+    <details className={styles.account}>
+      <summary aria-label={`${dict.auth.account} : ${me.displayName}`}>
+        <span className={styles.avatar} aria-hidden="true">
+          {initials(me.displayName)}
+        </span>
+      </summary>
+      <div className={styles.accountMenu}>
+        <p className={styles.accountName}>{me.displayName}</p>
+        <p className={styles.accountMail} dir="ltr">
+          {me.email}
+        </p>
+        {me.operator && <span className={`${styles.chip} ${styles.chipNeutral}`}>{dict.auth.operator}</span>}
+        <form action={logoutAction}>
+          <input type="hidden" name="lang" value={lang} />
+          <button type="submit" className={styles.logout}>
+            {dict.auth.logout}
+          </button>
+        </form>
+      </div>
+    </details>
+  );
+
+  // Atelys (ADR-0014): the production and warehouse app, same session, its own frame and accent.
+  if (isAtelysPath(path)) {
+    return (
+      <html {...htmlProps}>
+        {head}
+        <body className="atelys">
+          <a href="#main" className="skip-link">
+            {dict.nav.skip}
+          </a>
+          <AtelysShell
+            lang={lang}
+            dict={dict}
+            tenant={me.activeCompany?.legalName ?? null}
+            account={account}
+          >
+            {children}
+          </AtelysShell>
+        </body>
+      </html>
+    );
+  }
   const [health, company, invoices] = await Promise.all([fetchBackendHealth(), getPortalCompany(), listInvoices()]);
 
   const navLabels = {
@@ -173,26 +218,11 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
                   ariaLabel={dict.nav.switchToLabel}
                   className={styles.textButton}
                 />
-                <details className={styles.account}>
-                  <summary aria-label={`${dict.auth.account} : ${me.displayName}`}>
-                    <span className={styles.avatar} aria-hidden="true">
-                      {initials(me.displayName)}
-                    </span>
-                  </summary>
-                  <div className={styles.accountMenu}>
-                    <p className={styles.accountName}>{me.displayName}</p>
-                    <p className={styles.accountMail} dir="ltr">
-                      {me.email}
-                    </p>
-                    {me.operator && <span className={`${styles.chip} ${styles.chipNeutral}`}>{dict.auth.operator}</span>}
-                    <form action={logoutAction}>
-                      <input type="hidden" name="lang" value={lang} />
-                      <button type="submit" className={styles.logout}>
-                        {dict.auth.logout}
-                      </button>
-                    </form>
-                  </div>
-                </details>
+                {account}
+                <Link href={`/${lang}/atelys`} className={styles.appSwitch}>
+                  <span className={styles.appSwitchDot} aria-hidden="true" />
+                  {dict.atelys.switchToAtelys}
+                </Link>
               </div>
               <MobileNav lang={lang} labels={navLabels} />
             </header>

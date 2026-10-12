@@ -334,6 +334,20 @@ async function companyGet<T>(path: string, forCompany?: string): Promise<ApiResu
   }
 }
 
+/** GET on the portal environment, for modules with their own types (Atelys). */
+export const getForCompany = <T,>(path: string) => companyGet<T>(path);
+
+/** Writes on the portal environment (server actions only). */
+export async function sendForCompany<T>(
+  method: "POST" | "PATCH" | "PUT",
+  path: string,
+  body?: unknown,
+): Promise<MutationResult<T>> {
+  const company = await portalCompanyId();
+  if (!company) return { ok: false, errorCode: "NO_COMPANY" };
+  return sendFlowMutation<T>(company, method, path, body ?? null);
+}
+
 // ---------- client environments and flows (ADR-0007) ----------
 
 export type Environment = {
