@@ -405,9 +405,16 @@ export type DirectionCatalog = {
   targetChannels: CatalogOption[];
 };
 
+export type FlowModule = "INVOICING" | "SUPPLY_CHAIN";
+
+/** A document type, its module, and what its flows can be made of per direction. */
+export type CatalogDocument = { code: string; module: FlowModule; out: DirectionCatalog; in: DirectionCatalog };
+
 export type FlowCatalog = {
+  /** Invoice catalog, as before; `documents` has every document type. */
   out: DirectionCatalog;
   in: DirectionCatalog;
+  documents: CatalogDocument[];
   mappings: { direction: FlowDirection; sourceFormat: string; targetFormat: string; id: string; version: string }[];
 };
 

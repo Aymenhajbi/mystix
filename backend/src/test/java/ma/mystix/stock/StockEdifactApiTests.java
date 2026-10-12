@@ -47,7 +47,7 @@ class StockEdifactApiTests {
     RestClient http;
     UUID company;
     UUID other;
-    /** IN flow declared for supplier despatch advices; the OUT API flow comes with every new company. */
+    /** Active DESADV flows: supplier despatch advices (IN) and our own despatches (OUT). */
     UUID inFlow;
     UUID outFlow;
 
@@ -57,13 +57,11 @@ class StockEdifactApiTests {
         other = companies.register(new Ice("000000031000031"), "Autre Entrepot EDI SARL", null).id();
         http = RestClient.builder().baseUrl("http://localhost:" + port)
                 .defaultStatusHandler(status -> true, (request, response) -> { }).build();
-        outFlow = UUID.fromString((String) flows(company).getFirst().get("id"));
-        Map<?, ?> created = http.post().uri("/api/v1/flows").header("X-Mystix-Company-Id", company.toString())
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("name", "Avis d'expedition fournisseurs", "direction", "IN", "sourceChannel", "AS2",
-                        "sourceFormat", "UBL_2_1", "targetFormat", "IDOC_INVOIC02", "targetChannel", "SFTP"))
-                .retrieve().body(Map.class);
-        inFlow = UUID.fromString((String) created.get("id"));
+        inFlow = stockFlow(company, "Avis d'expedition fournisseurs", "DESADV", "IN", true);
+        outFlow = stockFlow(company, "Nos expeditions clients", "DESADV", "OUT", true);
+        stockFlow(company, "Avis de reception", "RECADV", "IN", true);
+        stockFlow(company, "Commandes clients", "ORDERS", "IN", true);
+        stockFlow(company, "Inventaires entrepot", "INVRPT", "IN", true);
     }
 
     @BeforeEach
@@ -139,10 +137,9 @@ class StockEdifactApiTests {
 
     @Test
     void theClientsFlowGivesTheMeaningOfADespatchAdvice() throws IOException {
-        // Without a flow the despatch advice has no meaning: rejected, and the reason names the header.
+        // Two active DESADV flows (IN and OUT): without a named flow the despatch advice has no meaning.
         Map<String, Object> noFlow = receive("desadv-in.edi", "", null).getBody();
-        assertThat(message(noFlow)).containsEntry("status", "REJECTED")
-                .containsEntry("errorCode", "EDIFACT_MAPPING_FAILED");
+        assertThat(message(noFlow)).containsEntry("status", "REJECTED").containsEntry("errorCode", "FLOW_AMBIGUOUS");
         assertThat((String) message(noFlow).get("errorDetail")).contains("X-Mystix-Flow-Id");
 
         // Through the OUT flow the same structure is our despatch: reserved stock must leave (none here).
@@ -164,6 +161,63 @@ class StockEdifactApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void stockFlowsAreActivatedAndPausedLikeEveryFlow() throws IOException {
+        UUID third = companies.register(new Ice("000000032000032"), "Plateforme Logistique Synthetique SARL", null).id();
+        // No RECADV flow yet: the message is refused, nothing applied.
+        Map<String, Object> none = receiveBytes(fixture("recadv.edi"), "", null, third).getBody();
+        assertThat(message(none)).containsEntry("status", "REJECTED").containsEntry("errorCode", "FLOW_NOT_ACTIVE");
+
+        // A draft flow is declared and executable, and still receives nothing until it is activated.
+        UUID recadv = stockFlow(third, "Receptions entrepot", "RECADV", "IN", false);
+        Map<String, Object> view = http.get().uri("/api/v1/flows/{id}", recadv)
+                .header("X-Mystix-Company-Id", third.toString()).retrieve().body(Map.class);
+        assertThat(view).containsEntry("status", "DRAFT").containsEntry("executable", true)
+                .containsEntry("documentType", "RECADV").containsEntry("sourceFormat", "EDIFACT_RECADV_D96A")
+                .containsEntry("targetFormat", "STOCK_LEDGER").containsEntry("mappingId", "stock-edifact-d96a");
+        assertThat(message(receiveBytes(fixture("recadv.edi"), "", recadv, third).getBody()))
+                .containsEntry("errorCode", "FLOW_NOT_ACTIVE");
+
+        // Active: the message enters the flow without naming it, and the outcome names the flow. Nothing is in
+        // transit for this company, so the stock refuses it on its own rule, after the flow let it through.
+        setStatus(third, recadv, "ACTIVE");
+        Map<String, Object> entered = message(receiveBytes(fixture("recadv.edi"), "", null, third).getBody());
+        assertThat(entered).containsEntry("flowId", recadv.toString()).doesNotContainEntry("errorCode", "FLOW_NOT_ACTIVE");
+
+        // Paused: refused again.
+        setStatus(third, recadv, "PAUSED");
+        assertThat(message(receiveBytes(fixture("recadv.edi"), "", null, third).getBody()))
+                .containsEntry("errorCode", "FLOW_NOT_ACTIVE");
+
+        // A flow carries one document type: an ORDERS through the RECADV flow or the invoice flow is refused.
+        setStatus(third, recadv, "ACTIVE");
+        assertThat(message(receiveBytes(fixture("orders.edi"), "", recadv, third).getBody()))
+                .containsEntry("errorCode", "FLOW_DOCUMENT_MISMATCH");
+        UUID thirdInvoices = UUID.fromString((String) flows(third).getFirst().get("id"));
+        assertThat(message(receiveBytes(fixture("orders.edi"), "", thirdInvoices, third).getBody()))
+                .containsEntry("errorCode", "FLOW_DOCUMENT_MISMATCH");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theCatalogOffersTheSupplyChainModule() {
+        Map<?, ?> catalog = http.get().uri("/api/v1/flows/catalog").header("X-Mystix-Company-Id", company.toString())
+                .retrieve().body(Map.class);
+        List<Map<String, Object>> documents = (List<Map<String, Object>>) catalog.get("documents");
+        assertThat(documents).extracting(d -> d.get("code"))
+                .containsExactly("INVOICE", "DESADV", "RECADV", "ORDERS", "INVRPT");
+        assertThat(documents).extracting(d -> d.get("module"))
+                .containsExactly("INVOICING", "SUPPLY_CHAIN", "SUPPLY_CHAIN", "SUPPLY_CHAIN", "SUPPLY_CHAIN");
+        // A stock flow cannot carry an invoice format.
+        ResponseEntity<Map> wrong = http.post().uri("/api/v1/flows").header("X-Mystix-Company-Id", company.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "Melange", "documentType", "DESADV", "direction", "IN", "sourceChannel", "API",
+                        "sourceFormat", "UBL_2_1", "targetFormat", "STOCK_LEDGER", "targetChannel", "LEDGER"))
+                .retrieve().toEntity(Map.class);
+        assertThat(wrong.getBody()).containsEntry("errorCode", "FLOW_OPTION_UNAVAILABLE");
+    }
+
+    @Test
     void aBadInterchangeIsRefusedWhole() throws IOException {
         ResponseEntity<Map> bad = receive("orders-bad-count.edi", "", null);
         assertThat(bad.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -178,13 +232,39 @@ class StockEdifactApiTests {
     }
 
     private ResponseEntity<Map> receiveBytes(byte[] body, String query, UUID flowId) {
+        return receiveBytes(body, query, flowId, company);
+    }
+
+    private ResponseEntity<Map> receiveBytes(byte[] body, String query, UUID flowId, UUID companyId) {
         var request = http.post().uri("/api/v1/stock/edifact" + query)
-                .header("X-Mystix-Company-Id", company.toString())
+                .header("X-Mystix-Company-Id", companyId.toString())
                 .contentType(MediaType.parseMediaType("application/edifact"));
         if (flowId != null) {
             request = request.header("X-Mystix-Flow-Id", flowId.toString());
         }
         return request.body(body).retrieve().toEntity(Map.class);
+    }
+
+    /** Declares an API stock flow to the stock ledger, active or left as a draft. */
+    private UUID stockFlow(UUID companyId, String name, String documentType, String direction, boolean active) {
+        Map<?, ?> created = http.post().uri("/api/v1/flows").header("X-Mystix-Company-Id", companyId.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", name, "documentType", documentType, "direction", direction, "sourceChannel", "API",
+                        "sourceFormat", "EDIFACT_" + documentType + "_D96A", "targetFormat", "STOCK_LEDGER",
+                        "targetChannel", "LEDGER"))
+                .retrieve().body(Map.class);
+        UUID id = UUID.fromString((String) created.get("id"));
+        if (active) {
+            setStatus(companyId, id, "ACTIVE");
+        }
+        return id;
+    }
+
+    private void setStatus(UUID companyId, UUID flowId, String status) {
+        ResponseEntity<Map> updated = http.patch().uri("/api/v1/flows/{id}", flowId)
+                .header("X-Mystix-Company-Id", companyId.toString()).contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("status", status)).retrieve().toEntity(Map.class);
+        assertThat(updated.getStatusCode()).as(status + " " + updated.getBody()).isEqualTo(HttpStatus.OK);
     }
 
     @SuppressWarnings("unchecked")

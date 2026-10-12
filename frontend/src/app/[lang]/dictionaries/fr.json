@@ -406,7 +406,8 @@
       "AS2": "AS2",
       "API_RESPONSE": "Réponse API",
       "WEBHOOK": "Webhook",
-      "API_PULL": "API (récupération)"
+      "API_PULL": "API (récupération)",
+      "LEDGER": "Registre de stock"
     },
     "formats": {
       "JSON_CANONICAL": "JSON canonique",
@@ -415,7 +416,12 @@
       "CSV": "CSV",
       "UBL_2_1": "UBL 2.1",
       "CII_D16B": "UN/CEFACT CII D16B",
-      "EANCOM_INVOIC": "EANCOM INVOIC"
+      "EANCOM_INVOIC": "EANCOM INVOIC",
+      "EDIFACT_DESADV_D96A": "EDIFACT DESADV D96A",
+      "EDIFACT_RECADV_D96A": "EDIFACT RECADV D96A",
+      "EDIFACT_ORDERS_D96A": "EDIFACT ORDERS D96A",
+      "EDIFACT_INVRPT_D96A": "EDIFACT INVRPT D96A",
+      "STOCK_LEDGER": "Mouvements de stock"
     },
     "planned": "prévu, lot {lot}",
     "flow": {
@@ -427,7 +433,7 @@
       "statusLabel": "Statut",
       "save": "Enregistrer",
       "saved": "Flux enregistré.",
-      "pauseNote": "Un flux en pause ou en brouillon refuse les factures (erreur FLOW_NOT_ACTIVE).",
+      "pauseNote": "Un flux en pause ou en brouillon refuse ses documents (erreur FLOW_NOT_ACTIVE).",
       "apiHint": "Pour envoyer sur ce flux : en-tête X-Mystix-Flow-Id: {id}",
       "defaultHint": "Sans en-tête, les factures API entrent dans le premier flux API actif.",
       "mappingFrom": "Valeurs de la dernière facture du flux : {number}",
@@ -466,7 +472,9 @@
       "default": "L'opération a échoué ({code}).",
       "FLOW_NOT_EXECUTABLE": "Ce flux est déclaré : ses briques ne sont pas encore livrées, il ne peut pas être activé.",
       "PARTNER_NOT_FOUND": "Ce partenaire n'appartient pas à cet environnement.",
-      "PARTNER_NAME_TAKEN": "Un partenaire porte déjà ce nom pour ce client."
+      "PARTNER_NAME_TAKEN": "Un partenaire porte déjà ce nom pour ce client.",
+      "FLOW_DOCUMENT_MISMATCH": "Ce flux ne porte pas ce type de document.",
+      "FLOW_AMBIGUOUS": "Plusieurs flux actifs portent ce document : nommez-en un."
     },
     "direction": {
       "OUT": "Émission",
@@ -529,6 +537,17 @@
       "enforceVatRates": "Contrôler les taux de TVA (recommandé)",
       "enforceVatRatesHelp": "Une ligne au taux normal ou réduit (S) doit porter un taux en vigueur à la date d'émission, selon le référentiel TVA daté ; sinon la facture est refusée (VAT_RATE_UNKNOWN). Sans taux au référentiel pour cette date, rien n'est contrôlé.",
       "vatOffWarning": "Contrôle des taux désactivé : tout taux entre 0 et 100 % est accepté. Le portail continue de proposer les taux en vigueur."
+    },
+    "modules": {
+      "INVOICING": "Facturation",
+      "SUPPLY_CHAIN": "Supply chain"
+    },
+    "documents": {
+      "INVOICE": "Facture",
+      "DESADV": "Avis d'expédition (DESADV)",
+      "RECADV": "Avis de réception (RECADV)",
+      "ORDERS": "Commande (ORDERS)",
+      "INVRPT": "Inventaire (INVRPT)"
     }
   },
   "studio": {

@@ -2834,3 +2834,38 @@
   border-color: var(--crit);
   color: var(--crit);
 }
+
+/* ---------- flow modules (invoicing, supply chain) ---------- */
+
+.docModules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+}
+
+.docModule {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.docModuleTitle {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.docValue {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 40px;
+  font-weight: 500;
+}
+
+.docValue small {
+  color: var(--muted);
+  font-weight: 400;
+}

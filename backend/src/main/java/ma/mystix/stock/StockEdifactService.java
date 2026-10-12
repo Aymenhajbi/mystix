@@ -10,6 +10,8 @@ import java.util.UUID;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import ma.mystix.flow.ExchangeFlow;
+import ma.mystix.flow.FlowCatalog;
 import ma.mystix.flow.FlowService;
 import ma.mystix.format.edifact.EdifactException;
 import ma.mystix.format.edifact.EdifactParser;
@@ -52,7 +54,7 @@ public class StockEdifactService {
      */
     public record MessageOutcome(String messageReference, String messageType, String documentNumber, String status,
                                  StockService.Result result, String errorCode, String errorDetail,
-                                 List<ApiError.FieldViolation> fieldErrors) {
+                                 List<ApiError.FieldViolation> fieldErrors, UUID flowId) {
     }
 
     /**
@@ -66,11 +68,12 @@ public class StockEdifactService {
     /**
      * @param flowId the client's IN or OUT flow; it must belong to the company. Its direction gives the meaning of a
      *               DESADV (IN: despatch advice from a supplier, OUT: our despatch to a customer).
-     *               TODO(Lot 6): stock document types in the flow catalog, and an ACTIVE flow required, like invoices.
+     *               Without it, each message enters the company's only active API flow of its type.
      */
     public Receipt receive(UUID companyId, byte[] body, UUID flowId, String defaultLocation) {
         companies.get(companyId);
-        String direction = flowId == null ? null : flows.get(companyId, flowId).direction();
+        ExchangeFlow named = flowId == null ? null : flows.get(companyId, flowId);
+        String direction = named == null ? null : named.direction();
         EdifactParser.Interchange interchange;
         try {
             interchange = EdifactParser.parse(body);
@@ -81,7 +84,7 @@ public class StockEdifactService {
         }
         List<MessageOutcome> outcomes = new ArrayList<>();
         for (EdifactParser.Message message : interchange.messages()) {
-            outcomes.add(receive(companyId, interchange, message, direction, defaultLocation));
+            outcomes.add(receive(companyId, interchange, message, named, defaultLocation));
         }
         int rejected = (int) outcomes.stream().filter(o -> "REJECTED".equals(o.status())).count();
         return new Receipt(interchange.sender(), interchange.controlReference(), flowId, direction,
@@ -89,23 +92,31 @@ public class StockEdifactService {
     }
 
     private MessageOutcome receive(UUID companyId, EdifactParser.Interchange interchange, EdifactParser.Message message,
-                                   String direction, String defaultLocation) {
+                                   ExchangeFlow named, String defaultLocation) {
         String documentNumber = null;
+        UUID flowId = named == null ? null : named.id();
         MessageOutcome outcome;
         try {
+            // A message type the stock does not read is refused by the mapper, with its own error.
+            String direction = null;
+            if (FlowCatalog.isStock(message.type())) {
+                ExchangeFlow flow = flows.forStockMessage(companyId, named, message.type());
+                flowId = flow.id();
+                direction = flow.direction();
+            }
             StockEventRequest request = StockEdifactMapper.map(interchange, message, direction, defaultLocation);
             documentNumber = request.documentNumber();
             validate(request);
             StockService.Result result = stock.apply(companyId, request);
             outcome = new MessageOutcome(message.reference(), message.type(), documentNumber,
-                    result.replayed() ? "REPLAYED" : "APPLIED", result, null, null, List.of());
+                    result.replayed() ? "REPLAYED" : "APPLIED", result, null, null, List.of(), flowId);
         } catch (StockEdifactMapper.MappingException e) {
             outcome = new MessageOutcome(message.reference(), message.type(), documentNumber, "REJECTED", null,
                     ErrorCode.EDIFACT_MAPPING_FAILED.name(), e.getMessage(),
-                    List.of(new ApiError.FieldViolation(e.segment, e.getMessage())));
+                    List.of(new ApiError.FieldViolation(e.segment, e.getMessage())), flowId);
         } catch (MystixException e) {
             outcome = new MessageOutcome(message.reference(), message.type(), documentNumber, "REJECTED", null,
-                    e.errorCode().name(), e.getMessage(), e.fieldErrors());
+                    e.errorCode().name(), e.getMessage(), e.fieldErrors(), flowId);
         }
         store(companyId, interchange, message, outcome);
         return outcome;
