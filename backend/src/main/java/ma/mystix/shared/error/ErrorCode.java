@@ -138,16 +138,28 @@ public enum ErrorCode {
                     "تحقّق من معرّف التدفق ومن بيئة الزبون المختارة.")),
 
     FLOW_NOT_ACTIVE(HttpStatus.CONFLICT, Stage.API, false,
-            new LocalizedText("Aucun flux actif ne peut recevoir cette facture.",
-                    "لا يوجد تدفق نشط يمكنه استقبال هذه الفاتورة."),
-            new LocalizedText("Activez le flux dans le portail (environnement client > flux), puis renvoyez la facture.",
-                    "فعّل التدفق في البوابة (بيئة الزبون > التدفقات)، ثم أعد إرسال الفاتورة.")),
+            new LocalizedText("Aucun flux actif ne peut recevoir ce document.",
+                    "لا يوجد تدفق نشط يمكنه استقبال هذه الوثيقة."),
+            new LocalizedText("Activez le flux dans le portail (environnement client > flux), puis renvoyez le document.",
+                    "فعّل التدفق في البوابة (بيئة الزبون > التدفقات)، ثم أعد إرسال الوثيقة.")),
 
     FLOW_OPTION_UNAVAILABLE(HttpStatus.BAD_REQUEST, Stage.API, false,
             new LocalizedText("Cette combinaison de canal et de format n'est pas encore disponible.",
                     "هذا المزيج من القناة والصيغة غير متاح بعد."),
             new LocalizedText("Choisissez une option marquée disponible ; les autres arrivent avec les lots indiqués.",
                     "اختر خياراً متاحاً؛ الخيارات الأخرى قادمة مع الدفعات المشار إليها.")),
+
+    FLOW_DOCUMENT_MISMATCH(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Ce flux ne porte pas ce type de document.",
+                    "هذا التدفق لا يحمل هذا النوع من الوثائق."),
+            new LocalizedText("Envoyez le message par le flux de son type (DESADV, RECADV, ORDERS ou INVRPT).",
+                    "أرسل الرسالة عبر تدفق نوعها (DESADV أو RECADV أو ORDERS أو INVRPT).")),
+
+    FLOW_AMBIGUOUS(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Plusieurs flux actifs peuvent recevoir ce document.",
+                    "عدة تدفقات نشطة يمكنها استقبال هذه الوثيقة."),
+            new LocalizedText("Nommez le flux avec l'en-tête X-Mystix-Flow-Id.",
+                    "حدّد التدفق بواسطة الترويسة X-Mystix-Flow-Id.")),
 
     FLOW_NAME_TAKEN(HttpStatus.CONFLICT, Stage.API, false,
             new LocalizedText("Un flux porte déjà ce nom pour cette société.",

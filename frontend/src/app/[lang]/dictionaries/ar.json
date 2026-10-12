@@ -406,7 +406,8 @@
       "AS2": "AS2",
       "API_RESPONSE": "رد API",
       "WEBHOOK": "Webhook",
-      "API_PULL": "API (سحب)"
+      "API_PULL": "API (سحب)",
+      "LEDGER": "سجل المخزون"
     },
     "formats": {
       "JSON_CANONICAL": "JSON موحّد",
@@ -415,7 +416,12 @@
       "CSV": "CSV",
       "UBL_2_1": "UBL 2.1",
       "CII_D16B": "UN/CEFACT CII D16B",
-      "EANCOM_INVOIC": "EANCOM INVOIC"
+      "EANCOM_INVOIC": "EANCOM INVOIC",
+      "EDIFACT_DESADV_D96A": "EDIFACT DESADV D96A",
+      "EDIFACT_RECADV_D96A": "EDIFACT RECADV D96A",
+      "EDIFACT_ORDERS_D96A": "EDIFACT ORDERS D96A",
+      "EDIFACT_INVRPT_D96A": "EDIFACT INVRPT D96A",
+      "STOCK_LEDGER": "حركات المخزون"
     },
     "planned": "مُبرمج، الدفعة {lot}",
     "flow": {
@@ -427,7 +433,7 @@
       "statusLabel": "الحالة",
       "save": "حفظ",
       "saved": "تم حفظ التدفق.",
-      "pauseNote": "التدفق المتوقف أو المسودة يرفض الفواتير (الخطأ FLOW_NOT_ACTIVE).",
+      "pauseNote": "التدفق المتوقف أو المسودة يرفض وثائقه (الخطأ FLOW_NOT_ACTIVE).",
       "apiHint": "للإرسال على هذا التدفق: الترويسة X-Mystix-Flow-Id: {id}",
       "defaultHint": "دون ترويسة، تدخل فواتير API في أول تدفق API نشط.",
       "mappingFrom": "قيم آخر فاتورة في التدفق: {number}",
@@ -466,7 +472,9 @@
       "default": "فشلت العملية ({code}).",
       "FLOW_NOT_EXECUTABLE": "هذا التدفق مُعلَن: مكوّناته لم تُسلَّم بعد، ولا يمكن تفعيله.",
       "PARTNER_NOT_FOUND": "هذا الشريك لا ينتمي إلى هذه البيئة.",
-      "PARTNER_NAME_TAKEN": "يوجد شريك بنفس الاسم لهذا الزبون."
+      "PARTNER_NAME_TAKEN": "يوجد شريك بنفس الاسم لهذا الزبون.",
+      "FLOW_DOCUMENT_MISMATCH": "هذا التدفق لا يحمل هذا النوع من الوثائق.",
+      "FLOW_AMBIGUOUS": "عدة تدفقات نشطة تحمل هذه الوثيقة: حدّد واحداً."
     },
     "direction": {
       "OUT": "إرسال",
@@ -529,6 +537,17 @@
       "enforceVatRates": "مراقبة أسعار الضريبة على القيمة المضافة (موصى به)",
       "enforceVatRatesHelp": "يجب أن يحمل السطر بالسعر العادي أو المخفَّض (S) سعراً سارياً في تاريخ الإصدار حسب المرجع المؤرَّخ؛ وإلا تُرفض الفاتورة (VAT_RATE_UNKNOWN). إذا لم يتضمن المرجع أي سعر لهذا التاريخ، لا تتم أي مراقبة.",
       "vatOffWarning": "مراقبة الأسعار معطَّلة: يُقبل أي سعر بين 0 و100 %. تواصل البوابة اقتراح الأسعار السارية."
+    },
+    "modules": {
+      "INVOICING": "الفوترة",
+      "SUPPLY_CHAIN": "سلسلة الإمداد"
+    },
+    "documents": {
+      "INVOICE": "فاتورة",
+      "DESADV": "إشعار الشحن (DESADV)",
+      "RECADV": "إشعار الاستلام (RECADV)",
+      "ORDERS": "طلبية (ORDERS)",
+      "INVRPT": "جرد (INVRPT)"
     }
   },
   "studio": {

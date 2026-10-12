@@ -13,9 +13,11 @@ export async function createFlowAction(form: FormData) {
   if (!hasLocale(lang) || !isUuid(companyId)) redirect("/");
   const base = `/${lang}/clients/${companyId}`;
   const direction = text(form, "direction") === "IN" ? "IN" : "OUT";
+  const documentType = text(form, "documentType") || "INVOICE";
   const partnerId = text(form, "partnerId");
   const result = await sendFlowMutation<ExchangeFlow>(companyId, "POST", "/api/v1/flows", {
     name: text(form, "name"),
+    documentType,
     direction,
     partnerId: isUuid(partnerId) ? partnerId : null,
     sourceChannel: text(form, "sourceChannel"),
@@ -23,7 +25,7 @@ export async function createFlowAction(form: FormData) {
     targetFormat: text(form, "targetFormat"),
     targetChannel: text(form, "targetChannel"),
   });
-  if (!result.ok) redirect(`${base}/flows/new?direction=${direction}&error=${encodeURIComponent(result.errorCode)}`);
+  if (!result.ok) redirect(`${base}/flows/new?direction=${direction}&doc=${encodeURIComponent(documentType)}&error=${encodeURIComponent(result.errorCode)}`);
   redirect(`${base}/flows/${result.data.id}?created=1`);
 }
 

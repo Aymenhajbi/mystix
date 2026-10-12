@@ -35,11 +35,14 @@ class FlowController {
         this.flows = flows;
     }
 
+    /** {@code out} and {@code in} are the invoice catalog, kept for older clients; {@code documents} has them all. */
     record CatalogView(FlowCatalog.DirectionCatalog out, FlowCatalog.DirectionCatalog in,
-                       List<FlowCatalog.Mapping> mappings) {
+                       List<FlowCatalog.Mapping> mappings, List<FlowCatalog.Document> documents) {
     }
 
+    /** {@code documentType} defaults to INVOICE. */
     record CreateFlowRequest(@NotBlank @Size(max = 120) String name,
+                             @Pattern(regexp = "^(INVOICE|DESADV|RECADV|ORDERS|INVRPT)$") String documentType,
                              @NotBlank @Pattern(regexp = "^(IN|OUT)$") String direction, UUID partnerId,
                              @NotBlank String sourceChannel, @NotBlank String sourceFormat,
                              @NotBlank String targetFormat, @NotBlank String targetChannel) {
@@ -54,7 +57,7 @@ class FlowController {
 
     @GetMapping(value = "/catalog", produces = MediaType.APPLICATION_JSON_VALUE)
     CatalogView catalog() {
-        return new CatalogView(FlowCatalog.OUT, FlowCatalog.IN, FlowCatalog.MAPPINGS);
+        return new CatalogView(FlowCatalog.OUT, FlowCatalog.IN, FlowCatalog.MAPPINGS, FlowCatalog.DOCUMENTS);
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -74,8 +77,8 @@ class FlowController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<FlowView> create(@RequestHeader(COMPANY) UUID companyId,
                                         @Valid @RequestBody CreateFlowRequest request) {
-        ExchangeFlow flow = flows.create(companyId, new FlowService.NewFlow(request.name(), request.direction(),
-                request.partnerId(), request.sourceChannel(), request.sourceFormat(), request.targetFormat(),
+        ExchangeFlow flow = flows.create(companyId, new FlowService.NewFlow(request.name(), request.documentType(),
+                request.direction(), request.partnerId(), request.sourceChannel(), request.sourceFormat(), request.targetFormat(),
                 request.targetChannel()));
         return ResponseEntity.status(201).body(view(flow));
     }

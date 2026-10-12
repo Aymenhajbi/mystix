@@ -47,7 +47,7 @@ Le moteur de stock (ADR-0011) reçoit des événements canoniques. Il faut lire 
      - sinon le GLN du NAD : DP puis ST pour les réceptions, SF pour les expéditions et commandes, WH pour les inventaires ;
      - sinon l'emplacement par défaut passé à l'API.
    - **Dates sans fuseau** (formats 102, 203, 204) : lues en Africa/Casablanca, fuseau métier.
-4. **API** : `POST /api/v1/stock/edifact?location=…`, avec l'en-tête `X-Mystix-Flow-Id` (amendement 1), reçoit une interchange.
+4. **API** : `POST /api/v1/stock/edifact?location=…`, avec l'en-tête `X-Mystix-Flow-Id` (amendements 1 et 2), reçoit une interchange ; chaque message entre par un flux actif de son type.
    - Chaque message est appliqué dans **sa propre transaction**, et la réponse donne le résultat message par message.
    - Une erreur de syntaxe de l'interchange la refuse en entier (`EDIFACT_INVALID`, 400).
 
@@ -56,7 +56,17 @@ Décision du fondateur : le sens d'un DESADV n'est plus passé en paramètre. Il
 - Flux **IN** : avis d'expédition d'un fournisseur (`SHIPMENT_NOTICE_IN`). Flux **OUT** : notre expédition vers un client (`SHIPMENT_OUT`).
 - Le flux doit appartenir à l'environnement, sinon `FLOW_NOT_FOUND` (404). Sans flux, un DESADV est refusé, avec un motif qui nomme l'en-tête ; les RECADV, ORDERS et INVRPT n'en ont pas besoin.
 - Une même interchange déjà appliquée ne peut pas changer de sens : renvoyée par l'autre flux, elle est refusée (`STOCK_EVENT_CONFLICT`).
-- Reste à faire (Lot 6) : types de document « stock » dans le catalogue des flux, et flux ACTIF exigé comme pour les factures. Aujourd'hui, seul le sens du flux est lu.
+- ~~Reste à faire (Lot 6) : types de document « stock » dans le catalogue des flux, et flux ACTIF exigé.~~ Fait par l'amendement 2.
+
+## Amendement 2 — 2026-10-12 : flux supply chain, activables comme tout flux
+Demande du fondateur : les flux stock s'activent et se mettent en pause comme les flux de factures.
+- **Catalogue** : deux modules, **Facturation** (`INVOICE`) et **Supply chain** (`DESADV`, `RECADV`, `ORDERS`, `INVRPT`). Un flux supply chain : canal d'entrée API (AS2 et SFTP prévus, Lot 6), format `EDIFACT_<type>_D96A`, cible `STOCK_LEDGER` par le canal `LEDGER`, mapping `stock-edifact-d96a` 1.0, dans les deux sens. `GET /api/v1/flows/catalog` ajoute la liste `documents` ; `POST /api/v1/flows` accepte `documentType` (défaut `INVOICE`). Migration `V16`.
+- **Flux ACTIF exigé**, message par message :
+  - flux nommé par `X-Mystix-Flow-Id` : il doit porter le type du message (`FLOW_DOCUMENT_MISMATCH`), être actif et d'entrée API (`FLOW_NOT_ACTIVE`) ;
+  - sans en-tête : le seul flux actif API de ce type est pris ; aucun → `FLOW_NOT_ACTIVE`, plusieurs → `FLOW_AMBIGUOUS` (nommer le flux).
+- Le sens d'un DESADV vient du flux retenu : un DESADV n'a plus besoin de l'en-tête quand un seul flux DESADV est actif.
+- Le résultat de chaque message donne le flux emprunté (`flowId`).
+- Aucun flux stock n'est créé d'office : chaque environnement client déclare et active les siens dans le portail.
 
 ## Hypothèses à confirmer
 - Profils EANCOM des partenaires : les messages D96A EANCOM (UNH …:EAN00x) sont acceptés, sans contrôle des règles propres à EANCOM.

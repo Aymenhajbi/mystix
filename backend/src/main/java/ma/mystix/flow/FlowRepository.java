@@ -92,6 +92,20 @@ class FlowRepository {
                 .optional();
     }
 
+    /** Active API flows of one document type, oldest first. */
+    List<ExchangeFlow> activeApiFlows(UUID companyId, String documentType) {
+        return jdbc.sql("""
+                SELECT * FROM exchange_flow
+                WHERE company_id = :companyId AND status = 'ACTIVE' AND source_channel = 'API'
+                  AND document_type = :documentType
+                ORDER BY created_at, name
+                """)
+                .param("companyId", companyId)
+                .param("documentType", documentType)
+                .query(FLOW)
+                .list();
+    }
+
     void update(UUID companyId, UUID id, String name, ExchangeFlow.Status status, OffsetDateTime at) {
         jdbc.sql("""
                 UPDATE exchange_flow SET name = :name, status = :status, updated_at = :at

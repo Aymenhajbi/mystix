@@ -55,6 +55,7 @@ export default async function NewFlowPage({ params, searchParams }: Params) {
   const query = await searchParams;
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
   const direction: FlowDirection = query.direction === "IN" ? "IN" : "OUT";
+  const docParam = Array.isArray(query.doc) ? query.doc[0] : query.doc;
   const [company, catalog, partners] = await Promise.all([
     getCompany(companyId),
     getFlowCatalog(companyId),
@@ -65,9 +66,17 @@ export default async function NewFlowPage({ params, searchParams }: Params) {
     return <p className={styles.message} role="alert">{dict.common.apiUnreachable}</p>;
   }
   const errorText = error ? (c.errors[error as keyof typeof c.errors] ?? t(c.errors.default, { code: error })) : null;
-  const options = direction === "IN" ? catalog.data.in : catalog.data.out;
-  const mappings = catalog.data.mappings.filter((m) => m.direction === direction);
+  const documents = catalog.data.documents;
+  const document = documents.find((d) => d.code === docParam) ?? documents[0];
+  const options = direction === "IN" ? document.in : document.out;
+  const formats = new Set(options.sourceFormats.map((o) => o.code));
+  const mappings = catalog.data.mappings.filter((m) => m.direction === direction && formats.has(m.sourceFormat));
   const base = `/${lang}/clients/${companyId}/flows/new`;
+  const href = (d: FlowDirection, doc: string) => `${base}?direction=${d}&doc=${doc}`;
+  const modules = (["INVOICING", "SUPPLY_CHAIN"] as const).map((m) => ({
+    code: m,
+    documents: documents.filter((d) => d.module === m),
+  }));
 
   return (
     <div className={styles.stack}>
@@ -95,9 +104,27 @@ export default async function NewFlowPage({ params, searchParams }: Params) {
       )}
       <nav className={styles.dirTabs} aria-label={c.create.direction}>
         {(["OUT", "IN"] as const).map((d) => (
-          <Link key={d} href={`${base}?direction=${d}`} aria-current={d === direction ? "page" : undefined}>
+          <Link key={d} href={href(d, document.code)} aria-current={d === direction ? "page" : undefined}>
             <DirectionBadge direction={d} dict={dict} /> {c.directionTitle[d]}
           </Link>
+        ))}
+      </nav>
+      <nav className={styles.docModules} aria-label={c.create.document}>
+        {modules.map((m) => (
+          <div key={m.code} className={styles.docModule}>
+            <span className={styles.docModuleTitle}>{c.modules[m.code]}</span>
+            <div className={styles.dirTabs}>
+              {m.documents.map((d) => (
+                <Link
+                  key={d.code}
+                  href={href(direction, d.code)}
+                  aria-current={d.code === document.code ? "page" : undefined}
+                >
+                  {c.documents[d.code as keyof typeof c.documents] ?? d.code}
+                </Link>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
       <section className={styles.panel}>
@@ -105,6 +132,7 @@ export default async function NewFlowPage({ params, searchParams }: Params) {
           <input type="hidden" name="lang" value={lang} />
           <input type="hidden" name="companyId" value={companyId} />
           <input type="hidden" name="direction" value={direction} />
+          <input type="hidden" name="documentType" value={document.code} />
           <p className={styles.formNote} style={{ margin: 0 }}>
             {c.directionHint[direction]}
           </p>
@@ -113,12 +141,13 @@ export default async function NewFlowPage({ params, searchParams }: Params) {
               <span>{c.create.name}</span>
               <input name="name" required maxLength={120} placeholder={c.create.namePlaceholder} />
             </label>
-            <label className={styles.field}>
+            <div className={styles.field}>
               <span>{c.create.document}</span>
-              <select name="documentType" defaultValue="INVOICE" disabled>
-                <option value="INVOICE">{c.create.invoice}</option>
-              </select>
-            </label>
+              <span className={styles.docValue}>
+                {c.documents[document.code as keyof typeof c.documents] ?? document.code}
+                <small>{c.modules[document.module]}</small>
+              </span>
+            </div>
           </div>
           <label className={styles.field}>
             <span>{c.partner.label}</span>

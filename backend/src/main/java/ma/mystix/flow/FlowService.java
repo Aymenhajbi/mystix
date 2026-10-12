@@ -37,8 +37,8 @@ public class FlowService {
      * @param direction OUT (the client sends) or IN (the client receives)
      * @param partnerId one partner of the client, or {@code null} for all partners
      */
-    public record NewFlow(String name, String direction, UUID partnerId, String sourceChannel, String sourceFormat,
-                          String targetFormat, String targetChannel) {
+    public record NewFlow(String name, String documentType, String direction, UUID partnerId, String sourceChannel,
+                          String sourceFormat, String targetFormat, String targetChannel) {
     }
 
     /** Every new client environment starts with the flow Mystix already runs: invoices by API to UBL 2.1. */
@@ -70,7 +70,8 @@ public class FlowService {
     @Transactional
     public ExchangeFlow create(UUID companyId, NewFlow request) {
         companies.get(companyId);
-        FlowCatalog.DirectionCatalog catalog = FlowCatalog.of(request.direction());
+        String documentType = request.documentType() == null ? FlowCatalog.INVOICE : request.documentType();
+        FlowCatalog.DirectionCatalog catalog = FlowCatalog.of(documentType, request.direction());
         if (catalog == null
                 || FlowCatalog.option(catalog.sourceChannels(), request.sourceChannel()).isEmpty()
                 || FlowCatalog.option(catalog.sourceFormats(), request.sourceFormat()).isEmpty()
@@ -83,7 +84,7 @@ public class FlowService {
         }
         var mapping = FlowCatalog.mappingFor(request.direction(), request.sourceFormat(), request.targetFormat());
         OffsetDateTime now = OffsetDateTime.now(clock);
-        ExchangeFlow flow = new ExchangeFlow(UUID.randomUUID(), companyId, request.name().strip(), "INVOICE",
+        ExchangeFlow flow = new ExchangeFlow(UUID.randomUUID(), companyId, request.name().strip(), documentType,
                 request.direction(), request.sourceChannel(), request.sourceFormat(), request.targetFormat(),
                 request.targetChannel(), mapping.map(FlowCatalog.Mapping::id).orElse(null),
                 mapping.map(FlowCatalog.Mapping::version).orElse(null), ExchangeFlow.Status.DRAFT, now, now,
@@ -111,6 +112,38 @@ public class FlowService {
             throw new MystixException(ErrorCode.FLOW_NAME_TAKEN, "Flow name taken: " + newName, e);
         }
         return get(companyId, flowId);
+    }
+
+    /**
+     * The flow a stock EDIFACT message enters (ADR-0012, amendment 2): the one the caller named, or else the company's
+     * only active API flow of that message type. Like an invoice, a stock message needs an active flow: a draft or
+     * paused flow receives nothing.
+     *
+     * @param named       the flow named by the caller, already checked to belong to the company, or {@code null}
+     * @param messageType the EDIFACT message type (DESADV, RECADV, ORDERS, INVRPT)
+     */
+    @Transactional(readOnly = true)
+    public ExchangeFlow forStockMessage(UUID companyId, ExchangeFlow named, String messageType) {
+        if (named != null) {
+            if (!messageType.equals(named.documentType())) {
+                throw new MystixException(ErrorCode.FLOW_DOCUMENT_MISMATCH,
+                        "Flow " + named.id() + " carries " + named.documentType() + ", not " + messageType);
+            }
+            if (named.status() != ExchangeFlow.Status.ACTIVE || !"API".equals(named.sourceChannel())) {
+                throw new MystixException(ErrorCode.FLOW_NOT_ACTIVE, "Flow " + named.id() + " is " + named.status());
+            }
+            return named;
+        }
+        List<ExchangeFlow> active = repository.activeApiFlows(companyId, messageType);
+        if (active.isEmpty()) {
+            throw new MystixException(ErrorCode.FLOW_NOT_ACTIVE, "No active API " + messageType + " flow for company "
+                    + companyId + ": activate one, or name it with X-Mystix-Flow-Id");
+        }
+        if (active.size() > 1) {
+            throw new MystixException(ErrorCode.FLOW_AMBIGUOUS, active.size() + " active " + messageType
+                    + " flows: name one with X-Mystix-Flow-Id");
+        }
+        return active.getFirst();
     }
 
     /**
