@@ -14,6 +14,7 @@ import ma.mystix.TestcontainersConfiguration;
 import ma.mystix.shared.Sha256;
 import ma.mystix.tenant.CompanyService;
 import ma.mystix.tenant.Ice;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ class InvoiceApiTests {
 
     @Autowired
     CompanyService companies;
+
+    @Autowired
+    MeterRegistry meters;
 
     RestClient http;
     String validRequest;
@@ -124,6 +128,16 @@ class InvoiceApiTests {
                 .filteredOn(a -> "OUT".equals(a.get("kind")))
                 .singleElement()
                 .satisfies(a -> assertThat(a).containsEntry("sha256", Sha256.hex(first.getBody())));
+    }
+
+    @Test
+    void timesEachStageOfThePipeline() {
+        submit(sellerCompany, withNumber("FA-METRICS-1"), byte[].class);
+        for (String stage : List.of("canonical", "calculate", "generate", "xsd", "en16931", "persist", "clearance")) {
+            var timer = meters.find("mystix.stage").tags("pipeline", "invoice", "stage", stage, "outcome", "ok").timer();
+            assertThat(timer).as(stage).isNotNull();
+            assertThat(timer.count()).as(stage).isPositive();
+        }
     }
 
     @Test

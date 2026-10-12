@@ -35,6 +35,12 @@ CREATE TABLE message_queue (
 CREATE INDEX ix_queue_ready ON message_queue (available_at) WHERE status = 'READY';
 ```
 
+## Mise en œuvre (2026-10-12)
+- Table `queue_job` (V20) : identifiants UUID, `company_id` NOT NULL, unicité `(kind, subject_id)` pour l'idempotence, bail (`locked_until`) au lieu d'un simple `locked_at`.
+- **Voies** : une voie par flux (`flow:<id>`) ou par société. Chaque voie a un plafond de traitements simultanés, tous nœuds confondus (`queue_lane`, sinon `mystix.queue.default-max-running`), garanti par un verrou consultatif de transaction par voie. Chaque tour sert les voies à parts égales : un gros lot d'un client ne prend pas les places des autres.
+- Échec : erreur structurée non rejouable → DEAD tout de suite ; sinon reprise après `backoff-base × 2^(n−1)` (plafonné, ±20 %), DEAD après `max-attempts`. Rejeu d'un DEAD par l'administrateur de l'environnement (`POST /api/v1/queue/jobs/{id}/replay`).
+- Exécution sur threads virtuels, `mystix.queue.concurrency` par processus ; temps par type et issue (`mystix.queue.job`).
+
 ## Options écartées
 | Option | Pourquoi écartée |
 | --- | --- |

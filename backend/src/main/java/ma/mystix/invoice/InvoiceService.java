@@ -24,6 +24,7 @@ import ma.mystix.shared.Sha256;
 import ma.mystix.shared.error.ApiError;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
+import ma.mystix.shared.metrics.StageMetrics;
 import ma.mystix.shared.time.TimeConfig;
 import ma.mystix.tenant.CompanyService;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ public class InvoiceService {
 
     private static final Logger log = LoggerFactory.getLogger(InvoiceService.class);
     static final int MAX_PAGE_SIZE = 200;
+    private static final String PIPELINE = "invoice";
 
     private final CompanyService companies;
     private final InvoiceRepository repository;
@@ -51,11 +53,14 @@ public class InvoiceService {
     private final En16931Validator rulesValidator;
     private final ClearanceGateway clearance;
     private final ProcessingLog logs;
+    private final StageMetrics stages;
     private final Clock clock;
 
     InvoiceService(CompanyService companies, InvoiceRepository repository, InvoiceCalculator calculator,
                    UblInvoiceGenerator generator, UblSchemaValidator schemaValidator,
-                   En16931Validator rulesValidator, ClearanceGateway clearance, ProcessingLog logs, Clock clock) {
+                   En16931Validator rulesValidator, ClearanceGateway clearance, ProcessingLog logs, StageMetrics stages,
+                   Clock clock) {
+        this.stages = stages;
         this.clearance = clearance;
         this.logs = logs;
         this.companies = companies;
@@ -75,7 +80,7 @@ public class InvoiceService {
         // Seller identity (seller ICE = company ICE) is checked at intake, where each environment can turn it off.
         companies.get(companyId);
 
-        byte[] canonical = CanonicalJson.write(invoice);
+        byte[] canonical = stages.time(PIPELINE, "canonical", () -> CanonicalJson.write(invoice));
         String canonicalSha256 = Sha256.hex(canonical);
 
         var existing = repository.findByNumber(companyId, invoice.number());
@@ -83,7 +88,7 @@ public class InvoiceService {
             return replay(existing.get(), canonicalSha256);
         }
 
-        InvoiceTotals totals = calculator.calculate(invoice);
+        InvoiceTotals totals = stages.time(PIPELINE, "calculate", () -> calculator.calculate(invoice));
         byte[] ubl = toUbl(invoice, totals);
         OffsetDateTime now = OffsetDateTime.now(clock);
         // A backdated invoice is stored and checked like any other, but waits for an administrator before clearance.
@@ -98,7 +103,7 @@ public class InvoiceService {
         artifacts.put(ArtifactKind.CANONICAL, canonical);
         artifacts.put(ArtifactKind.OUT, ubl);
         try {
-            repository.insert(stored, artifacts);
+            stages.time(PIPELINE, "persist", () -> repository.insert(stored, artifacts));
         } catch (DuplicateKeyException e) {
             // A concurrent submission with the same number won the race.
             return replay(repository.findByNumber(companyId, invoice.number()).orElseThrow(() -> e),
@@ -147,8 +152,8 @@ public class InvoiceService {
     private StoredInvoice clear(StoredInvoice stored, byte[] ubl) {
         ClearanceResult result;
         try {
-            result = clearance.submit(new ClearanceRequest(stored.companyId(), stored.id(), stored.number(), ubl,
-                    Sha256.hex(ubl)));
+            result = stages.time(PIPELINE, "clearance", () -> clearance.submit(new ClearanceRequest(
+                    stored.companyId(), stored.id(), stored.number(), ubl, Sha256.hex(ubl))));
         } catch (RuntimeException e) {
             log.warn("Clearance failed for invoice {}", stored.id(), e);
             repository.appendEvent(stored.companyId(), stored.id(), StoredInvoice.EVENT_CLEARANCE_ERROR,
@@ -200,16 +205,16 @@ public class InvoiceService {
     }
 
     private byte[] toUbl(Invoice invoice, InvoiceTotals totals) {
-        byte[] ubl = generator.generate(invoice, totals);
+        byte[] ubl = stages.time(PIPELINE, "generate", () -> generator.generate(invoice, totals));
 
-        List<String> schemaErrors = schemaValidator.validateInvoice(ubl);
+        List<String> schemaErrors = stages.time(PIPELINE, "xsd", () -> schemaValidator.validateInvoice(ubl));
         if (!schemaErrors.isEmpty()) {
             // Our own output broke the schema: a Mystix bug, not a user error.
             throw new MystixException(ErrorCode.INVOICE_SCHEMA_INVALID,
                     "Generated UBL is not schema-valid for " + invoice.number() + ": " + schemaErrors);
         }
 
-        List<En16931Validator.Violation> violations = rulesValidator.validate(ubl);
+        List<En16931Validator.Violation> violations = stages.time(PIPELINE, "en16931", () -> rulesValidator.validate(ubl));
         if (violations.stream().anyMatch(v -> v.severity() == En16931Validator.Severity.FATAL)) {
             throw new MystixException(ErrorCode.INVOICE_RULES_VIOLATED,
                     "EN 16931 rules failed for " + invoice.number(), List.of(),

@@ -215,6 +215,18 @@ public enum ErrorCode {
             new LocalizedText("Choisissez un autre nom.",
                     "اختر اسماً آخر.")),
 
+    QUEUE_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
+            new LocalizedText("Traitement introuvable pour ce client.",
+                    "المعالجة غير موجودة لهذا الزبون."),
+            new LocalizedText("Vérifiez l'identifiant du traitement.",
+                    "تحقّق من معرّف المعالجة.")),
+
+    QUEUE_JOB_NOT_DEAD(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Seul un traitement en échec définitif peut être rejoué.",
+                    "لا يمكن إعادة تشغيل إلا معالجة فشلت نهائياً."),
+            new LocalizedText("Attendez la fin des reprises automatiques, puis rejouez si le traitement reste en échec.",
+                    "انتظر انتهاء المحاولات التلقائية، ثم أعد التشغيل إذا بقيت المعالجة فاشلة.")),
+
     CHANNEL_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
             new LocalizedText("Canal de communication introuvable pour ce client.",
                     "قناة الاتصال غير موجودة لهذا الزبون."),
