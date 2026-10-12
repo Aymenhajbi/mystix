@@ -2,6 +2,9 @@
 mystix:
   admin:
     enabled: true
+  atelys:
+    # Fictitious Atelys demonstration data (POST /api/v1/atelys/demo). Never on in production.
+    demo-enabled: true
   auth:
     # API tooling on a developer workstation (curl with X-Mystix-Company-Id). The portal always uses sessions.
     required: false

@@ -22,6 +22,11 @@ mystix:
     lock-duration: PT15M
     session-lifetime: PT12H
     idle-timeout: PT2H
+  atelys:
+    # Fictitious demonstration data endpoint (ADR-0014): developer profile only.
+    demo-enabled: false
+    # Issues beyond the BOM need plus this margin require a justification (percent).
+    consumption-tolerance-percent: 10
   admin:
     # Cross-tenant operator endpoints (/api/v1/admin). Off by default; on in the dev profile only.
     # TODO(auth): operator role required once authentication exists (Lot 8).
