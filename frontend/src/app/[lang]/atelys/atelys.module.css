@@ -3,61 +3,60 @@
 
 .shell {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: 252px minmax(0, 1fr);
   min-height: 100vh;
 }
 
+/* The workshop side: always dark, like a control panel, whatever the theme. */
 .side {
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  background: var(--surface);
-  border-inline-end: 1px solid var(--line);
+  background: #141016;
+  color: #d9d2e3;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 20px 14px;
+  gap: 22px;
+  padding: 22px 14px 18px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   text-decoration: none;
-  color: var(--text);
-  padding-inline: 6px;
+  color: #ffffff;
+  padding: 2px 8px 14px;
+  border-block-end: 1px solid #2a2430;
 }
 
-.brandMark {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--atelys-flash);
-  color: var(--atelys-flash-ink);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 21px;
-  letter-spacing: -0.02em;
-  box-shadow: 0 8px 22px rgba(255, 90, 31, 0.32);
+.brand:focus-visible {
+  outline: 2px solid var(--atelys-flash);
+  outline-offset: 4px;
+  border-radius: 8px;
 }
 
 .brandText {
   display: flex;
   flex-direction: column;
-  line-height: 1.15;
+  line-height: 1;
+  gap: 5px;
 }
 
 .brandName {
-  font-size: 21px;
+  font-family: var(--font-plex-condensed), var(--font-sans);
+  font-size: 30px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .brandTag {
-  font-size: 12px;
-  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a39cb3;
 }
 
 .navGroup {
@@ -67,22 +66,24 @@
 }
 
 .navTitle {
-  font-size: 11px;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  padding: 0 10px 6px;
+  letter-spacing: 0.14em;
+  color: #8a83a3;
+  padding: 0 10px 8px;
 }
 
 .navLink {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   min-height: 44px;
-  padding-inline: 10px;
+  padding-inline: 12px;
   border-radius: 10px;
-  color: var(--text-2);
+  color: #cfc8da;
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -92,20 +93,36 @@
   width: 19px;
   height: 19px;
   flex: none;
+  color: #8a83a3;
 }
 
 .navLink:hover {
-  background: var(--surface-2);
-  color: var(--text);
+  background: #1f1a24;
+  color: #ffffff;
 }
 
 .navLink[aria-current="page"] {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: #2a1a12;
+  color: #ffffff;
+}
+
+.navLink[aria-current="page"] svg {
+  color: var(--atelys-flash);
+}
+
+/* A square module marks the current screen, echoing the modules of the mark. */
+.navLink[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 12px;
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+  background: var(--atelys-flash);
 }
 
 .navLink:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--atelys-flash);
   outline-offset: 1px;
 }
 
@@ -114,22 +131,29 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 10px 0;
-  border-block-start: 1px solid var(--line);
-  font-size: 11.5px;
-  color: var(--muted);
+  padding: 14px 10px 0;
+  border-block-start: 1px solid #2a2430;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a83a3;
 }
 
 .powered svg {
-  height: 15px;
+  height: 16px;
   width: auto;
-  color: #8500de;
+  color: #c9a3ff;
 }
 
+/* The work surface: a faint dot grid, like the plan of a shop floor. */
 .frame {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg);
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 10%, transparent) 1px, transparent 1.2px);
+  background-size: 24px 24px;
 }
 
 .top {
@@ -137,12 +161,19 @@
   align-items: center;
   gap: 10px 14px;
   flex-wrap: wrap;
-  padding: 16px 28px 10px;
+  padding: 16px 32px 6px;
 }
 
 .tenant {
-  font-size: 13px;
-  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
 }
 
 .spacer {
@@ -172,13 +203,29 @@
 .switchDot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 2px;
   background: #8500de;
 }
 
 .main {
-  padding: 8px 28px 48px;
+  padding: 10px 32px 56px;
   min-width: 0;
+}
+
+/* Tables read like a shop ledger: mono, spaced, uppercase headings. */
+.main :global(table) th {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.main :global(section) h2 {
+  font-family: var(--font-plex-condensed), var(--font-sans);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 /* ---------- page parts ---------- */
@@ -189,21 +236,44 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-block-end: 18px;
+  margin-block-end: 22px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-block-end: 8px;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--atelys-flash);
 }
 
 .head h1 {
   margin: 0;
-  font-size: 26px;
-  letter-spacing: -0.01em;
+  font-family: var(--font-plex-condensed), var(--font-sans);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
 }
 
 .head p {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   color: var(--muted);
-  max-width: 80ch;
+  max-width: 78ch;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .kpis {
@@ -216,26 +286,130 @@
 .kpi {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: 16px;
+  padding: 14px 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  min-height: 108px;
+  justify-content: space-between;
 }
 
 .kpi span {
-  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 
 .kpi strong {
-  font-size: 28px;
+  font-family: var(--font-plex-condensed), var(--font-sans);
+  font-size: 44px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
+/* The figure that matters most is a solid flash block, ink on orange. */
+.kpiHot {
+  background: var(--atelys-flash);
+  border-color: var(--atelys-flash);
+  color: var(--atelys-flash-ink);
+}
+
+.kpiHot span,
 .kpiHot strong {
-  color: var(--accent);
+  color: var(--atelys-flash-ink);
+}
+
+.kpiHot .unit {
+  color: color-mix(in srgb, var(--atelys-flash-ink) 70%, transparent);
+}
+
+/* Work order lifecycle, one module per step. */
+.steps {
+  list-style: none;
+  padding: 0;
+  margin-block-start: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin-block-end: 18px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.step::before {
+  content: "";
+  height: 8px;
+  border-radius: 2px;
+  background: var(--surface-3);
+}
+
+.stepDone::before {
+  background: color-mix(in srgb, var(--atelys-flash) 45%, var(--surface-3));
+}
+
+.stepDone {
+  color: var(--text-2);
+}
+
+.stepNow::before {
+  background: var(--atelys-flash);
+}
+
+.stepNow {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.stepNote {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--warn);
+  margin: -10px 0 16px;
+}
+
+/* Stock split: available, reserved, blocked, in transit, side by side in one bar. */
+.split {
+  display: flex;
+  height: 10px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-3);
+  min-width: 140px;
+}
+
+.split > span {
+  display: block;
+  height: 100%;
+}
+
+.splitAvailable {
+  background: var(--atelys-flash);
+}
+
+.splitReserved {
+  background: #f2b27a;
+}
+
+.splitBlocked {
+  background: var(--crit);
+}
+
+.splitTransit {
+  background: repeating-linear-gradient(135deg, var(--text-2) 0 3px, transparent 3px 6px);
 }
 
 .grid2 {
@@ -720,6 +894,20 @@
     grid-template-columns: 1fr 1fr;
   }
 
+  .brand {
+    border-block-end: 0;
+    padding-block-end: 2px;
+  }
+
+  .head h1 {
+    font-size: 32px;
+  }
+
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 12px;
+  }
+
   .main,
   .top {
     padding-inline: 16px;
@@ -744,4 +932,19 @@
 
 .bodyFlush {
   padding: 12px 18px;
+}
+
+/* Arabic script joins its letters: no tracking, no mono, for every spaced-caps label. */
+.brandTag:lang(ar),
+.navTitle:lang(ar),
+.powered:lang(ar),
+.tenant:lang(ar),
+.eyebrow:lang(ar),
+.kpi span:lang(ar),
+.step:lang(ar),
+.main :global(table) th:lang(ar) {
+  font-family: var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 12px;
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Sans_Arabic, IBM_Plex_Sans_Condensed } from "next/font/google";
 import { AtelysShell } from "@/components/AtelysShell";
 import { CommandPalette, type PaletteItem } from "@/components/CommandPalette";
 import { Wordmark } from "@/components/Icons";
@@ -28,6 +28,13 @@ const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-plex-mono",
+  display: "swap",
+});
+/** Atelys display type (ADR-0014): headings, figures and the wordmark. */
+const plexCondensed = IBM_Plex_Sans_Condensed({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-plex-condensed",
   display: "swap",
 });
 const plexArabic = IBM_Plex_Sans_Arabic({
@@ -61,7 +68,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   const htmlProps = {
     lang,
     dir: direction(lang),
-    className: `${plexSans.variable} ${plexMono.variable} ${plexArabic.variable}`,
+    className: `${plexSans.variable} ${plexMono.variable} ${plexArabic.variable} ${plexCondensed.variable}`,
     suppressHydrationWarning: true,
   };
   const head = (

@@ -33,7 +33,7 @@ export default async function BomsPage({ params, searchParams }: PageProps<"/[la
 
   return (
     <>
-      <Head title={b.title} lead={b.lead}>
+      <Head eyebrow={dict.atelys.nav.production} title={b.title} lead={b.lead}>
         <a href="#new" className={s.flashBtn}>
           {b.new}
         </a>

@@ -31,7 +31,7 @@ export default async function TraceabilityPage({ params, searchParams }: PagePro
 
   return (
     <>
-      <Head title={T.title} lead={T.lead} />
+      <Head eyebrow={dict.atelys.nav.admin} title={T.title} lead={T.lead} />
       <form className={s.scan} role="search">
         <input
           name="code"

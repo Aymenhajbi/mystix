@@ -54,7 +54,7 @@ export default async function LotPage({ params, searchParams }: PageProps<"/[lan
 
   return (
     <>
-      <Head title={`${L.title} ${lot.lotNumber}`} lead={`${lot.sku} · ${lot.productName} · ${L.origin} : ${L.origins[lot.origin as keyof typeof L.origins] ?? lot.origin}`}>
+      <Head eyebrow={dict.atelys.nav.warehouse} title={`${L.title} ${lot.lotNumber}`} lead={`${lot.sku} · ${lot.productName} · ${L.origin} : ${L.origins[lot.origin as keyof typeof L.origins] ?? lot.origin}`}>
         <QualityBadge quality={lot.qualityStatus} dict={dict} />
       </Head>
       <Notice error={one(query.error)} ok={one(query.ok)} dict={dict} />

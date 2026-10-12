@@ -39,7 +39,7 @@ export default async function TransfersPage({ params, searchParams }: PageProps<
 
   return (
     <>
-      <Head title={T.title} lead={T.lead} />
+      <Head eyebrow={dict.atelys.nav.warehouse} title={T.title} lead={T.lead} />
       <Notice error={one(query.error)} ok={one(query.ok)} dict={dict} />
       <section className={pstyles.panel}>
         <div className={pstyles.panelHead}>

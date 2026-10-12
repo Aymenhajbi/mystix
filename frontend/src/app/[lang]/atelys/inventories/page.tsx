@@ -33,7 +33,7 @@ export default async function InventoriesPage({ params, searchParams }: PageProp
 
   return (
     <>
-      <Head title={I.title} lead={I.lead} />
+      <Head eyebrow={dict.atelys.nav.warehouse} title={I.title} lead={I.lead} />
       <Notice error={one(query.error)} ok={one(query.ok)} dict={dict} />
       <section className={pstyles.panel}>
         <div className={pstyles.panelHead}>

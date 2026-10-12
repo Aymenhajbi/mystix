@@ -33,7 +33,7 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps<
 
   return (
     <>
-      <Head title={S.title} lead={S.lead}>
+      <Head eyebrow={dict.atelys.nav.warehouse} title={S.title} lead={S.lead}>
         <a href="#new" className={s.flashBtn}>
           {S.new}
         </a>

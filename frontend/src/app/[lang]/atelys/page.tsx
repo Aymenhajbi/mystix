@@ -33,7 +33,7 @@ export default async function AtelysDashboard({ params, searchParams }: PageProp
   if (sites.data.length === 0) {
     return (
       <>
-        <Head title={d.title} lead={d.lead} />
+        <Head eyebrow={dict.atelys.nav.production} title={d.title} lead={d.lead} />
         <Notice error={one(query.error)} ok={one(query.ok)} dict={dict} />
         <div className={s.empty}>
           <h2>{d.empty}</h2>
@@ -55,7 +55,7 @@ export default async function AtelysDashboard({ params, searchParams }: PageProp
 
   return (
     <>
-      <Head title={d.title} lead={d.lead}>
+      <Head eyebrow={dict.atelys.nav.production} title={d.title} lead={d.lead}>
         {isDemo && <span className={s.demoFlag}>{a.common.demoNote}</span>}
         <Link href={`${base}/work-orders`} className={s.flashBtn}>
           {a.workOrders.new}
