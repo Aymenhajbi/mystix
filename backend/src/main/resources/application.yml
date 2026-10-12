@@ -38,6 +38,18 @@ mystix:
     # Cross-tenant operator endpoints (/api/v1/admin). Off by default; on in the dev profile only.
     # TODO(auth): operator role required once authentication exists (Lot 8).
     enabled: false
+  queue:
+    # Work queue in PostgreSQL (ADR-0003). One process or several: SKIP LOCKED and the per-lane lock keep them apart.
+    worker-enabled: ${MYSTIX_QUEUE_WORKER_ENABLED:true}
+    poll-interval: 500ms
+    # Jobs run at the same time by this process (virtual threads).
+    concurrency: 16
+    # Jobs of one flow running at the same time across all nodes, unless queue_lane overrides it.
+    default-max-running: 4
+    max-attempts: 8
+    lease: 5m
+    backoff-base: 2s
+    backoff-max: 15m
   clearance:
     # Only "simulated" exists (ADR-0001). Any other value stops the application at startup. TODO(DGI-SPEC)
     mode: ${MYSTIX_CLEARANCE_MODE:simulated}
