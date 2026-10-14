@@ -227,6 +227,12 @@ public enum ErrorCode {
             new LocalizedText("Attendez la fin des reprises automatiques, puis rejouez si le traitement reste en échec.",
                     "انتظر انتهاء المحاولات التلقائية، ثم أعد التشغيل إذا بقيت المعالجة فاشلة.")),
 
+    QUEUE_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, Stage.API, true,
+            new LocalizedText("Trop de traitements en attente sur ce flux : la demande n'a pas été enregistrée.",
+                    "توجد معالجات كثيرة قيد الانتظار في هذا التدفق: لم يُسجَّل الطلب."),
+            new LocalizedText("Renvoyez la même demande après le délai indiqué par l'en-tête Retry-After.",
+                    "أعد إرسال الطلب نفسه بعد المهلة المحددة في الترويسة Retry-After.")),
+
     CERTIFICATE_INVALID(HttpStatus.BAD_REQUEST, Stage.API, false,
             new LocalizedText("Ce fichier n'est pas un certificat X.509 lisible.",
                     "هذا الملف ليس شهادة X.509 قابلة للقراءة."),

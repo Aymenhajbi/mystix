@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import ma.mystix.TestcontainersConfiguration;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
+import ma.mystix.shared.error.RetryLaterException;
 import ma.mystix.tenant.CompanyService;
 import ma.mystix.tenant.Ice;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,7 +44,8 @@ import org.springframework.web.client.RestClient;
 @Import({TestcontainersConfiguration.class, QueueTests.Handlers.class})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "mystix.queue.worker-enabled=false", "mystix.queue.backoff-base=20ms", "mystix.queue.backoff-max=40ms",
-        "mystix.queue.max-attempts=3", "mystix.queue.default-max-running=2", "mystix.queue.concurrency=8"})
+        "mystix.queue.max-attempts=3", "mystix.queue.default-max-running=2", "mystix.queue.concurrency=8",
+        "mystix.queue.default-max-queued=3"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SuppressWarnings({"unchecked", "rawtypes"})
 class QueueTests {
@@ -244,6 +246,46 @@ class QueueTests {
         assertThat(queue.claim("w3", 8)).hasSize(5);
         jdbc.sql("UPDATE queue_lane SET paused = TRUE WHERE lane = :l").param("l", busy).update();
         assertThat(queue.claim("w4", 8)).isEmpty();
+    }
+
+    @Test
+    void aLaneAtItsQuotaRefusesNewWorkUntilAJobFinishes() {
+        String busy = Job.flowLane(UUID.randomUUID());
+        String quiet = Job.flowLane(UUID.randomUUID());
+        jdbc.sql("INSERT INTO queue_lane (lane, company_id, max_running, max_queued, updated_at) VALUES (:l, :c, 2, 2, now())")
+                .param("l", busy).param("c", company).update();
+        queue.admit(company, busy);
+        enqueue("TEST_OK", busy, UUID.randomUUID(), Map.of(), 5);
+        enqueue("TEST_OK", busy, UUID.randomUUID(), Map.of(), 5);
+
+        // RUNNING jobs count as unfinished: claiming does not make room.
+        List<Job> claimed = queue.claim("w", 1);
+        assertThatThrownBy(() -> queue.admit(company, busy))
+                .isInstanceOfSatisfying(RetryLaterException.class, e -> {
+                    assertThat(e.errorCode()).isEqualTo(ErrorCode.QUEUE_QUOTA_EXCEEDED);
+                    assertThat(e.retryAfter()).isPositive();
+                });
+        // Another lane, and the lane of another company, keep their own quota.
+        queue.admit(company, quiet);
+        queue.admit(other, Job.companyLane(other));
+
+        queue.complete(claimed.getFirst(), "w");
+        queue.admit(company, busy);
+    }
+
+    @Test
+    void theDefaultQuotaAppliesWhenTheLaneHasNoSetting() {
+        // Default from the test properties: 3 unfinished jobs.
+        String lane = Job.companyLane(company);
+        for (int i = 0; i < 3; i++) {
+            queue.admit(company, lane);
+            enqueue("TEST_OK", lane, UUID.randomUUID(), Map.of(), 5);
+        }
+        assertThatThrownBy(() -> queue.admit(company, lane)).isInstanceOf(RetryLaterException.class);
+        // A lane row without max_queued still uses the default.
+        jdbc.sql("INSERT INTO queue_lane (lane, company_id, max_running, updated_at) VALUES (:l, :c, 9, now())")
+                .param("l", lane).param("c", company).update();
+        assertThatThrownBy(() -> queue.admit(company, lane)).isInstanceOf(RetryLaterException.class);
     }
 
     @Test

@@ -15,6 +15,14 @@ public interface MessageQueue {
      */
     Job enqueue(Job.New job);
 
+    /**
+     * Refuses new work on a lane that already holds its quota of unfinished jobs: throws {@code QUEUE_QUOTA_EXCEEDED}
+     * (429, retryable). Call it in the transaction that will enqueue, before the business change is written, so a
+     * refused submission leaves nothing behind. The count is not locked: concurrent callers may overshoot the quota by
+     * at most their number, which is acceptable for a guard against unbounded growth.
+     */
+    void admit(UUID companyId, String lane);
+
     /** Reserves up to {@code max} ready jobs for this worker, a fair share per lane, within each lane's cap. */
     List<Job> claim(String worker, int max);
 

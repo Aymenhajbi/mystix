@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
+import ma.mystix.shared.error.RetryLaterException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
@@ -85,6 +86,25 @@ class PostgresMessageQueue implements MessageQueue {
                 .update();
         return jdbc.sql("SELECT * FROM queue_job WHERE kind = :kind AND subject_id = :subject")
                 .param("kind", job.kind()).param("subject", job.subjectId()).query(rows).single();
+    }
+
+    @Override
+    public void admit(UUID companyId, String lane) {
+        int quota = jdbc.sql("SELECT max_queued FROM queue_lane WHERE lane = :lane AND company_id = :c")
+                .param("lane", lane).param("c", companyId).query((rs, n) -> rs.getObject(1, Integer.class))
+                .list().stream().filter(java.util.Objects::nonNull).findFirst().orElse(properties.defaultMaxQueued());
+        // Stops counting at the quota: the partial indexes on READY and RUNNING keep this cheap on a deep lane.
+        long unfinished = jdbc.sql("""
+                        SELECT count(*) FROM (
+                            SELECT 1 FROM queue_job WHERE lane = :lane AND status IN ('READY', 'RUNNING') LIMIT :q
+                        ) t
+                        """)
+                .param("lane", lane).param("q", quota).query(Long.class).single();
+        if (unfinished >= quota) {
+            throw new RetryLaterException(ErrorCode.QUEUE_QUOTA_EXCEEDED,
+                    "Lane " + lane + " holds " + unfinished + " unfinished jobs, quota " + quota,
+                    properties.retryAfter());
+        }
     }
 
     private record ReadyLane(String lane, int maxRunning) {
