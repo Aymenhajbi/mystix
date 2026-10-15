@@ -132,6 +132,14 @@ class ConnectivityController {
         return view(listeners.stop(companyId, id, access.actor(request)), null);
     }
 
+    /** One acquisition cycle now, on a polling listener; answers what it did. */
+    @PostMapping("/listeners/{id}/poll")
+    ListenerAdapter.PollResult poll(@RequestHeader(COMPANY) UUID companyId, @PathVariable UUID id,
+                                    HttpServletRequest request) {
+        access.requireManager(request, companyId);
+        return listeners.pollNow(companyId, id, access.actor(request));
+    }
+
     @GetMapping("/listeners/{id}/events")
     List<ListenerStore.Event> events(@RequestHeader(COMPANY) UUID companyId, @PathVariable UUID id,
                                      @RequestParam(defaultValue = "100") int limit) {

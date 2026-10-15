@@ -20,13 +20,19 @@ L'ADR-0015 a livré la **configuration** des canaux (`comm_channel` : AS2, SFTP,
 7. **Journal** (`listener_event`) : démarrage demandé, démarré, refusé, échec, arrêté, restauré, message reçu ou refusé, avec corrélation et détails sans secret ni contenu de message. Compteurs `received_count`, `rejected_count`, `last_activity_at`.
 8. **Droits** : créer, modifier, démarrer, arrêter, faire tourner la clé : administrateur de l'environnement ou opérateur (`Access.requireManager`).
 
+## Amendement (2026-10-15) : SFTP par scrutation
+9. **Adaptateur `SFTP_POLLING`** (Apache MINA SSHD 2.18.0, Apache-2.0) : Mystix est **client** du serveur SFTP du partenaire (un serveur SFTP hébergé par Mystix n'est pas construit). Au démarrage, une connexion de contrôle prouve la configuration ; chaque échec est nommé : `HOST_UNREACHABLE`, `TIMEOUT`, `HOST_KEY_MISMATCH`, `AUTH_FAILED`, `REMOTE_DIRECTORY_UNAVAILABLE`, `SECRET_MISSING`, `SECRET_INVALID`.
+10. **Clé du serveur toujours vérifiée** : l'empreinte SHA-256 déclarée sur le canal est obligatoire ; aucune option pour la désactiver.
+11. **Acquisition** : fichiers du répertoire d'entrée qui suivent le masque, complets (pas de suffixe `.part`, `.tmp`, `.filepart`, `.partial` ; inchangés depuis `mystix.connectivity.sftp-stable-after`), dans la limite de taille. Empreinte SHA-256 et **dédoublonnage** par listener (`listener_file`, V24) : un contenu déjà pris n'est jamais remis deux fois au pipeline. Un fichier accepté est supprimé, déplacé en archive ou laissé, selon le canal ; un fichier refusé ou rejeté reste en place, journalisé une fois.
+12. **Secrets** : `SecretStore` lit le secret nommé par `credential_ref` dans `mystix.secrets.directory` (un fichier par référence, hors dépôt, jamais en base). Clés privées PKCS#8 ou OpenSSH sans phrase de passe. Le coffre d'exploitation reste prévu (Lot 8).
+13. **Une seule instance** : un poller ne tourne que dans un processus (`multiInstance() = false`) ; un démarrage est refusé (`RUNNING_ELSEWHERE`) tant qu'un autre processus a un heartbeat frais.
+14. **« Scruter maintenant »** : `POST /listeners/{id}/poll` lance un cycle et renvoie ce qu'il a fait.
+
 ## Livré / prévu
-- **Livré dans ce lot** : modèle, migrations, moteur, réconciliation, heartbeat, listener HTTP entrant réel, point d'entrée facture JSON, API, tests d'intégration.
+- **Livré** : modèle, migrations, moteur, réconciliation, heartbeat, listener HTTP entrant réel, listener SFTP par scrutation (testé contre un vrai serveur SSH embarqué), point d'entrée facture JSON, API, écrans, tests d'intégration.
 - **Prévu** :
-  - écrans Connectivity Center et Listener Management ;
-  - SFTP client par scrutation (Apache MINA SSHD, testé contre un serveur SSH embarqué) ;
   - AS2 (bibliothèque selon l'ADR-0004, validée contre `tools/as2-test`) ;
-  - test de connexion sortant avec protection SSRF ;
+  - liste blanche des hôtes joignables (protection SSRF) et test de connexion sortant ; SFTP sortant (dépôt) ; FTP/FTPS ;
   - secrets lus depuis le coffre ; mTLS ; points d'entrée EDIFACT, XML, CSV.
 - **Limite connue** : HTTP entrant est servi par chaque nœud ; pour un adaptateur qui ouvre un port ou scrute un serveur distant (SFTP, AS2 hébergé), il faudra un verrou distribué par listener (une seule instance active). Le schéma le prévoit (`runtime_instance`, heartbeat) ; le verrou viendra avec le premier adaptateur de ce type.
 

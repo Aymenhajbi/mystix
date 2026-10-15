@@ -16,14 +16,17 @@ type Option = { id: string; label: string };
 export function ListenerForm({
   lang,
   dict,
+  kind,
   channels,
   entryPoints,
 }: {
   lang: string;
   dict: Dictionary;
+  kind: "HTTP_INBOUND" | "SFTP_POLLING";
   channels: Option[];
   entryPoints: Option[];
 }) {
+  const sftp = kind === "SFTP_POLLING";
   const c = dict.connectivity;
   const f = c.form;
   const [state, action, pending] = useActionState<ListenerActionResult | null, FormData>(createListenerAction, null);
@@ -46,6 +49,7 @@ export function ListenerForm({
   return (
     <form action={action} className={portal.panel} style={{ padding: 20 }} noValidate={false}>
       <input type="hidden" name="lang" value={lang} />
+      <input type="hidden" name="kind" value={kind} />
       {state && !state.ok && (
         <p className={styles.alert} role="alert">
           {c.errors[state.errorCode as keyof typeof c.errors] ?? c.errors.default}
@@ -65,7 +69,9 @@ export function ListenerForm({
               <option key={o.id} value={o.id}>{o.label}</option>
             ))}
           </select>
-          <span className={styles.hint}>{channels.length === 0 ? f.noChannel : f.channelHint}</span>
+          <span className={styles.hint}>
+            {channels.length === 0 ? (sftp ? f.noSftpChannel : f.noChannel) : sftp ? f.sftpChannelHint : f.channelHint}
+          </span>
         </label>
         <label className={styles.field} data-invalid={errors.has("entryPointId") || undefined}>
           <span>{f.entryPoint}<span className={styles.req} aria-hidden="true"> *</span></span>

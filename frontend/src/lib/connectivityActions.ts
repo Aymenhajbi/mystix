@@ -43,7 +43,7 @@ export async function createListenerAction(_: ListenerActionResult | null, form:
   const maxKb = Number(text(form, "maxKb"));
   const result = await sendForCompany<ListenerView>("POST", "/api/v1/connectivity/listeners", {
     name: text(form, "name"),
-    kind: "HTTP_INBOUND",
+    kind: text(form, "kind") === "SFTP_POLLING" ? "SFTP_POLLING" : "HTTP_INBOUND",
     channelId: text(form, "channelId") || null,
     entryPointId: text(form, "entryPointId") || null,
     settings: Number.isFinite(maxKb) && maxKb > 0 ? { maxBytes: Math.round(maxKb * 1024) } : {},
@@ -78,4 +78,20 @@ export async function listenerLifecycleAction(form: FormData) {
     redirect(join(`error=${encodeURIComponent(result.errorCode)}${fields ? `&why=${encodeURIComponent(fields)}` : ""}`));
   }
   redirect(join(action === "start" ? "started=1" : "stopped=1"));
+}
+
+/** One acquisition cycle now on a polling listener; the counts come back in the URL (no content, no secret). */
+export async function pollListenerAction(form: FormData) {
+  const l = lang(form);
+  const id = text(form, "id");
+  const back = `/${l}/connectivity/listeners/${id}`;
+  if (!isUuid(id)) redirect(`/${l}/connectivity?error=VALIDATION_FAILED`);
+  const result = await sendForCompany<{ accepted: number; rejected: number; refused: number; duplicates: number; skipped: number }>(
+    "POST",
+    `/api/v1/connectivity/listeners/${id}/poll`,
+  );
+  revalidatePath(back);
+  if (!result.ok) redirect(`${back}?error=${encodeURIComponent(result.errorCode)}`);
+  const r = result.data;
+  redirect(`${back}?polled=${[r.accepted, r.rejected, r.refused, r.duplicates, r.skipped].join("-")}`);
 }

@@ -84,15 +84,17 @@ public class ListenerService {
     public Created create(UUID companyId, Config config, String actor) {
         companies.get(companyId);
         Map<String, Object> settings = check(companyId, config);
-        String key = newKey();
+        // Only HTTP listeners authenticate their senders with a key; a poller authenticates itself to the server.
+        String key = config.kind() == Listener.Kind.HTTP_INBOUND ? newKey() : null;
         OffsetDateTime now = store.now();
         Listener listener = new Listener(UUID.randomUUID(), companyId, config.name().strip(), config.kind(),
-                config.channelId(), config.entryPointId(), settings, true, hint(key),
+                config.channelId(), config.entryPointId(), settings, key != null, key == null ? null : hint(key),
                 config.enabled() == null || config.enabled(), Listener.DesiredState.STOPPED,
                 Listener.RuntimeState.CONFIGURED, null, null, null, null, null, null, 0, 0, actor, now, now);
         try {
             tx.executeWithoutResult(s -> {
-                store.insert(listener, Sha256.hex(key.getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
+                store.insert(listener, key == null ? null
+                        : Sha256.hex(key.getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
                 store.event(companyId, listener.id(), "CREATED", "INFO", null,
                         Map.of("kind", config.kind().name()), actor);
             });
@@ -128,7 +130,10 @@ public class ListenerService {
 
     /** A new API key, shown this once; the previous one stops working at the next start. */
     public Created rotateKey(UUID companyId, UUID id, String actor) {
-        store.get(companyId, id);
+        if (store.get(companyId, id).kind() != Listener.Kind.HTTP_INBOUND) {
+            throw new MystixException(ErrorCode.VALIDATION_FAILED, "Only HTTP inbound listeners have an API key",
+                    List.of(new ApiError.FieldViolation("kind", "no API key for this kind of listener")), List.of(), null);
+        }
         String key = newKey();
         tx.executeWithoutResult(s -> {
             store.setApiKey(companyId, id, Sha256.hex(key.getBytes(java.nio.charset.StandardCharsets.US_ASCII)),
@@ -144,7 +149,29 @@ public class ListenerService {
         return new Created(store.get(companyId, id), key);
     }
 
-    private enum Decision { START, ALREADY, REFUSED }
+    /** One acquisition cycle now on a polling listener running here (what an operator does after dropping a file). */
+    public ListenerAdapter.PollResult pollNow(UUID companyId, UUID id, String actor) {
+        Listener listener = store.get(companyId, id);
+        ListenerAdapter.PollResult result;
+        try {
+            result = supervisor.pollNow(listener);
+        } catch (ListenerAdapter.StartFailure e) {
+            Map<String, Object> error = ListenerStore.errorOf(e.code(), e.getMessage());
+            store.event(companyId, id, "POLL_FAILED", "ERROR", null, error, actor);
+            throw new MystixException(ErrorCode.LISTENER_POLL_FAILED, "Poll of " + id + " failed: " + e.code(), e);
+        }
+        if (result == null) {
+            throw new MystixException(ErrorCode.VALIDATION_FAILED, "Listener " + id + " does not poll",
+                    List.of(new ApiError.FieldViolation("kind", "this listener waits for requests; it does not poll")),
+                    List.of(), null);
+        }
+        store.event(companyId, id, "POLLED", "INFO", null, Map.of("seen", result.seen(), "accepted", result.accepted(),
+                "rejected", result.rejected(), "refused", result.refused(), "duplicates", result.duplicates(),
+                "skipped", result.skipped()), actor);
+        return result;
+    }
+
+    private enum Decision { START, ALREADY, REFUSED, ELSEWHERE }
 
     /**
      * Starts the listener: preconditions, then the adapter, then a health check. Idempotent: a listener already
@@ -165,6 +192,9 @@ public class ListenerService {
             if (l.desiredState() == Listener.DesiredState.RUNNING && (supervisor.isLocal(id) || starting)) {
                 return Decision.ALREADY;
             }
+            if (!supervisor.multiInstance(l.kind()) && supervisor.runningElsewhere(l)) {
+                return Decision.ELSEWHERE;
+            }
             problems.addAll(supervisor.preconditions(l));
             if (!problems.isEmpty()) {
                 return Decision.REFUSED;
@@ -179,6 +209,13 @@ public class ListenerService {
             store.event(companyId, id, "START_REFUSED", "WARN", null, details, actor);
             throw new MystixException(ErrorCode.LISTENER_NOT_READY, "Listener " + id + " not ready", problems,
                     List.of(), null);
+        }
+        if (decision == Decision.ELSEWHERE) {
+            Listener l = store.get(companyId, id);
+            store.event(companyId, id, "START_REFUSED", "WARN", null, ListenerStore.errorOf("RUNNING_ELSEWHERE",
+                    "running on " + l.runtimeInstance() + ", heartbeat " + l.lastHeartbeatAt()), actor);
+            throw new MystixException(ErrorCode.LISTENER_START_FAILED, "Listener " + id + " runs on "
+                    + l.runtimeInstance());
         }
         if (decision == Decision.START) {
             supervisor.launch(store.get(companyId, id), "STARTED", actor);

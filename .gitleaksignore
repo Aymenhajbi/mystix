@@ -1,0 +1,4 @@
+# Gitleaks false positives, one fingerprint per line (commit:file:rule:line), each with its reason.
+# SftpPollingTests wrote a PEM header around a key generated at run time (no key in the repository); the header
+# literal was split in the next commit, this entry only covers the historical commit.
+e241ff1810c97539c9ac708d7a43d8ff8fbee8d0:backend/src/test/java/ma/mystix/connector/SftpPollingTests.java:private-key:115

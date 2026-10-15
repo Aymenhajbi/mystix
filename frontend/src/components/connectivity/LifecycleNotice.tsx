@@ -1,4 +1,4 @@
-import type { Dictionary } from "@/app/[lang]/dictionaries";
+import { t, type Dictionary } from "@/app/[lang]/dictionaries";
 import styles from "@/app/[lang]/portal.module.css";
 
 /** Outcome of a start, a stop or a creation, from the query the server action redirected with. */
@@ -7,7 +7,7 @@ export function LifecycleNotice({
   query,
 }: {
   dict: Dictionary;
-  query: { started?: string; stopped?: string; entryPoint?: string; error?: string; why?: string };
+  query: { started?: string; stopped?: string; entryPoint?: string; error?: string; why?: string; polled?: string };
 }) {
   const c = dict.connectivity;
   if (query.error) {
@@ -23,6 +23,14 @@ export function LifecycleNotice({
           </ul>
         )}
       </div>
+    );
+  }
+  if (query.polled) {
+    const [accepted, rejected, refused, duplicates, skipped] = query.polled.split("-").map((v) => Number(v) || 0);
+    return (
+      <p className={styles.notice} role="status">
+        {t(c.notices.polled, { accepted, rejected, refused, duplicates, skipped })}
+      </p>
     );
   }
   const notice = query.started ? c.notices.started : query.stopped ? c.notices.stopped : query.entryPoint ? c.notices.entryPoint : null;

@@ -25,6 +25,38 @@ public interface ListenerAdapter {
     /** Observed health of a started resource. */
     Health health(Handle handle);
 
+    /**
+     * False when two processes must never run the same listener (a poller that moves remote files, a bound port):
+     * the supervisor then refuses to start it while another instance holds a fresh heartbeat.
+     */
+    default boolean multiInstance() {
+        return true;
+    }
+
+    /** One acquisition cycle now, for listeners that poll; null for those that wait for requests. */
+    default PollResult pollNow(Handle handle) {
+        return null;
+    }
+
+    /** What one poll did. */
+    record PollResult(int seen, int accepted, int rejected, int refused, int duplicates, int skipped) {
+    }
+
+    /** A start that failed for an observed, named reason ({@code code}: AUTH_FAILED, HOST_KEY_MISMATCH, …). */
+    final class StartFailure extends RuntimeException {
+
+        private final String code;
+
+        StartFailure(String code, String detail, Throwable cause) {
+            super(detail, cause);
+            this.code = code;
+        }
+
+        String code() {
+            return code;
+        }
+    }
+
     /** What a listener needs to run: itself, its channel, its entry point and the flow behind it. */
     record Context(Listener listener, Channel channel, EntryPoint entryPoint, ExchangeFlow flow, String apiKeyHash) {
     }

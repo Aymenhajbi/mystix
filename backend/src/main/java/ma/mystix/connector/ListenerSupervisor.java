@@ -69,6 +69,11 @@ class ListenerSupervisor implements SmartLifecycle {
         return adapters.containsKey(kind);
     }
 
+    /** False for kinds that must run in one process only (a poller, a bound port). */
+    boolean multiInstance(Listener.Kind kind) {
+        return adapter(kind).multiInstance();
+    }
+
     boolean isLocal(UUID listenerId) {
         return handles.containsKey(listenerId);
     }
@@ -91,6 +96,14 @@ class ListenerSupervisor implements SmartLifecycle {
                 return;
             }
             ListenerAdapter adapter = adapter(listener.kind());
+            Listener current = store.get(listener.companyId(), listener.id());
+            if (!adapter.multiInstance() && runningElsewhere(current)) {
+                Map<String, Object> error = ListenerStore.errorOf("RUNNING_ELSEWHERE",
+                        "running on " + current.runtimeInstance() + ", heartbeat " + current.lastHeartbeatAt());
+                store.event(listener.companyId(), listener.id(), "START_REFUSED", "WARN", null, error, actor);
+                throw new MystixException(ErrorCode.LISTENER_START_FAILED,
+                        "Listener " + listener.id() + " runs on " + current.runtimeInstance());
+            }
             ListenerAdapter.Context context = context(listener);
             List<ApiError.FieldViolation> problems = adapter.preconditions(context);
             if (!problems.isEmpty()) {
@@ -103,6 +116,9 @@ class ListenerSupervisor implements SmartLifecycle {
             ListenerAdapter.Handle handle;
             try {
                 handle = adapter.start(context);
+            } catch (ListenerAdapter.StartFailure e) {
+                fail(listener, e.code(), e.getMessage(), actor);
+                throw new MystixException(ErrorCode.LISTENER_START_FAILED, "Listener " + listener.id() + ": " + e.code(), e);
             } catch (RuntimeException e) {
                 fail(listener, "START_ERROR", e.getClass().getSimpleName() + ": " + e.getMessage(), actor);
                 throw new MystixException(ErrorCode.LISTENER_START_FAILED, "Listener " + listener.id() + " did not start", e);
@@ -121,6 +137,22 @@ class ListenerSupervisor implements SmartLifecycle {
                     Map.of("instance", instance, "kind", listener.kind().name()), actor);
             LOG.info("Listener {} ({}) {} on {}", listener.id(), listener.kind(), eventType, instance);
         }
+    }
+
+    /** One acquisition cycle now, on a polling listener started here; null when it does not poll. */
+    ListenerAdapter.PollResult pollNow(Listener listener) {
+        ListenerAdapter.Handle handle = handles.get(listener.id());
+        if (handle == null) {
+            throw new MystixException(ErrorCode.LISTENER_NOT_RUNNING, "Listener " + listener.id() + " not running here");
+        }
+        return adapter(handle.kind()).pollNow(handle);
+    }
+
+    /** Another process holds this listener: RUNNING there with a heartbeat younger than the stale delay. */
+    boolean runningElsewhere(Listener l) {
+        return l.runtimeInstance() != null && !instance.equals(l.runtimeInstance())
+                && (l.runtimeState() == Listener.RuntimeState.RUNNING || l.runtimeState() == Listener.RuntimeState.DEGRADED)
+                && l.lastHeartbeatAt() != null && l.lastHeartbeatAt().plus(properties.staleAfter()).isAfter(store.now());
     }
 
     /** Stops the listener here, if it runs here, and records STOPPED. */
