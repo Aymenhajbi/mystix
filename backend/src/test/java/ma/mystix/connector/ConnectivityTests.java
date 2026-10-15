@@ -248,12 +248,14 @@ class ConnectivityTests {
     }
 
     @Test
-    void kindsWithoutAnAdapterAndChannelsInUseAreRefused() {
+    void unknownKindsAndChannelsInUseAreRefused() {
         UUID channel = activeChannel("HTTPS utilisé");
         UUID entry = entryPoint("UTILISE", "JSON");
-        ResponseEntity<Map> as2 = send(company, HttpMethod.POST, "/api/v1/connectivity/listeners", Map.of(
-                "name", "AS2 pas encore", "kind", "AS2_SERVER", "channelId", channel, "entryPointId", entry));
-        assertThat(as2.getBody()).containsEntry("errorCode", "LISTENER_KIND_UNAVAILABLE");
+        // A kind no adapter knows is refused at the door.
+        ResponseEntity<Map> unknown = send(company, HttpMethod.POST, "/api/v1/connectivity/listeners", Map.of(
+                "name", "FTP pas encore", "kind", "FTP_POLLING", "channelId", channel, "entryPointId", entry));
+        assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(unknown.getBody()).containsEntry("errorCode", "VALIDATION_FAILED");
 
         createListener("HTTP utilisé", channel, entry);
         ResponseEntity<Map> delete = send(company, HttpMethod.DELETE, "/api/v1/channels/" + channel, null);

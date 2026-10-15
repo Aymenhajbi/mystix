@@ -68,6 +68,12 @@
 			<artifactId>sshd-sftp</artifactId>
 			<version>2.18.0</version>
 		</dependency>
+		<!-- AS2 (RFC 4130) transport, ADR-0004: S/MIME, MDN and MIC from as2-lib (BSD), not reimplemented. -->
+		<dependency>
+			<groupId>com.helger.as2</groupId>
+			<artifactId>as2-lib</artifactId>
+			<version>5.1.8</version>
+		</dependency>
 		<!-- ArtifactStore on the S3 API (ADR-0017): any S3-compatible store (MinIO in dev, risk R-07). Apache-2.0.
 		     The JDK HTTP client (url-connection-client) instead of the default Apache and Netty ones. -->
 		<dependency>

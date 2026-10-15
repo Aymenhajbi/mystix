@@ -43,7 +43,7 @@ import org.springframework.web.client.RestClient;
  */
 @Import({TestcontainersConfiguration.class, QueueTests.Handlers.class})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-        "mystix.queue.worker-enabled=false", "mystix.queue.backoff-base=20ms", "mystix.queue.backoff-max=40ms",
+        "mystix.queue.worker-enabled=false", "mystix.queue.backoff-base=200ms", "mystix.queue.backoff-max=400ms",
         "mystix.queue.max-attempts=3", "mystix.queue.default-max-running=2", "mystix.queue.concurrency=8",
         "mystix.queue.default-max-queued=3"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

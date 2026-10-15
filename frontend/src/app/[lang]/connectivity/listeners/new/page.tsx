@@ -21,13 +21,16 @@ export default async function NewListenerPage({ params, searchParams }: PageProp
   const dict = await getDictionary(lang);
   const c = dict.connectivity;
   const query = await searchParams;
-  const kind = (Array.isArray(query.kind) ? query.kind[0] : query.kind) === "SFTP_POLLING" ? "SFTP_POLLING" : "HTTP_INBOUND";
+  const requested = Array.isArray(query.kind) ? query.kind[0] : query.kind;
+  const kind = requested === "SFTP_POLLING" || requested === "AS2_SERVER" ? requested : "HTTP_INBOUND";
   const sftp = kind === "SFTP_POLLING";
+  const as2 = kind === "AS2_SERVER";
   const [channels, entryPoints] = await Promise.all([channelsApi.list(), connectivityApi.entryPoints()]);
   // Only channels that can receive with this kind of listener; their status is checked again at start.
   const receiving = (channels.kind === "ok" ? channels.data : []).filter(
     (ch) =>
-      ch.direction !== "OUT" && (sftp ? ch.protocol === "SFTP" : ch.protocol === "HTTPS" || ch.protocol === "WEBHOOK"),
+      ch.direction !== "OUT" &&
+      (sftp ? ch.protocol === "SFTP" : as2 ? ch.protocol === "AS2" : ch.protocol === "HTTPS" || ch.protocol === "WEBHOOK"),
   );
   const entries = entryPoints.kind === "ok" ? entryPoints.data : [];
 
@@ -38,17 +41,17 @@ export default async function NewListenerPage({ params, searchParams }: PageProp
       </nav>
       <div className={styles.pageHead}>
         <div>
-          <h1>{sftp ? c.form.sftpTitle : c.form.listenerTitle}</h1>
+          <h1>{sftp ? c.form.sftpTitle : as2 ? c.form.as2Title : c.form.listenerTitle}</h1>
           <p className={styles.muted} style={{ margin: "6px 0 0", maxWidth: "75ch" }}>
-            {sftp ? c.form.sftpLead : c.form.listenerLead}
+            {sftp ? c.form.sftpLead : as2 ? c.form.as2Lead : c.form.listenerLead}
           </p>
         </div>
       </div>
       <nav className={styles.filters} aria-label={c.form.kind} style={{ marginBottom: 16 }}>
-        {(["HTTP_INBOUND", "SFTP_POLLING"] as const).map((k) => (
+        {(["HTTP_INBOUND", "SFTP_POLLING", "AS2_SERVER"] as const).map((k) => (
           <Link
             key={k}
-            href={`/${lang}/connectivity/listeners/new${k === "SFTP_POLLING" ? "?kind=SFTP_POLLING" : ""}`}
+            href={`/${lang}/connectivity/listeners/new${k === "HTTP_INBOUND" ? "" : `?kind=${k}`}`}
             className={styles.filter}
             aria-current={kind === k ? "true" : undefined}
           >

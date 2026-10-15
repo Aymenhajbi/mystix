@@ -353,7 +353,9 @@
       "channel.credentialRef": "le canal n'a pas de référence de secret",
       "channel.hostKeyFingerprint": "l'empreinte de la clé serveur est obligatoire",
       "channel.inboundDirectory": "le répertoire d'entrée est obligatoire",
-      "channel.archiveDirectory": "un répertoire d'archive est obligatoire pour déplacer les fichiers"
+      "channel.archiveDirectory": "un répertoire d'archive est obligatoire pour déplacer les fichiers",
+      "certificate.own": "le certificat de Mystix (OWN) manque sur le canal",
+      "certificate.partner": "le certificat du partenaire (PARTNER) manque sur le canal"
     },
     "form": {
       "listenerTitle": "Nouveau listener HTTP entrant",
@@ -387,7 +389,11 @@
       "sftpTitle": "Nouveau listener SFTP (scrutation)",
       "sftpLead": "Mystix se connecte au serveur SFTP du partenaire, vérifie sa clé, récupère les fichiers du répertoire d'entrée et les remet au point d'entrée choisi. Enregistrer ne démarre rien.",
       "sftpChannelHint": "Canaux SFTP en réception. Le canal doit être actif, avoir une empreinte de clé serveur, un répertoire d'entrée et un secret présent dans le coffre.",
-      "noSftpChannel": "Aucun canal SFTP en réception : créez-en un dans l'environnement client."
+      "noSftpChannel": "Aucun canal SFTP en réception : créez-en un dans l'environnement client.",
+      "as2Title": "Nouveau listener AS2 (réception)",
+      "as2Lead": "Mystix reçoit les messages AS2 du partenaire sur sa propre URL : déchiffrement, vérification de signature avec le certificat enregistré, MDN signé. Enregistrer ne démarre rien.",
+      "as2ChannelHint": "Canaux AS2 en réception. Il faut le certificat de Mystix (OWN), celui du partenaire (PARTNER) et la clé privée de Mystix dans le coffre.",
+      "noAs2Channel": "Aucun canal AS2 en réception : créez-en un dans l'environnement client."
     },
     "detail": {
       "endpoint": "URL de réception",
