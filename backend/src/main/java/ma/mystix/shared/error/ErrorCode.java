@@ -395,6 +395,12 @@ public enum ErrorCode {
             new LocalizedText("Consultez le diagnostic du listener, corrigez la cause, puis relancez.",
                     "راجع تشخيص المستمع، صحّح السبب، ثم أعد التشغيل.")),
 
+    LISTENER_POLL_FAILED(HttpStatus.BAD_GATEWAY, Stage.API, true,
+            new LocalizedText("La scrutation du serveur distant a échoué.",
+                    "فشل استطلاع الخادم البعيد."),
+            new LocalizedText("Consultez le diagnostic du listener (connexion, clé du serveur, identifiants, répertoire).",
+                    "راجع تشخيص المستمع (الاتصال، مفتاح الخادم، بيانات الدخول، المجلد).")),
+
     LISTENER_NOT_RUNNING(HttpStatus.SERVICE_UNAVAILABLE, Stage.API, true,
             new LocalizedText("Ce point de réception n'est pas en service.",
                     "نقطة الاستقبال هذه ليست في الخدمة."),

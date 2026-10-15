@@ -324,7 +324,8 @@
     "notices": {
       "started": "Listener démarré : il a passé son contrôle de santé.",
       "stopped": "Listener arrêté : sa route est fermée.",
-      "entryPoint": "Point d'entrée créé."
+      "entryPoint": "Point d'entrée créé.",
+      "polled": "Scrutation : {accepted} acceptés, {rejected} refusés par le pipeline, {refused} refusés à la réception, {duplicates} doublons, {skipped} ignorés."
     },
     "errors": {
       "LISTENER_NOT_READY": "Le listener ne peut pas démarrer. À corriger :",
@@ -335,7 +336,9 @@
       "LISTENER_NAME_TAKEN": "Un listener porte déjà ce nom.",
       "ENTRY_POINT_CODE_TAKEN": "Un point d'entrée porte déjà ce code.",
       "VALIDATION_FAILED": "Des champs sont invalides ou manquants.",
-      "default": "L'action n'a pas abouti. Rechargez la page et réessayez."
+      "default": "L'action n'a pas abouti. Rechargez la page et réessayez.",
+      "LISTENER_POLL_FAILED": "La scrutation a échoué : voir le diagnostic.",
+      "LISTENER_NOT_RUNNING": "Le listener n'est pas en service sur ce serveur."
     },
     "why": {
       "channel.protocol": "le canal doit être HTTPS ou webhook",
@@ -345,7 +348,12 @@
       "entryPoint.inputFormat": "ce format n'est pas encore remis au pipeline (seul JSON l'est)",
       "entryPoint.flow": "le flux du point d'entrée n'est pas actif",
       "apiKey": "aucune clé d'API : générez-en une",
-      "settings.maxBytes": "taille maximale invalide"
+      "settings.maxBytes": "taille maximale invalide",
+      "secret": "le secret du canal est absent du coffre",
+      "channel.credentialRef": "le canal n'a pas de référence de secret",
+      "channel.hostKeyFingerprint": "l'empreinte de la clé serveur est obligatoire",
+      "channel.inboundDirectory": "le répertoire d'entrée est obligatoire",
+      "channel.archiveDirectory": "un répertoire d'archive est obligatoire pour déplacer les fichiers"
     },
     "form": {
       "listenerTitle": "Nouveau listener HTTP entrant",
@@ -374,7 +382,12 @@
       "createEntry": "Créer le point d'entrée",
       "cancel": "Annuler",
       "copy": "Copier",
-      "copied": "Copiée"
+      "copied": "Copiée",
+      "kind": "Type de listener",
+      "sftpTitle": "Nouveau listener SFTP (scrutation)",
+      "sftpLead": "Mystix se connecte au serveur SFTP du partenaire, vérifie sa clé, récupère les fichiers du répertoire d'entrée et les remet au point d'entrée choisi. Enregistrer ne démarre rien.",
+      "sftpChannelHint": "Canaux SFTP en réception. Le canal doit être actif, avoir une empreinte de clé serveur, un répertoire d'entrée et un secret présent dans le coffre.",
+      "noSftpChannel": "Aucun canal SFTP en réception : créez-en un dans l'environnement client."
     },
     "detail": {
       "endpoint": "URL de réception",
@@ -402,7 +415,14 @@
         "actor": "Par"
       },
       "try": "Essayer",
-      "tryLead": "Exemple d'envoi depuis un terminal, avec la clé reçue à la création :"
+      "tryLead": "Exemple d'envoi depuis un terminal, avec la clé reçue à la création :",
+      "remote": "Serveur distant",
+      "fingerprint": "Empreinte de la clé serveur",
+      "afterDownload": "Après récupération",
+      "poll": "Scrutation",
+      "pollEvery": "toutes les {s} s",
+      "pollNow": "Scruter maintenant",
+      "sftpHint": "Mystix est client : il se connecte au serveur du partenaire. La clé du serveur est toujours vérifiée. Un fichier refusé reste sur le serveur et n'est pas repris (même contenu)."
     },
     "eventTypes": {
       "CREATED": "Créé",
@@ -420,7 +440,10 @@
       "HEALTH_RECOVERED": "Santé rétablie",
       "MESSAGE_RECEIVED": "Message reçu",
       "MESSAGE_REFUSED": "Refusé à la réception",
-      "MESSAGE_REJECTED": "Refusé par le pipeline"
+      "MESSAGE_REJECTED": "Refusé par le pipeline",
+      "POLLED": "Scrutation",
+      "POLL_FAILED": "Échec de scrutation",
+      "MESSAGE_DUPLICATE": "Doublon ignoré"
     }
   },
   "logs": {

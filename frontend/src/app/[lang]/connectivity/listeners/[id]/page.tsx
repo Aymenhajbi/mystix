@@ -9,7 +9,7 @@ import { LifecycleNotice } from "@/components/connectivity/LifecycleNotice";
 import { isUuid, listFlows, portalCompanyId } from "@/lib/api";
 import { channelsApi } from "@/lib/channels";
 import { connectivityApi, receptionUrl, stateTone } from "@/lib/connectivity";
-import { listenerLifecycleAction } from "@/lib/connectivityActions";
+import { listenerLifecycleAction, pollListenerAction } from "@/lib/connectivityActions";
 import { formatDateTime, hasLocale, intlTag } from "@/lib/i18n";
 import { getDictionary, t } from "../../../dictionaries";
 import styles from "../../../portal.module.css";
@@ -46,6 +46,11 @@ export default async function ListenerPage({ params, searchParams }: PageProps<"
   const entry = entryPoints.kind === "ok" ? entryPoints.data.find((e) => e.id === l.entryPointId) : undefined;
   const flow = flows?.kind === "ok" && entry ? flows.data.find((f) => f.id === entry.flowId) : undefined;
   const url = receptionUrl(l.endpoint);
+  const settings: Record<string, unknown> = channel.kind === "ok" ? channel.data.settings : {};
+  const remote =
+    channel.kind === "ok" && channel.data.protocol === "SFTP"
+      ? `sftp://${String(settings.username ?? "")}@${String(settings.host ?? "")}:${String(settings.port ?? 22)}${String(settings.inboundDirectory ?? "")}`
+      : null;
   const integer = new Intl.NumberFormat(intlTag(lang));
   const when = (v: string | null) => (v ? formatDateTime(lang, v) : c.never);
 
@@ -82,7 +87,7 @@ export default async function ListenerPage({ params, searchParams }: PageProps<"
         </form>
       </div>
 
-      <LifecycleNotice dict={dict} query={{ started: one(query.started), stopped: one(query.stopped), error: one(query.error), why: one(query.why) }} />
+      <LifecycleNotice dict={dict} query={{ started: one(query.started), stopped: one(query.stopped), error: one(query.error), why: one(query.why), polled: one(query.polled) }} />
 
       {l.lastError && (l.state === "ERROR" || l.state === "DEGRADED") && (
         <div className={styles.message} role="alert">
@@ -93,6 +98,54 @@ export default async function ListenerPage({ params, searchParams }: PageProps<"
       )}
 
       <div className={styles.gridTwo}>
+        {l.kind === "SFTP_POLLING" ? (
+          <section className={styles.panel} aria-labelledby="remote-title" style={{ padding: 20 }}>
+            <h2 id="remote-title" style={{ marginTop: 0 }}>{d.remote}</h2>
+            <dl className={channelStyles.kv}>
+              <div>
+                <dt>{d.remote}</dt>
+                <dd className={styles.mono} dir="ltr" style={{ wordBreak: "break-all" }}>
+                  {remote ?? dict.common.none}
+                </dd>
+              </div>
+              <div>
+                <dt>{d.fingerprint}</dt>
+                <dd className={styles.mono} dir="ltr" style={{ wordBreak: "break-all" }}>
+                  {String(settings.hostKeyFingerprint ?? dict.common.none)}
+                </dd>
+              </div>
+              <div>
+                <dt>{d.poll}</dt>
+                <dd>
+                  {String(settings.filePattern ?? "*")} · {t(d.pollEvery, { s: String(settings.pollSeconds ?? 300) })}
+                </dd>
+              </div>
+              <div>
+                <dt>{d.afterDownload}</dt>
+                <dd>
+                  {String(settings.afterDownload ?? "MOVE")}
+                  {settings.archiveDirectory ? ` → ${String(settings.archiveDirectory)}` : ""}
+                </dd>
+              </div>
+              <div>
+                <dt>{c.col.channel}</dt>
+                <dd>{channel.kind === "ok" ? `${channel.data.name} · ${channel.data.protocol} · ${channel.data.status}` : dict.common.none}</dd>
+              </div>
+              <div>
+                <dt>{c.col.entryPoint}</dt>
+                <dd>{entry ? `${entry.code} · ${entry.inputFormat}` : dict.common.none}{flow ? ` → ${flow.name}` : ""}</dd>
+              </div>
+            </dl>
+            <p className={styles.muted} style={{ fontSize: "0.9em" }}>{d.sftpHint}</p>
+            {l.state === "RUNNING" || l.state === "DEGRADED" ? (
+              <form action={pollListenerAction}>
+                <input type="hidden" name="lang" value={lang} />
+                <input type="hidden" name="id" value={l.id} />
+                <button type="submit" className={`${styles.btn} ${styles.btnSm}`}>{d.pollNow}</button>
+              </form>
+            ) : null}
+          </section>
+        ) : (
         <section className={styles.panel} aria-labelledby="endpoint-title" style={{ padding: 20 }}>
           <h2 id="endpoint-title" style={{ marginTop: 0 }}>{d.endpoint}</h2>
           <dl className={channelStyles.kv}>
@@ -131,6 +184,7 @@ export default async function ListenerPage({ params, searchParams }: PageProps<"
             </>
           )}
         </section>
+        )}
 
         <section className={styles.panel} aria-labelledby="runtime-title" style={{ padding: 20 }}>
           <h2 id="runtime-title" style={{ marginTop: 0 }}>{d.runtime}</h2>

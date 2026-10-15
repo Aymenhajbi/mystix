@@ -184,6 +184,25 @@ class ListenerStore {
                 .param("now", now()).param("id", id).update();
     }
 
+    /** The outcome of this content on this listener (ACCEPTED, REJECTED, REFUSED), if it was acquired before. */
+    java.util.Optional<String> fileOutcome(UUID listenerId, String sha256) {
+        return jdbc.sql("SELECT outcome FROM listener_file WHERE listener_id = :l AND sha256 = :h")
+                .param("l", listenerId).param("h", sha256).query(String.class).optional();
+    }
+
+    void recordFile(UUID companyId, UUID listenerId, String path, long size, String sha256, String outcome,
+                    UUID correlation, UUID invoiceId, String errorCode) {
+        jdbc.sql("""
+                        INSERT INTO listener_file (id, company_id, listener_id, remote_path, size_bytes, sha256, outcome,
+                                                   correlation_id, invoice_id, error_code, received_at)
+                        VALUES (:id, :c, :l, :path, :size, :sha, :outcome, :corr, :invoice, :error, :now)
+                        ON CONFLICT (listener_id, sha256) DO NOTHING
+                        """)
+                .param("id", UUID.randomUUID()).param("c", companyId).param("l", listenerId).param("path", path)
+                .param("size", size).param("sha", sha256).param("outcome", outcome).param("corr", correlation)
+                .param("invoice", invoiceId).param("error", errorCode).param("now", now()).update();
+    }
+
     void event(UUID companyId, UUID listenerId, String type, String severity, UUID correlationId,
                Map<String, Object> details, String actor) {
         jdbc.sql("""

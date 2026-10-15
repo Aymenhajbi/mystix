@@ -64,6 +64,12 @@ mystix:
     supervisor-enabled: ${MYSTIX_CONNECTIVITY_SUPERVISOR_ENABLED:true}
     heartbeat: 15s
     reconcile: 30s
+    # A remote file changed more recently than this is left for the next poll: it may still be being written.
+    sftp-stable-after: 10s
+  secrets:
+    # One file per credential_ref (ADR-0015/0016), outside the repository; empty = no secret available.
+    # TODO(lot-8): Vault or the secret manager retained for operations.
+    directory: ${MYSTIX_SECRETS_DIRECTORY:}
   clearance:
     # Only "simulated" exists (ADR-0001). Any other value stops the application at startup. TODO(DGI-SPEC)
     mode: ${MYSTIX_CLEARANCE_MODE:simulated}

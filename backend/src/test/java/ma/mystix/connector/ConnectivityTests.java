@@ -251,9 +251,9 @@ class ConnectivityTests {
     void kindsWithoutAnAdapterAndChannelsInUseAreRefused() {
         UUID channel = activeChannel("HTTPS utilisé");
         UUID entry = entryPoint("UTILISE", "JSON");
-        ResponseEntity<Map> sftp = send(company, HttpMethod.POST, "/api/v1/connectivity/listeners", Map.of(
-                "name", "SFTP pas encore", "kind", "SFTP_POLLING", "channelId", channel, "entryPointId", entry));
-        assertThat(sftp.getBody()).containsEntry("errorCode", "LISTENER_KIND_UNAVAILABLE");
+        ResponseEntity<Map> as2 = send(company, HttpMethod.POST, "/api/v1/connectivity/listeners", Map.of(
+                "name", "AS2 pas encore", "kind", "AS2_SERVER", "channelId", channel, "entryPointId", entry));
+        assertThat(as2.getBody()).containsEntry("errorCode", "LISTENER_KIND_UNAVAILABLE");
 
         createListener("HTTP utilisé", channel, entry);
         ResponseEntity<Map> delete = send(company, HttpMethod.DELETE, "/api/v1/channels/" + channel, null);

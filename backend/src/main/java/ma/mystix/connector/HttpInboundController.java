@@ -6,13 +6,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import ma.mystix.invoice.InvoiceReception;
 import ma.mystix.invoice.InvoiceService;
 import ma.mystix.shared.Sha256;
 import ma.mystix.shared.error.ErrorCode;
@@ -38,13 +36,11 @@ class HttpInboundController {
     static final String CORRELATION_HEADER = "X-Mystix-Correlation-Id";
 
     private final HttpInboundAdapter adapter;
-    private final ListenerStore store;
-    private final InvoiceReception invoices;
+    private final EntryPointDispatcher dispatcher;
 
-    HttpInboundController(HttpInboundAdapter adapter, ListenerStore store, InvoiceReception invoices) {
+    HttpInboundController(HttpInboundAdapter adapter, EntryPointDispatcher dispatcher) {
         this.adapter = adapter;
-        this.store = store;
-        this.invoices = invoices;
+        this.dispatcher = dispatcher;
     }
 
     record Receipt(UUID correlationId, UUID invoiceId, String number, String status, boolean replayed) {
@@ -79,28 +75,8 @@ class HttpInboundController {
             throw refused(route, correlation, ErrorCode.INBOUND_TOO_LARGE, "more than " + route.maxBytes() + " bytes");
         }
 
-        InvoiceService.Submission submission;
-        try {
-            submission = invoices.receive(route.companyId(), route.flowId(), body, true);
-        } catch (MystixException e) {
-            // A business refusal: the message reached the pipeline, which said no (already in the company logs).
-            Map<String, Object> details = new LinkedHashMap<>();
-            details.put("errorCode", e.errorCode().name());
-            details.put("stage", "PIPELINE");
-            details.put("bytes", body.length);
-            store.received(route.listenerId(), false);
-            store.event(route.companyId(), route.listenerId(), "MESSAGE_REJECTED", "WARN", correlation, details, null);
-            throw e;
-        }
-        Map<String, Object> details = new LinkedHashMap<>();
-        details.put("invoiceId", submission.invoice().id().toString());
-        details.put("number", submission.invoice().number());
-        details.put("bytes", body.length);
-        details.put("sha256", Sha256.hex(body));
-        details.put("replayed", submission.replayed());
-        store.received(route.listenerId(), true);
-        store.event(route.companyId(), route.listenerId(), "MESSAGE_RECEIVED", "INFO", correlation, details, null);
-
+        InvoiceService.Submission submission = dispatcher.dispatch(route.companyId(), route.listenerId(),
+                route.flowId(), body, correlation, Map.of("transport", "HTTP"));
         Receipt receipt = new Receipt(correlation, submission.invoice().id(), submission.invoice().number(),
                 submission.invoice().status(), submission.replayed());
         return submission.replayed()
@@ -110,9 +86,8 @@ class HttpInboundController {
     }
 
     private MystixException refused(HttpInboundAdapter.Route route, UUID correlation, ErrorCode code, String reason) {
-        store.received(route.listenerId(), false);
-        store.event(route.companyId(), route.listenerId(), "MESSAGE_REFUSED", "WARN", correlation,
-                Map.of("errorCode", code.name(), "stage", "RECEPTION", "reason", reason), null);
+        dispatcher.refuse(route.companyId(), route.listenerId(), correlation, code.name(), reason,
+                Map.of("transport", "HTTP"));
         return new MystixException(code, "Listener " + route.listenerId() + ": " + reason);
     }
 
