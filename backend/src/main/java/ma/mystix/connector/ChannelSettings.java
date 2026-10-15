@@ -97,7 +97,9 @@ final class ChannelSettings {
                     Field.choice("mdn", "SYNC", "SYNC", "ASYNC", "NONE"),
                     Field.withDefault("mdnSigned", Kind.FLAG, true),
                     Field.of("asyncMdnUrl", Kind.URL, false),
-                    Field.of("partnerCertificateRef", Kind.TEXT, false)),
+                    Field.of("partnerCertificateRef", Kind.TEXT, false),
+                    // How MIME parts are encoded when sending: some partners (OpenSSL-based) only read base64.
+                    Field.choice("transferEncoding", "BINARY", "BINARY", "BASE64")),
             Channel.Protocol.HTTPS, List.of(
                     Field.of("url", Kind.HTTPS_URL, false),
                     Field.choice("method", "POST", "POST", "PUT"),

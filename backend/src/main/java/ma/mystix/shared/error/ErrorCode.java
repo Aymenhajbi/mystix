@@ -425,6 +425,18 @@ public enum ErrorCode {
             new LocalizedText("Envoyez le format attendu par le point d'entrée (Content-Type: application/json).",
                     "أرسل الصيغة المنتظرة في نقطة الدخول (Content-Type: application/json).")),
 
+    AS2_NOT_READY(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Ce canal ne peut pas émettre en AS2 : des éléments manquent.",
+                    "لا يمكن لهذه القناة الإرسال عبر AS2: تنقص بعض العناصر."),
+            new LocalizedText("Complétez le canal (URL du partenaire, certificats, clé privée), puis réessayez.",
+                    "أكمل القناة (عنوان الشريك، الشهادات، المفتاح الخاص)، ثم أعد المحاولة.")),
+
+    AS2_SEND_FAILED(HttpStatus.BAD_GATEWAY, Stage.API, true,
+            new LocalizedText("L'envoi AS2 vers le partenaire a échoué.",
+                    "فشل الإرسال عبر AS2 إلى الشريك."),
+            new LocalizedText("Vérifiez l'URL du partenaire et son accessibilité, puis renvoyez.",
+                    "تحقّق من عنوان الشريك وإمكانية الوصول إليه، ثم أعد الإرسال.")),
+
     STORAGE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, Stage.API, true,
             new LocalizedText("Le stockage des documents est momentanément indisponible : rien n'a été enregistré.",
                     "تخزين الوثائق غير متاح مؤقتاً: لم يُسجَّل أي شيء."),

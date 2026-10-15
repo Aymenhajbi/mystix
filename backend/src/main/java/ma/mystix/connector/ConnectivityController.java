@@ -7,6 +7,12 @@ import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import ma.mystix.auth.Access;
+import ma.mystix.invoice.ArtifactKind;
+import ma.mystix.invoice.InvoiceService;
+import ma.mystix.invoice.StoredInvoice;
+import ma.mystix.shared.error.ApiError;
+import ma.mystix.shared.error.ErrorCode;
+import ma.mystix.shared.error.MystixException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,11 +39,47 @@ class ConnectivityController {
     private final EntryPointService entryPoints;
     private final ListenerService listeners;
     private final Access access;
+    private final As2Sender as2;
+    private final As2MessageStore as2Messages;
+    private final ChannelService channels;
+    private final InvoiceService invoices;
 
-    ConnectivityController(EntryPointService entryPoints, ListenerService listeners, Access access) {
+    ConnectivityController(EntryPointService entryPoints, ListenerService listeners, Access access, As2Sender as2,
+                           As2MessageStore as2Messages, ChannelService channels, InvoiceService invoices) {
         this.entryPoints = entryPoints;
         this.listeners = listeners;
         this.access = access;
+        this.as2 = as2;
+        this.as2Messages = as2Messages;
+        this.channels = channels;
+        this.invoices = invoices;
+    }
+
+    // ---------- AS2 sending ----------
+
+    record As2SendRequest(UUID invoiceId) {
+    }
+
+    /** Sends the UBL 2.1 (OUT) of an invoice of this environment to the partner of an AS2 channel. */
+    @PostMapping(value = "/channels/{channelId}/as2/send", consumes = MediaType.APPLICATION_JSON_VALUE)
+    As2Sender.Result sendAs2(@RequestHeader(COMPANY) UUID companyId, @PathVariable UUID channelId,
+                             @RequestBody As2SendRequest r, HttpServletRequest request) {
+        access.requireManager(request, companyId);
+        if (r == null || r.invoiceId() == null) {
+            throw new MystixException(ErrorCode.VALIDATION_FAILED, "invoiceId required",
+                    List.of(new ApiError.FieldViolation("invoiceId", "required")), List.of(), null);
+        }
+        StoredInvoice invoice = invoices.get(companyId, r.invoiceId());
+        byte[] ubl = invoices.artifact(companyId, invoice.id(), ArtifactKind.OUT);
+        return as2.send(companyId, channelId, ubl, "application/xml", invoice.number() + ".xml",
+                "Invoice " + invoice.number());
+    }
+
+    @GetMapping("/channels/{channelId}/as2/messages")
+    List<As2MessageStore.Row> as2Messages(@RequestHeader(COMPANY) UUID companyId, @PathVariable UUID channelId,
+                                          @RequestParam(defaultValue = "100") int limit) {
+        channels.get(companyId, channelId);
+        return as2Messages.list(companyId, channelId, limit);
     }
 
     // ---------- entry points ----------
@@ -147,7 +189,11 @@ class ConnectivityController {
     }
 
     private ListenerView view(Listener l, String apiKey) {
-        String endpoint = l.kind() == Listener.Kind.HTTP_INBOUND ? HttpInboundController.PATH + "/" + l.id() : null;
+        String endpoint = switch (l.kind()) {
+            case HTTP_INBOUND -> HttpInboundController.PATH + "/" + l.id();
+            case AS2_SERVER -> As2InboundController.PATH + "/" + l.id();
+            case SFTP_POLLING -> null;
+        };
         return new ListenerView(l.id(), l.name(), l.kind(), l.channelId(), l.entryPointId(), l.settings(), l.enabled(),
                 l.desiredState(), listeners.observedState(l), l.runtimeState(), l.runtimeInstance(),
                 l.lastHeartbeatAt(), l.lastError(), l.startedAt(), l.stoppedAt(), l.lastActivityAt(),

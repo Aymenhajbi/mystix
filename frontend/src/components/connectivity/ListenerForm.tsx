@@ -22,11 +22,12 @@ export function ListenerForm({
 }: {
   lang: string;
   dict: Dictionary;
-  kind: "HTTP_INBOUND" | "SFTP_POLLING";
+  kind: "HTTP_INBOUND" | "SFTP_POLLING" | "AS2_SERVER";
   channels: Option[];
   entryPoints: Option[];
 }) {
   const sftp = kind === "SFTP_POLLING";
+  const as2 = kind === "AS2_SERVER";
   const c = dict.connectivity;
   const f = c.form;
   const [state, action, pending] = useActionState<ListenerActionResult | null, FormData>(createListenerAction, null);
@@ -70,7 +71,9 @@ export function ListenerForm({
             ))}
           </select>
           <span className={styles.hint}>
-            {channels.length === 0 ? (sftp ? f.noSftpChannel : f.noChannel) : sftp ? f.sftpChannelHint : f.channelHint}
+            {channels.length === 0
+              ? sftp ? f.noSftpChannel : as2 ? f.noAs2Channel : f.noChannel
+              : sftp ? f.sftpChannelHint : as2 ? f.as2ChannelHint : f.channelHint}
           </span>
         </label>
         <label className={styles.field} data-invalid={errors.has("entryPointId") || undefined}>

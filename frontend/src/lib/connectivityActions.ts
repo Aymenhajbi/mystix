@@ -43,7 +43,7 @@ export async function createListenerAction(_: ListenerActionResult | null, form:
   const maxKb = Number(text(form, "maxKb"));
   const result = await sendForCompany<ListenerView>("POST", "/api/v1/connectivity/listeners", {
     name: text(form, "name"),
-    kind: text(form, "kind") === "SFTP_POLLING" ? "SFTP_POLLING" : "HTTP_INBOUND",
+    kind: ["SFTP_POLLING", "AS2_SERVER"].includes(text(form, "kind")) ? text(form, "kind") : "HTTP_INBOUND",
     channelId: text(form, "channelId") || null,
     entryPointId: text(form, "entryPointId") || null,
     settings: Number.isFinite(maxKb) && maxKb > 0 ? { maxBytes: Math.round(maxKb * 1024) } : {},
