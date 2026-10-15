@@ -139,6 +139,11 @@ public class ChannelService {
     @Transactional
     public void delete(UUID companyId, UUID id, String actor) {
         get(companyId, id);
+        boolean used = jdbc.sql("SELECT EXISTS (SELECT 1 FROM listener WHERE company_id = :c AND channel_id = :id)")
+                .param("c", companyId).param("id", id).query(Boolean.class).single();
+        if (used) {
+            throw new MystixException(ErrorCode.CHANNEL_IN_USE, "Channel " + id + " has listeners");
+        }
         jdbc.sql("DELETE FROM comm_channel WHERE company_id = :c AND id = :id")
                 .param("c", companyId).param("id", id).update();
         LOG.info("Channel {} deleted for company {} by {}", id, companyId, actor);
