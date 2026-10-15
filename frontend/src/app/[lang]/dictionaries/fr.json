@@ -15,7 +15,8 @@
     "flow": "Flux en direct",
     "mapping": "Mapping",
     "clients": "Environnements clients",
-    "stock": "Stock"
+    "stock": "Stock",
+    "jobs": "Traitements"
   },
   "top": {
     "search": "N° de facture, client, référence de clearance…",
@@ -191,6 +192,72 @@
       "approved": "Facture validée : envoyée en clearance (simulée).",
       "rejected": "Facture refusée : elle ne partira pas en clearance.",
       "error": "La décision n'a pas pu être enregistrée ({code})."
+    }
+  },
+  "jobs": {
+    "title": "Traitements",
+    "lead": "Les travaux de la file : clearances en attente, reprises automatiques et échecs définitifs. Un échec définitif ne repart plus tout seul ; corrigez sa cause, puis rejouez-le.",
+    "stripLabel": "État de la file",
+    "filterLabel": "Filtrer par état",
+    "filters": {
+      "DEAD": "En échec",
+      "READY": "En attente",
+      "RUNNING": "En cours",
+      "DONE": "Terminés",
+      "all": "Tous"
+    },
+    "statuses": {
+      "DEAD": "En échec",
+      "READY": "En attente",
+      "RUNNING": "En cours",
+      "DONE": "Terminé"
+    },
+    "kpi": {
+      "dead": "En échec définitif",
+      "deadSub": "à corriger puis rejouer",
+      "ready": "En attente",
+      "readySub": "le plus ancien attend depuis {age}",
+      "readyEmpty": "rien n'attend",
+      "running": "En cours",
+      "runningSub": "pris par un traitement en ce moment",
+      "done": "Terminés",
+      "doneSub": "depuis la création de la file"
+    },
+    "age": {
+      "seconds": "{n} s",
+      "minutes": "{n} min",
+      "hours": "{n} h",
+      "days": "{n} j"
+    },
+    "caption": "Traitements, du plus récent au plus ancien",
+    "count": "{count} affichés",
+    "window": "les {count} plus récents",
+    "col": {
+      "subject": "Objet",
+      "flow": "Flux",
+      "status": "État",
+      "attempts": "Tentatives",
+      "error": "Dernière erreur",
+      "updated": "Mis à jour",
+      "actions": "Actions"
+    },
+    "kinds": {
+      "INVOICE_CLEARANCE": "Clearance de facture"
+    },
+    "noFlow": "Sans flux",
+    "unknownError": "Erreur",
+    "permanent": "non réessayable",
+    "nextAttempt": "nouvelle tentative {at}",
+    "none": "Aucun traitement dans cet état.",
+    "noneDead": "Aucun traitement en échec. Les reprises automatiques ont tout absorbé.",
+    "replay": "Rejouer",
+    "replayLabel": "Rejouer le traitement de {subject}",
+    "replayed": "Traitement remis dans la file : il repart avec ses tentatives remises à zéro.",
+    "errors": {
+      "AUTH_FORBIDDEN": "Rejouer un traitement est réservé aux gestionnaires de cet environnement.",
+      "QUEUE_JOB_NOT_DEAD": "Ce traitement n'est plus en échec : il a déjà été rejoué ou s'est terminé.",
+      "QUEUE_JOB_NOT_FOUND": "Traitement introuvable pour cet environnement.",
+      "default": "Le rejeu n'a pas abouti. Rechargez la page et réessayez."
     }
   },
   "logs": {

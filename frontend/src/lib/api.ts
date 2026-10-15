@@ -732,3 +732,36 @@ export const listStockAlerts = (sku?: string, location?: string, limit = 20) =>
   companyGet<StockAlert[]>(`/api/v1/stock/alerts${stockQuery({ sku, location, limit: String(limit) })}`);
 export const listStockSnapshots = (limit = 10) =>
   companyGet<StockSnapshot[]>(`/api/v1/stock/snapshots?limit=${limit}`);
+
+// ---------- work queue (ADR-0003, Lot 4) ----------
+
+export type JobStatus = "READY" | "RUNNING" | "DONE" | "DEAD";
+
+/** Last failure of a job, as the worker recorded it. */
+export type JobError = { errorCode?: string; stage?: string; retryable?: boolean; message?: string; attempt?: number };
+
+export type QueueJob = {
+  id: string;
+  lane: string;
+  kind: string;
+  subjectId: string;
+  payload: Record<string, unknown>;
+  priority: number;
+  status: JobStatus;
+  attempts: number;
+  maxAttempts: number;
+  availableAt: string;
+  lastError: JobError | null;
+  createdAt: string;
+  updatedAt: string;
+  finishedAt: string | null;
+};
+
+export type QueueStats = { ready: number; running: number; done: number; dead: number; oldestReadySeconds: number | null };
+
+export const JOB_WINDOW = 200;
+
+export const listJobs = (status?: JobStatus) =>
+  companyGet<QueueJob[]>(`/api/v1/queue/jobs?limit=${JOB_WINDOW}${status ? `&status=${status}` : ""}`);
+
+export const getQueueStats = () => companyGet<QueueStats>("/api/v1/queue/stats");

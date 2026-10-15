@@ -160,6 +160,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     invoices: dict.nav.invoices,
     stock: dict.nav.stock,
     logs: dict.nav.logs,
+    jobs: dict.nav.jobs,
   };
   const paletteItems: PaletteItem[] = [
     { kind: dict.palette.kindPage, label: dict.nav.clients, extra: "", href: `/${lang}/clients`, keywords: `${dict.nav.clients} client environnement flux` },
@@ -174,6 +175,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     { kind: dict.palette.kindPage, label: dict.nav.flow, extra: "", href: `/${lang}/flow`, keywords: `${dict.nav.flow} flux live direct` },
     { kind: dict.palette.kindPage, label: dict.nav.stock, extra: "", href: `/${lang}/stock`, keywords: `${dict.nav.stock} stock inventaire ATP entrepôt INVRPT DESADV RECADV` },
     { kind: dict.palette.kindPage, label: dict.nav.mapping, extra: "", href: `/${lang}/mapping`, keywords: `${dict.nav.mapping} mapping lignée lineage UBL` },
+    { kind: dict.palette.kindPage, label: dict.nav.jobs, extra: "", href: `/${lang}/jobs`, keywords: `${dict.nav.jobs} job file queue échec rejeu replay dead` },
     { kind: dict.palette.kindPage, label: dict.nav.logs, extra: "", href: `/${lang}/logs`, keywords: `${dict.nav.logs} log erreur error` },
     ...(invoices.kind === "ok"
       ? invoices.data.map((i) => ({
