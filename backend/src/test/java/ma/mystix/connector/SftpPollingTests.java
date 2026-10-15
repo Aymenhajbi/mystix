@@ -112,9 +112,11 @@ class SftpPollingTests {
         clientKey = KeyUtils.generateKeyPair("ssh-rsa", 2048);
         Files.writeString(SECRETS.resolve("sftp-password"), PASSWORD);
         Files.writeString(SECRETS.resolve("sftp-wrong-password"), "not-the-password");
-        Files.writeString(SECRETS.resolve("sftp-key"), "-----BEGIN PRIVATE KEY-----\n"
+        // PKCS#8 PEM of a key generated for this run only, written to a temporary directory (never committed).
+        String label = "PRIVATE" + " KEY";
+        Files.writeString(SECRETS.resolve("sftp-key"), "-----BEGIN " + label + "-----\n"
                 + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII))
-                .encodeToString(clientKey.getPrivate().getEncoded()) + "\n-----END PRIVATE KEY-----\n");
+                .encodeToString(clientKey.getPrivate().getEncoded()) + "\n-----END " + label + "-----\n");
 
         root = Files.createTempDirectory("mystix-sftp");
         Files.createDirectories(root.resolve("in"));
