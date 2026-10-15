@@ -44,7 +44,7 @@ export function MystixWordmark({ className }: { className?: string }) {
   );
 }
 
-type IconName = "clients" | "cockpit" | "flow" | "mapping" | "invoices" | "stock" | "logs" | "search" | "theme" | "download";
+type IconName = "clients" | "cockpit" | "flow" | "mapping" | "invoices" | "stock" | "logs" | "jobs" | "search" | "theme" | "download";
 
 const paths: Record<IconName, ReactNode> = {
   clients: (
@@ -84,6 +84,13 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <path d="M4 6h16M4 12h10M4 18h13" />
       <circle cx="19" cy="12" r="1.5" />
+    </>
+  ),
+  jobs: (
+    <>
+      <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+      <path d="M20 5v6h-6" />
+      <path d="M12 8v4l2.5 1.5" />
     </>
   ),
   search: (
