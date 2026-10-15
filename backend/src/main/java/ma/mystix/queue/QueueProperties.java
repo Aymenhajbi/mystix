@@ -17,11 +17,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param lease             how long a claimed job stays reserved; past it, the job is released for another worker
  * @param backoffBase       delay before the second attempt; doubles at each attempt
  * @param backoffMax        upper bound of that delay
+ * @param defaultMaxQueued  unfinished jobs (READY or RUNNING) a lane may hold before new work is refused with 429,
+ *                          unless queue_lane says otherwise
+ * @param retryAfter        delay suggested to a refused caller ({@code Retry-After})
  */
 @ConfigurationProperties("mystix.queue")
 public record QueueProperties(Boolean workerEnabled, Duration pollInterval, Integer concurrency, Integer maxLanes,
                               Integer defaultMaxRunning, Integer maxAttempts, Duration lease, Duration backoffBase,
-                              Duration backoffMax) {
+                              Duration backoffMax, Integer defaultMaxQueued, Duration retryAfter) {
 
     public QueueProperties {
         workerEnabled = workerEnabled == null || workerEnabled;
@@ -33,5 +36,7 @@ public record QueueProperties(Boolean workerEnabled, Duration pollInterval, Inte
         lease = lease == null ? Duration.ofMinutes(5) : lease;
         backoffBase = backoffBase == null ? Duration.ofSeconds(2) : backoffBase;
         backoffMax = backoffMax == null ? Duration.ofMinutes(15) : backoffMax;
+        defaultMaxQueued = defaultMaxQueued == null ? 10_000 : defaultMaxQueued;
+        retryAfter = retryAfter == null ? Duration.ofSeconds(30) : retryAfter;
     }
 }

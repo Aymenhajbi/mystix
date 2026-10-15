@@ -128,6 +128,10 @@ public class InvoiceService {
         try {
             boolean enqueue = async && !backdated;
             stages.time(PIPELINE, "persist", () -> tx.executeWithoutResult(status -> {
+                if (enqueue) {
+                    // Over the flow's quota: 429 and nothing stored, the caller sends the same invoice again later.
+                    queue.admit(companyId, clearanceLane(stored));
+                }
                 repository.insert(stored, artifacts);
                 if (enqueue) {
                     enqueueClearance(stored);
@@ -216,9 +220,12 @@ public class InvoiceService {
     }
 
     private void enqueueClearance(StoredInvoice stored) {
-        queue.enqueue(new Job.New(stored.companyId(),
-                stored.flowId() == null ? Job.companyLane(stored.companyId()) : Job.flowLane(stored.flowId()),
-                CLEARANCE_JOB, stored.id(), Map.of("number", stored.number()), CLEARANCE_PRIORITY));
+        queue.enqueue(new Job.New(stored.companyId(), clearanceLane(stored), CLEARANCE_JOB, stored.id(),
+                Map.of("number", stored.number()), CLEARANCE_PRIORITY));
+    }
+
+    private static String clearanceLane(StoredInvoice stored) {
+        return stored.flowId() == null ? Job.companyLane(stored.companyId()) : Job.flowLane(stored.flowId());
     }
 
     private StoredInvoice submitToGateway(StoredInvoice stored, byte[] ubl) {

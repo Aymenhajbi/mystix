@@ -34,6 +34,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -83,6 +84,9 @@ class InvoiceQueueTests {
 
     @Autowired
     CompanyService companies;
+
+    @Autowired
+    JdbcClient jdbc;
 
     RestClient http;
     UUID company;
@@ -155,6 +159,42 @@ class InvoiceQueueTests {
         assertThat((Map) dead.getFirst().get("lastError")).containsEntry("retryable", true);
         assertThat(http.get().uri("/api/v1/invoices/" + id).header("X-Mystix-Company-Id", company.toString())
                 .retrieve().body(Map.class)).containsEntry("status", "VALIDATED");
+    }
+
+    @Test
+    void asynchronousSubmissionOverTheFlowQuotaAnswers429AndStoresNothing() throws InterruptedException {
+        // Learn the flow's lane, then pause it with room for one more job, so the next queued job stays unfinished.
+        ResponseEntity<byte[]> first = submit("FA-QUOTA-1", false);
+        String lane = "flow:" + first.getHeaders().getFirst("X-Mystix-Flow-Id");
+        jdbc.sql("INSERT INTO queue_lane (lane, company_id, max_running, max_queued, paused, updated_at) "
+                        + "VALUES (:l, :c, 4, 1, TRUE, now())")
+                .param("l", lane).param("c", company).update();
+        // Jobs left by other tests of this class (a DEAD-bound retry, say) may still be unfinished in this lane: once
+        // none runs, the paused lane's count is stable and the quota leaves room for exactly one more.
+        for (int i = 0; i < 100 && jdbc.sql("SELECT count(*) FROM queue_job WHERE lane = :l AND status = 'RUNNING'")
+                .param("l", lane).query(Long.class).single() > 0; i++) {
+            Thread.sleep(100);
+        }
+        jdbc.sql("UPDATE queue_lane SET max_queued = 1 + (SELECT count(*) FROM queue_job WHERE lane = :l "
+                        + "AND status IN ('READY', 'RUNNING')) WHERE lane = :l")
+                .param("l", lane).update();
+        try {
+            assertThat(submit("FA-QUOTA-2", true).getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+
+            ResponseEntity<byte[]> refused = submit("FA-QUOTA-3", true);
+            assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+            assertThat(refused.getHeaders().getFirst("Retry-After")).isEqualTo("30");
+            assertThat(new String(refused.getBody(), StandardCharsets.UTF_8))
+                    .contains("\"errorCode\":\"QUEUE_QUOTA_EXCEEDED\"").contains("\"retryable\":true");
+            // A synchronous submission does not wait in the queue: the quota does not apply.
+            assertThat(submit("FA-QUOTA-4", false).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        } finally {
+            jdbc.sql("DELETE FROM queue_lane WHERE lane = :l").param("l", lane).update();
+        }
+        // Nothing was stored for the refused invoice: sent again, it is a first acceptance, not a replay.
+        ResponseEntity<byte[]> again = submit("FA-QUOTA-3", true);
+        assertThat(again.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        waitForInvoice(again.getHeaders().getFirst("X-Mystix-Invoice-Id"), i -> "CLEARED".equals(i.get("status")));
     }
 
     private ResponseEntity<byte[]> submit(String number, boolean async) {

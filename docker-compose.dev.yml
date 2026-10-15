@@ -31,12 +31,12 @@ services:
       retries: 20
 
   # Lot 4 - ArtifactStore (S3 compatible). Profile "storage".
-  # WARNING: since late 2025 MinIO no longer publishes community Docker images;
-  # the tag below is the last known community release (verify it pulls).
-  # Fallbacks: cgr.dev/chainguard/minio, or another S3-compatible store (see docs/pmo/risks.md R-07).
+  # MinIO no longer publishes community Docker images (minio/minio is gone from Docker Hub, checked 2026-10-14,
+  # risk R-07). Default: the Chainguard build (MinIO RELEASE.2026-09-22), pinned by digest; it ships mc and sh,
+  # so the healthcheck and minio-init below run unchanged. Override with MINIO_IMAGE / MINIO_MC_IMAGE.
   minio:
     profiles: ["storage"]
-    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2025-09-07T16-13-09Z}
+    image: ${MINIO_IMAGE:-cgr.dev/chainguard/minio@sha256:2136d593beacf4461187035eca949fe49abd589d5079735025c711ca58fee0c8}
     container_name: mystix-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -58,7 +58,7 @@ services:
   # (object lock can only be enabled at bucket creation).
   minio-init:
     profiles: ["storage"]
-    image: ${MINIO_MC_IMAGE:-minio/mc:RELEASE.2025-08-13T08-35-41Z}
+    image: ${MINIO_MC_IMAGE:-cgr.dev/chainguard/minio@sha256:2136d593beacf4461187035eca949fe49abd589d5079735025c711ca58fee0c8}
     depends_on:
       minio:
         condition: service_healthy
