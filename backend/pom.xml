@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<awssdk.version>2.46.7</awssdk.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -66,6 +67,32 @@
 			<groupId>org.apache.sshd</groupId>
 			<artifactId>sshd-sftp</artifactId>
 			<version>2.18.0</version>
+		</dependency>
+		<!-- ArtifactStore on the S3 API (ADR-0017): any S3-compatible store (MinIO in dev, risk R-07). Apache-2.0.
+		     The JDK HTTP client (url-connection-client) instead of the default Apache and Netty ones. -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>${awssdk.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>apache-client</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>apache5-client</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>netty-nio-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>url-connection-client</artifactId>
+			<version>${awssdk.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>

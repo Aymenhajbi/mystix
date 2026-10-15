@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import ma.mystix.shared.Sha256;
+import ma.mystix.storage.ArtifactStore;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -35,9 +36,20 @@ class InvoiceRepository {
             rs.getObject("flow_id", UUID.class));
 
     private final JdbcClient jdbc;
+    private final ArtifactStore store;
 
-    InvoiceRepository(JdbcClient jdbc) {
+    InvoiceRepository(JdbcClient jdbc, ArtifactStore store) {
         this.jdbc = jdbc;
+        this.store = store;
+    }
+
+    /**
+     * Object key of an artefact in the external store (ADR-0017): company first, so a company's objects can be listed,
+     * retained or exported together.
+     */
+    static String artifactKey(UUID companyId, UUID messageId, OffsetDateTime createdAt, ArtifactKind kind) {
+        return "%s/invoices/%d/%02d/%s/%s".formatted(companyId, createdAt.getYear(), createdAt.getMonthValue(),
+                messageId, kind.name());
     }
 
     /** Inserts the invoice and its artefacts atomically. Throws DuplicateKeyException if the number exists. */
@@ -63,20 +75,32 @@ class InvoiceRepository {
                 .param("canonicalSha256", invoice.canonicalSha256())
                 .param("createdAt", invoice.createdAt())
                 .update();
-        artifacts.forEach((kind, content) -> jdbc.sql("""
-                        INSERT INTO invoice_artifact (id, message_id, company_id, kind, media_type, content, sha256,
-                                                      created_at)
-                        VALUES (:id, :messageId, :companyId, :kind, :mediaType, :content, :sha256, :createdAt)
-                        """)
-                .param("id", UUID.randomUUID())
-                .param("messageId", invoice.id())
-                .param("companyId", invoice.companyId())
-                .param("kind", kind.name())
-                .param("mediaType", kind.mediaType())
-                .param("content", content)
-                .param("sha256", Sha256.hex(content))
-                .param("createdAt", invoice.createdAt())
-                .update());
+        artifacts.forEach((kind, content) -> {
+            String sha256 = Sha256.hex(content);
+            // External store: written before the row, inside the transaction; if the store fails, nothing is kept.
+            ArtifactStore.StoredObject stored = store.external()
+                    ? store.put(artifactKey(invoice.companyId(), invoice.id(), invoice.createdAt(), kind), content,
+                            kind.mediaType(), sha256)
+                    : null;
+            jdbc.sql("""
+                            INSERT INTO invoice_artifact (id, message_id, company_id, kind, media_type, content, sha256,
+                                                          storage_key, storage_version, size_bytes, created_at)
+                            VALUES (:id, :messageId, :companyId, :kind, :mediaType, :content, :sha256, :key, :version,
+                                    :size, :createdAt)
+                            """)
+                    .param("id", UUID.randomUUID())
+                    .param("messageId", invoice.id())
+                    .param("companyId", invoice.companyId())
+                    .param("kind", kind.name())
+                    .param("mediaType", kind.mediaType())
+                    .param("content", stored == null ? content : null)
+                    .param("sha256", sha256)
+                    .param("key", stored == null ? null : stored.key())
+                    .param("version", stored == null ? null : stored.versionId())
+                    .param("size", (long) content.length)
+                    .param("createdAt", invoice.createdAt())
+                    .update();
+        });
         appendEvent(invoice.companyId(), invoice.id(), invoice.status(), null, invoice.createdAt());
     }
 
@@ -178,7 +202,7 @@ class InvoiceRepository {
 
     List<StoredInvoice.ArtifactInfo> artifacts(UUID companyId, UUID messageId) {
         return jdbc.sql("""
-                SELECT kind, media_type, sha256, octet_length(content) AS size
+                SELECT kind, media_type, sha256, size_bytes AS size
                 FROM invoice_artifact
                 WHERE company_id = :companyId AND message_id = :messageId
                 ORDER BY CASE kind WHEN 'RAW' THEN 1 WHEN 'CANONICAL' THEN 2 ELSE 3 END
@@ -193,7 +217,7 @@ class InvoiceRepository {
     /** RAW requests of the latest invoices of a flow, newest first, with their numbers. */
     List<Map.Entry<String, byte[]>> latestRaw(UUID companyId, UUID flowId, int limit) {
         return jdbc.sql("""
-                SELECT m.invoice_number, a.content
+                SELECT m.invoice_number, a.content, a.storage_key, a.storage_version, a.sha256
                 FROM invoice_message m
                 JOIN invoice_artifact a ON a.message_id = m.id AND a.company_id = m.company_id AND a.kind = 'RAW'
                 WHERE m.company_id = :companyId AND m.flow_id = :flowId
@@ -203,19 +227,26 @@ class InvoiceRepository {
                 .param("companyId", companyId)
                 .param("flowId", flowId)
                 .param("limit", limit)
-                .query((rs, n) -> Map.entry(rs.getString("invoice_number"), rs.getBytes("content")))
+                .query((rs, n) -> Map.entry(rs.getString("invoice_number"), bytes(rs)))
                 .list();
     }
 
     Optional<byte[]> artifactContent(UUID companyId, UUID messageId, ArtifactKind kind) {
         return jdbc.sql("""
-                SELECT content FROM invoice_artifact
+                SELECT content, storage_key, storage_version, sha256 FROM invoice_artifact
                 WHERE company_id = :companyId AND message_id = :messageId AND kind = :kind
                 """)
                 .param("companyId", companyId)
                 .param("messageId", messageId)
                 .param("kind", kind.name())
-                .query((rs, n) -> rs.getBytes("content"))
+                .query((rs, n) -> bytes(rs))
                 .optional();
+    }
+
+    /** The bytes of an artefact row: in the row, or read back from the external store and checked. */
+    private byte[] bytes(java.sql.ResultSet rs) throws java.sql.SQLException {
+        byte[] content = rs.getBytes("content");
+        return content != null ? content
+                : store.get(rs.getString("storage_key"), rs.getString("storage_version"), rs.getString("sha256"));
     }
 }
