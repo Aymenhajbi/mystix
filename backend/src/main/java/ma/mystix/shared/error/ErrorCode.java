@@ -425,6 +425,24 @@ public enum ErrorCode {
             new LocalizedText("Envoyez le format attendu par le point d'entrée (Content-Type: application/json).",
                     "أرسل الصيغة المنتظرة في نقطة الدخول (Content-Type: application/json).")),
 
+    STORAGE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, Stage.API, true,
+            new LocalizedText("Le stockage des documents est momentanément indisponible : rien n'a été enregistré.",
+                    "تخزين الوثائق غير متاح مؤقتاً: لم يُسجَّل أي شيء."),
+            new LocalizedText("Renvoyez la même demande dans quelques instants.",
+                    "أعد إرسال الطلب نفسه بعد لحظات.")),
+
+    STORAGE_CONFLICT(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Un document archivé ne peut pas être remplacé.",
+                    "لا يمكن استبدال وثيقة مؤرشفة."),
+            new LocalizedText("Contactez le support en indiquant l'heure de l'erreur.",
+                    "اتصل بالدعم مع ذكر وقت حدوث الخطأ.")),
+
+    STORAGE_INTEGRITY(HttpStatus.INTERNAL_SERVER_ERROR, Stage.API, false,
+            new LocalizedText("Le document archivé ne correspond plus à son empreinte : il n'est pas servi.",
+                    "الوثيقة المؤرشفة لم تعد تطابق بصمتها: لن تُقدَّم."),
+            new LocalizedText("Contactez le support en indiquant l'heure de l'erreur.",
+                    "اتصل بالدعم مع ذكر وقت حدوث الخطأ.")),
+
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, Stage.API, false,
             new LocalizedText("Ressource introuvable.",
                     "المورد غير موجود."),

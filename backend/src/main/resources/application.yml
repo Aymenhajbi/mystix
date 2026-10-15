@@ -70,6 +70,17 @@ mystix:
     # One file per credential_ref (ADR-0015/0016), outside the repository; empty = no secret available.
     # TODO(lot-8): Vault or the secret manager retained for operations.
     directory: ${MYSTIX_SECRETS_DIRECTORY:}
+  storage:
+    # Artefacts (RAW, CANONICAL, OUT) in PostgreSQL ("database", default) or in an S3-compatible store ("s3"), ADR-0017.
+    mode: ${MYSTIX_STORAGE_MODE:database}
+    endpoint: ${MYSTIX_STORAGE_ENDPOINT:}
+    region: ${MYSTIX_STORAGE_REGION:us-east-1}
+    bucket: ${MYSTIX_STORAGE_BUCKET:mystix-artifacts}
+    access-key: ${MYSTIX_STORAGE_ACCESS_KEY:}
+    secret-key: ${MYSTIX_STORAGE_SECRET_KEY:}
+    # TODO(DGI-SPEC): legal retention of e-invoices not confirmed (probably 10 years); 0 = no object lock retention.
+    retention-days: ${MYSTIX_STORAGE_RETENTION_DAYS:0}
+    retention-mode: GOVERNANCE
   clearance:
     # Only "simulated" exists (ADR-0001). Any other value stops the application at startup. TODO(DGI-SPEC)
     mode: ${MYSTIX_CLEARANCE_MODE:simulated}
