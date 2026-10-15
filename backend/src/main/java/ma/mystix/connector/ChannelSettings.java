@@ -99,12 +99,12 @@ final class ChannelSettings {
                     Field.of("asyncMdnUrl", Kind.URL, false),
                     Field.of("partnerCertificateRef", Kind.TEXT, false)),
             Channel.Protocol.HTTPS, List.of(
-                    Field.of("url", Kind.HTTPS_URL, true),
+                    Field.of("url", Kind.HTTPS_URL, false),
                     Field.choice("method", "POST", "POST", "PUT"),
                     Field.choice("authType", "NONE", "NONE", "BASIC", "BEARER", "MTLS"),
                     Field.of("contentType", Kind.TEXT, false)),
             Channel.Protocol.WEBHOOK, List.of(
-                    Field.of("url", Kind.HTTPS_URL, true),
+                    Field.of("url", Kind.HTTPS_URL, false),
                     Field.of("events", Kind.TEXT, false)));
 
     private ChannelSettings() {
@@ -147,6 +147,11 @@ final class ChannelSettings {
         }
         if (protocol == Channel.Protocol.FTPS && "IMPLICIT".equals(out.get("tlsMode")) && raw.get("port") == null) {
             out.put("port", 990);
+        }
+        // HTTPS and webhooks: the partner URL is needed to send; to receive, Mystix is the server (ADR-0016).
+        if ((protocol == Channel.Protocol.HTTPS || protocol == Channel.Protocol.WEBHOOK)
+                && direction != Channel.Direction.IN && !out.containsKey("url")) {
+            violations.add(violation("url", "required for " + protocol + " to send"));
         }
         if (protocol == Channel.Protocol.AS2) {
             if (direction != Channel.Direction.IN && !out.containsKey("url")) {

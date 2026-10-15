@@ -58,6 +58,12 @@ mystix:
     # Unfinished jobs a flow may hold before new asynchronous work is refused with 429, unless queue_lane overrides it.
     default-max-queued: 10000
     retry-after: 30s
+  connectivity:
+    # Listener supervision (ADR-0016): health check of the listeners started here, and comparison of the desired
+    # state with what runs. A RUNNING listener without heartbeat for 3 x heartbeat is shown DEGRADED.
+    supervisor-enabled: ${MYSTIX_CONNECTIVITY_SUPERVISOR_ENABLED:true}
+    heartbeat: 15s
+    reconcile: 30s
   clearance:
     # Only "simulated" exists (ADR-0001). Any other value stops the application at startup. TODO(DGI-SPEC)
     mode: ${MYSTIX_CLEARANCE_MODE:simulated}
