@@ -16,6 +16,7 @@ type Labels = {
   stock: string;
   logs: string;
   jobs: string;
+  connectivity: string;
 };
 
 /** Icon rail of the Cockpit mockup. Only screens that exist are listed. */
@@ -52,6 +53,12 @@ export function Rail({ lang, labels }: { lang: string; labels: Labels }) {
       label: labels.stock,
       icon: "stock" as const,
       active: pathname.startsWith(`/${lang}/stock`),
+    },
+    {
+      href: `/${lang}/connectivity`,
+      label: labels.connectivity,
+      icon: "connectivity" as const,
+      active: pathname.startsWith(`/${lang}/connectivity`),
     },
     {
       href: `/${lang}/jobs`,
@@ -136,6 +143,13 @@ export function MobileNav({ lang, labels }: { lang: string; labels: Labels }) {
         aria-current={pathname.startsWith(`/${lang}/stock`) ? "true" : undefined}
       >
         {labels.stock}
+      </Link>
+      <Link
+        href={`/${lang}/connectivity`}
+        className={styles.filter}
+        aria-current={pathname.startsWith(`/${lang}/connectivity`) ? "true" : undefined}
+      >
+        {labels.connectivity}
       </Link>
       <Link
         href={`/${lang}/jobs`}

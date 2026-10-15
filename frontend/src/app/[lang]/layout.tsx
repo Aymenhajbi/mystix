@@ -161,6 +161,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     stock: dict.nav.stock,
     logs: dict.nav.logs,
     jobs: dict.nav.jobs,
+    connectivity: dict.nav.connectivity,
   };
   const paletteItems: PaletteItem[] = [
     { kind: dict.palette.kindPage, label: dict.nav.clients, extra: "", href: `/${lang}/clients`, keywords: `${dict.nav.clients} client environnement flux` },
@@ -175,6 +176,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     { kind: dict.palette.kindPage, label: dict.nav.flow, extra: "", href: `/${lang}/flow`, keywords: `${dict.nav.flow} flux live direct` },
     { kind: dict.palette.kindPage, label: dict.nav.stock, extra: "", href: `/${lang}/stock`, keywords: `${dict.nav.stock} stock inventaire ATP entrepôt INVRPT DESADV RECADV` },
     { kind: dict.palette.kindPage, label: dict.nav.mapping, extra: "", href: `/${lang}/mapping`, keywords: `${dict.nav.mapping} mapping lignée lineage UBL` },
+    { kind: dict.palette.kindPage, label: dict.nav.connectivity, extra: "", href: `/${lang}/connectivity`, keywords: `${dict.nav.connectivity} connectivity listener endpoint AS2 SFTP HTTPS webhook point d'entrée` },
     { kind: dict.palette.kindPage, label: dict.nav.jobs, extra: "", href: `/${lang}/jobs`, keywords: `${dict.nav.jobs} job file queue échec rejeu replay dead` },
     { kind: dict.palette.kindPage, label: dict.nav.logs, extra: "", href: `/${lang}/logs`, keywords: `${dict.nav.logs} log erreur error` },
     ...(invoices.kind === "ok"
