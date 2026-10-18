@@ -177,7 +177,7 @@ export default async function WorkOrdersPage({ params, searchParams }: PageProps
             </label>
             <label>
               {w.customerRef}
-              <input name="f.customerReference" maxLength={100} />
+              <output className={pstyles.muted}>{w.customerRefAuto}</output>
             </label>
           </div>
           <div className={s.formFoot}>

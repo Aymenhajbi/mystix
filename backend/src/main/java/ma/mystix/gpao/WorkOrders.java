@@ -145,6 +145,9 @@ public class WorkOrders {
         UUID id = UUID.randomUUID();
         String number = w.number() == null || w.number().isBlank() ? audit.nextNumber(companyId, "OF")
                 : w.number().strip();
+        // The order reference is generated, never typed: CMD-YYYY-000001, one sequence per company and year.
+        String reference = w.customerReference() == null || w.customerReference().isBlank()
+                ? audit.nextNumber(companyId, "CMD") : w.customerReference().strip();
         OffsetDateTime now = OffsetDateTime.now(clock);
         try {
             jdbc.sql("""
@@ -159,7 +162,7 @@ public class WorkOrders {
                     .param("bom", bom.id()).param("q", w.plannedQuantity()).param("site", w.siteId())
                     .param("line", w.productionLine()).param("out", output.id()).param("start", w.plannedStart())
                     .param("end", w.plannedEnd()).param("prio", w.priority() == null ? 3 : w.priority())
-                    .param("ref", w.customerReference()).param("resp", w.responsible()).param("now", now).update();
+                    .param("ref", reference).param("resp", w.responsible()).param("now", now).update();
         } catch (DuplicateKeyException e) {
             throw new MystixException(ErrorCode.ATELYS_CODE_TAKEN, "Work order " + number + " exists", e);
         }
