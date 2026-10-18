@@ -299,12 +299,15 @@ class WmsController {
 
     @PostMapping(value = "/receipts", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Receipts.Receipt> createReceipt(@RequestHeader(COMPANY) UUID companyId,
+                                                   @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                                    @Valid @RequestBody ReceiptRequest r, HttpServletRequest http) {
-        return ResponseEntity.status(201).body(receipts.create(companyId, new Receipts.NewReceipt(r.number(),
+        // 201 when created, 200 when the same Idempotency-Key and content had already created it.
+        Receipts.Created created = receipts.create(companyId, new Receipts.NewReceipt(r.number(),
                 r.siteId(), r.supplier(), r.sourceDocument(), r.lines().stream()
                 .map(l -> new Receipts.NewLine(l.productId(), l.quantity(), l.unit(), l.locationId(), l.lotNumber(),
                         l.supplierLot(), l.attributes()))
-                .toList()), access.actor(http)));
+                .toList()), idempotencyKey, access.actor(http));
+        return ResponseEntity.status(created.replayed() ? 200 : 201).body(created.receipt());
     }
 
     @PostMapping("/receipts/{id}/confirm")

@@ -293,6 +293,12 @@ public enum ErrorCode {
             new LocalizedText("Choisissez un autre code, ou ouvrez l'élément existant.",
                     "اختر رمزاً آخر أو افتح العنصر الموجود.")),
 
+    ATELYS_OPERATION_CONFLICT(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Cet identifiant d'opération a déjà servi pour un autre contenu.",
+                    "معرّف العملية هذا استُعمل لمحتوى آخر."),
+            new LocalizedText("Renvoyez exactement la même opération, ou créez-en une nouvelle avec un nouvel identifiant.",
+                    "أعد إرسال العملية نفسها تماماً، أو أنشئ عملية جديدة بمعرّف جديد.")),
+
     UNIT_INCOMPATIBLE(HttpStatus.BAD_REQUEST, Stage.API, false,
             new LocalizedText("Cette unité n'est pas convertible dans l'unité de stock du produit.",
                     "هذه الوحدة غير قابلة للتحويل إلى وحدة مخزون المنتج."),

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import ma.mystix.shared.Sha256;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
 import org.springframework.dao.DuplicateKeyException;
@@ -61,26 +62,57 @@ public class Receipts {
                           List<Line> lines) {
     }
 
+    /** A created receipt; {@code replayed} when the idempotency key had already created it. */
+    public record Created(Receipt receipt, boolean replayed) {
+    }
+
     @Transactional
     public Receipt create(UUID companyId, NewReceipt r, String actor) {
+        return create(companyId, r, null, actor).receipt();
+    }
+
+    /**
+     * Creates a draft receipt. With an idempotency key (the operation id of a mobile terminal), the same key and the
+     * same content return the receipt already created; the same key with another content is refused.
+     */
+    @Transactional
+    public Created create(UUID companyId, NewReceipt r, String idempotencyKey, String actor) {
         WmsCatalog.Site site = catalog.site(companyId, r.siteId());
         if (r.lines() == null || r.lines().isEmpty()) {
             throw new MystixException(ErrorCode.VALIDATION_FAILED, "A receipt needs at least one line");
         }
+        String key = blankToNull(idempotencyKey);
+        if (key != null && key.length() > 100) {
+            throw new MystixException(ErrorCode.VALIDATION_FAILED, "Idempotency-Key is longer than 100 characters");
+        }
+        String sha = key == null ? null : Sha256.hex(json.writeValueAsBytes(r));
+        if (key != null) {
+            Created replay = replay(companyId, key, sha);
+            if (replay != null) {
+                return replay;
+            }
+        }
         UUID id = UUID.randomUUID();
         String number = r.number() == null || r.number().isBlank() ? audit.nextNumber(companyId, "REC")
                 : r.number().strip();
+        int inserted;
         try {
-            jdbc.sql("""
+            // ON CONFLICT waits for a concurrent request with the same key, then lets this one replay it.
+            inserted = jdbc.sql("""
                             INSERT INTO wms_receipt (id, company_id, number, site_id, supplier, source_document, status,
-                                                     created_at, created_by)
-                            VALUES (:id, :c, :n, :site, :supplier, :doc, 'DRAFT', :now, :actor)
+                                                     created_at, created_by, idempotency_key, request_sha256)
+                            VALUES (:id, :c, :n, :site, :supplier, :doc, 'DRAFT', :now, :actor, :key, :sha)
+                            ON CONFLICT (company_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
                             """)
                     .param("id", id).param("c", companyId).param("n", number).param("site", site.id())
                     .param("supplier", r.supplier()).param("doc", r.sourceDocument())
-                    .param("now", OffsetDateTime.now(clock)).param("actor", actor).update();
+                    .param("now", OffsetDateTime.now(clock)).param("actor", actor)
+                    .param("key", key).param("sha", sha).update();
         } catch (DuplicateKeyException e) {
             throw new MystixException(ErrorCode.ATELYS_CODE_TAKEN, "Receipt " + number + " exists", e);
+        }
+        if (inserted == 0) {
+            return replay(companyId, key, sha);
         }
         int no = 0;
         for (NewLine line : r.lines()) {
@@ -104,7 +136,22 @@ public class Receipts {
                     .param("attrs", json.writeValueAsString(line.attributes() == null ? Map.of() : line.attributes()))
                     .update();
         }
-        return get(companyId, id);
+        return new Created(get(companyId, id), false);
+    }
+
+    private Created replay(UUID companyId, String key, String sha) {
+        var existing = jdbc.sql("SELECT id, request_sha256 FROM wms_receipt WHERE company_id = :c AND idempotency_key = :k")
+                .param("c", companyId).param("k", key)
+                .query((rs, n) -> Map.entry(rs.getObject("id", UUID.class), rs.getString("request_sha256")))
+                .optional();
+        if (existing.isEmpty()) {
+            return null;
+        }
+        if (!existing.get().getValue().equals(sha)) {
+            throw new MystixException(ErrorCode.ATELYS_OPERATION_CONFLICT,
+                    "Idempotency key already used for receipt " + existing.get().getKey() + " with other content");
+        }
+        return new Created(get(companyId, existing.get().getKey()), true);
     }
 
     /** Confirms a draft receipt: lots, movements and balances in one transaction. A confirmed receipt is returned as is. */
