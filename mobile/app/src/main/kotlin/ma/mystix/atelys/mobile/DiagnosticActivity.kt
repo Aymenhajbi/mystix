@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
+import android.text.InputType
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -31,6 +33,8 @@ class DiagnosticActivity : Activity(), ScanConsumer {
     private lateinit var resolutionText: TextView
     private lateinit var resultText: TextView
     private lateinit var buttons: LinearLayout
+    private lateinit var portalText: TextView
+    private lateinit var portalForm: LinearLayout
     private var run: ScannerDiagnosticService.Run? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,6 +55,11 @@ class DiagnosticActivity : Activity(), ScanConsumer {
         column.addView(resolutionText)
         column.addView(buttons)
         column.addView(resultText)
+        column.addView(section(R.string.portal_title))
+        portalText = TextView(this)
+        portalForm = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        column.addView(portalText)
+        column.addView(portalForm)
         column.addView(TextView(this).apply { setText(R.string.diag_hardware_note) })
         setContentView(ScrollView(this).apply { addView(column) })
     }
@@ -59,6 +68,8 @@ class DiagnosticActivity : Activity(), ScanConsumer {
         super.onStart()
         app.scanner.attach(this)
         refresh(activate = true)
+        renderPortal()
+        syncInBackground()
     }
 
     override fun onStop() {
@@ -155,6 +166,8 @@ class DiagnosticActivity : Activity(), ScanConsumer {
             else -> getString(R.string.diag_not_saved)
         }
         if (config != null) app.repository.saveConfiguration(config)
+        app.sync.queueDiagnostic(result)
+        syncInBackground()
         val detail = buildString {
             append(result.outcome)
             result.symbology?.let { append(" · $it") }
@@ -163,6 +176,67 @@ class DiagnosticActivity : Activity(), ScanConsumer {
         }
         refresh(activate = result.outcome == DiagnosticOutcome.PASSED)
         resultText.text = getString(R.string.diag_result, detail, verdict)
+    }
+
+    /** Sign-in and the portal requests. The password is never stored, only the session token. */
+    private fun renderPortal() {
+        val state = app.sync.state()
+        val api = app.sync.api
+        portalText.text = buildList {
+            add(api.signedInAs?.let { getString(R.string.portal_signed_in, it, api.serverUrl) } ?: getString(R.string.portal_signed_out))
+            state.deviceId?.let { add(getString(R.string.portal_registered, state.label ?: it.take(8))) }
+            state.preferredAdapter?.let { add(getString(R.string.portal_preferred, it)) }
+            if (state.testRequested) add(getString(R.string.portal_test_requested))
+            if (state.pendingDiagnostics > 0) add(getString(R.string.portal_pending, state.pendingDiagnostics))
+            state.lastError?.let { add(getString(R.string.portal_error, it)) }
+        }.joinToString("\n")
+        portalForm.removeAllViews()
+        if (api.signedInAs == null) {
+            val server = EditText(this).apply { setText(api.serverUrl); hint = getString(R.string.portal_server); inputType = InputType.TYPE_TEXT_VARIATION_URI }
+            val email = EditText(this).apply { hint = getString(R.string.portal_email); inputType = InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
+            val password = EditText(this).apply { hint = getString(R.string.portal_password); inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
+            listOf(server, email, password).forEach(portalForm::addView)
+            portalForm.addView(Button(this).apply {
+                setText(R.string.portal_sign_in)
+                setOnClickListener {
+                    val secret = password.text.toString().toCharArray()
+                    password.setText("")
+                    api.serverUrl = server.text.toString()
+                    val login = email.text.toString()
+                    portalText.setText(R.string.portal_connecting)
+                    app.network.execute {
+                        val r = api.signIn(login, secret)
+                        val state2 = if (r is ApiResult.Ok) app.sync.sync() else null
+                        runOnUiThread {
+                            renderPortal()
+                            if (r is ApiResult.Failure) portalText.append("\n" + getString(R.string.portal_error, r.errorCode))
+                            if (state2?.resetApplied == true) refresh(activate = false)
+                        }
+                    }
+                }
+            })
+        } else {
+            portalForm.addView(Button(this).apply {
+                setText(R.string.portal_sync)
+                setOnClickListener { syncInBackground() }
+            })
+            portalForm.addView(Button(this).apply {
+                setText(R.string.portal_sign_out)
+                setOnClickListener { app.network.execute { api.signOut(); runOnUiThread { renderPortal() } } }
+            })
+        }
+    }
+
+    private fun syncInBackground() {
+        if (app.sync.api.signedInAs == null) return
+        app.network.execute {
+            val state = app.sync.sync()
+            runOnUiThread {
+                if (isFinishing) return@runOnUiThread
+                renderPortal()
+                if (state.resetApplied) refresh(activate = false)
+            }
+        }
     }
 
     private fun section(title: Int) = TextView(this).apply {

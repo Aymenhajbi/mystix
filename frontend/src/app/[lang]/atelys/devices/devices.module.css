@@ -1,0 +1,771 @@
+/* Atelys Device Hub pages (ADR-0019). Motion is decorative and stops under prefers-reduced-motion. */
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 12px;
+  margin-block-end: 18px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  animation: rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.tile:nth-child(2) { animation-delay: 60ms; }
+.tile:nth-child(3) { animation-delay: 120ms; }
+.tile:nth-child(4) { animation-delay: 180ms; }
+.tile:nth-child(5) { animation-delay: 240ms; }
+
+.tileIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  flex: none;
+}
+
+.tileIcon svg { width: 20px; height: 20px; }
+
+.tileValue {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.tileLabel {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-block-start: 4px;
+}
+
+.tone-OK .tileIcon, .tone-OK.dot { background: var(--ok-soft); color: var(--ok); }
+.tone-ACTION_REQUIRED .tileIcon, .tone-ACTION_REQUIRED.dot { background: var(--warn-soft); color: var(--warn); }
+.tone-ERROR .tileIcon, .tone-ERROR.dot { background: var(--crit-soft); color: var(--crit); }
+.tone-OFFLINE .tileIcon, .tone-OFFLINE.dot { background: var(--surface-3); color: var(--muted); }
+.tone-total .tileIcon { background: var(--accent-soft); color: var(--atelys-flash); }
+
+/* ---------- how a terminal joins ---------- */
+
+.how {
+  padding: 18px;
+}
+
+.howTitle {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.howSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  gap: 14px;
+  counter-reset: how;
+}
+
+.howStep {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: start;
+  animation: rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.howStep:nth-child(2) { animation-delay: 90ms; }
+.howStep:nth-child(3) { animation-delay: 180ms; }
+.howStep:nth-child(4) { animation-delay: 270ms; }
+
+.howIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--atelys-flash);
+  position: relative;
+}
+
+.howIcon svg { width: 20px; height: 20px; }
+
+.howIcon::after {
+  counter-increment: how;
+  content: counter(how);
+  position: absolute;
+  inset-block-start: -4px;
+  inset-inline-end: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--atelys-flash);
+  color: var(--atelys-flash-ink);
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.howStep strong {
+  display: block;
+  font-size: 14px;
+  margin-block-end: 3px;
+}
+
+.howStep p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+/* ---------- device cards ---------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 14px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  animation: rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  box-shadow: 0 10px 24px -18px rgb(0 0 0 / 45%);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--atelys-flash);
+  outline-offset: 2px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.deviceIcon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  flex: none;
+}
+
+.deviceIcon svg { width: 24px; height: 24px; }
+
+.dot {
+  position: absolute;
+  inset-block-end: -3px;
+  inset-inline-end: -3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+
+.tone-OK.dot { background: var(--ok); }
+.tone-ACTION_REQUIRED.dot { background: var(--warn); }
+.tone-ERROR.dot { background: var(--crit); }
+.tone-OFFLINE.dot { background: var(--muted); }
+
+.tone-ACTION_REQUIRED.dot::after,
+.tone-ERROR.dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: pulse 1.8s ease-out infinite;
+}
+
+.tone-ACTION_REQUIRED.dot { color: var(--warn); }
+.tone-ERROR.dot { color: var(--crit); }
+
+.cardName {
+  font-weight: 600;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.cardSub {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.cardMeta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.cardMeta dt { color: var(--muted); }
+.cardMeta dd { margin: 0; text-align: end; overflow-wrap: anywhere; }
+
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-block-start: 10px;
+  border-block-start: 1px dashed var(--line);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.chip svg { width: 14px; height: 14px; }
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---------- empty state ---------- */
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 36px 18px;
+  text-align: center;
+}
+
+.emptyArt {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--atelys-flash);
+}
+
+.emptyArt svg {
+  width: 42px;
+  height: 42px;
+  animation: float 3.2s ease-in-out infinite;
+}
+
+.empty h2 { margin: 0; font-size: 17px; }
+.empty p { margin: 0; color: var(--text-2); max-width: 46ch; }
+
+/* ---------- device page ---------- */
+
+.journey {
+  list-style: none;
+  margin: 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+}
+
+.journeyStep {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.journeyStep::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 17px;
+  inset-inline-start: -50%;
+  width: 100%;
+  height: 3px;
+  background: var(--line);
+  z-index: 0;
+}
+
+.journeyStep:first-child::before { display: none; }
+
+.journeyDone::before,
+.journeyNow::before {
+  background: linear-gradient(90deg, var(--ok), var(--ok));
+  transform-origin: left;
+  animation: grow 520ms ease-out both;
+}
+
+[dir="rtl"] .journeyDone::before,
+[dir="rtl"] .journeyNow::before {
+  transform-origin: right;
+}
+
+.journeyMark {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--muted);
+  border: 2px solid var(--surface);
+}
+
+.journeyMark svg { width: 18px; height: 18px; }
+
+.journeyDone .journeyMark { background: var(--ok); color: var(--surface); }
+.journeyDone { color: var(--text); }
+
+.journeyNow .journeyMark {
+  background: var(--atelys-flash);
+  color: var(--atelys-flash-ink);
+  box-shadow: 0 0 0 0 var(--atelys-flash);
+  animation: beacon 2s ease-out infinite;
+}
+
+.journeyNow { color: var(--text); font-weight: 600; }
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-block-start: 18px;
+}
+
+@media (max-width: 960px) {
+  .detailGrid { grid-template-columns: minmax(0, 1fr); }
+  .journey { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 18px; }
+  .journeyStep:nth-child(3)::before { display: none; }
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 8px 14px;
+  margin: 0;
+  padding: 16px 18px;
+  font-size: 13.5px;
+}
+
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+
+.mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+.reasons {
+  list-style: none;
+  margin: 0;
+  padding: 0 18px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.reason {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  color: var(--text-2);
+  animation: rise 380ms ease-out both;
+}
+
+.reason svg { width: 16px; height: 16px; flex: none; margin-block-start: 2px; color: var(--info); }
+
+.adapterCard {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.adapterCard svg { width: 22px; height: 22px; color: var(--atelys-flash); }
+.adapterCard strong { display: block; font-size: 14px; }
+.adapterCard p { margin: 2px 0 0; font-size: 12.5px; color: var(--text-2); }
+
+.controls {
+  display: grid;
+  gap: 16px;
+  padding: 16px 18px 18px;
+}
+
+.control {
+  display: grid;
+  gap: 8px;
+}
+
+.control + .control {
+  padding-block-start: 14px;
+  border-block-start: 1px dashed var(--line);
+}
+
+.controlHint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.inline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.inline input,
+.inline select {
+  flex: 1 1 180px;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--warn);
+}
+
+.pending svg { width: 15px; height: 15px; animation: spin 1.6s linear infinite; }
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 8px 18px 16px;
+  display: grid;
+  gap: 0;
+}
+
+.event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  padding-block: 10px;
+}
+
+.event::before {
+  content: "";
+  position: absolute;
+  inset-block: 34px -10px;
+  inset-inline-start: 13px;
+  width: 2px;
+  background: var(--line);
+}
+
+.event:last-child::before { display: none; }
+
+.eventMark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text-2);
+  z-index: 1;
+}
+
+.eventMark svg { width: 15px; height: 15px; }
+.eventOk { background: var(--ok-soft); color: var(--ok); }
+.eventBad { background: var(--crit-soft); color: var(--crit); }
+
+.eventTitle { font-size: 13.5px; font-weight: 600; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.eventSub { font-size: 12.5px; color: var(--muted); }
+
+.simTag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px dashed var(--warn);
+  color: var(--warn);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.realTag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--info-soft);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.note svg { width: 18px; height: 18px; color: var(--info); flex: none; }
+
+.btnIcon {
+  width: 16px;
+  height: 16px;
+  margin-inline-end: 6px;
+  vertical-align: -3px;
+}
+
+/* ---------- profiles ---------- */
+
+.profiles {
+  display: grid;
+  gap: 12px;
+}
+
+.profile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  animation: rise 400ms ease-out both;
+}
+
+.profile summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  flex-wrap: wrap;
+}
+
+.profile summary::-webkit-details-marker { display: none; }
+
+.profile summary:focus-visible {
+  outline: 2px solid var(--atelys-flash);
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
+
+.profileRetired { opacity: 0.65; }
+
+.chevron {
+  margin-inline-start: auto;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  transition: transform 200ms ease;
+}
+
+.profile[open] .chevron { transform: rotate(180deg); }
+
+.profileBody {
+  padding: 0 16px 16px;
+  border-block-start: 1px solid var(--line);
+}
+
+.version {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- loading ---------- */
+
+.loading {
+  display: grid;
+  gap: 18px;
+}
+
+.loadingCard {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.radar {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--atelys-flash);
+  display: grid;
+  place-items: center;
+}
+
+.radar svg { width: 26px; height: 26px; }
+
+.radar::before,
+.radar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--atelys-flash);
+  opacity: 0;
+  animation: ripple 2.4s ease-out infinite;
+}
+
+.radar::after { animation-delay: 1.2s; }
+
+.loadingTitle { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+
+.loadingSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.loadingStep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+  animation: stepOn 600ms ease-out both;
+}
+
+.loadingStep:nth-child(1) { animation-delay: 150ms; }
+.loadingStep:nth-child(2) { animation-delay: 900ms; }
+.loadingStep:nth-child(3) { animation-delay: 1650ms; }
+
+.loadingStep::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  animation: spin 900ms linear infinite;
+}
+
+.loadingHint { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+
+.skeletons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 14px;
+}
+
+.skeleton {
+  height: 168px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: linear-gradient(100deg, var(--surface) 30%, var(--surface-3) 50%, var(--surface) 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes beacon {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--atelys-flash) 55%, transparent); }
+  100% { box-shadow: 0 0 0 12px transparent; }
+}
+
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ripple {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+@keyframes stepOn {
+  from { opacity: 0.25; transform: translateX(-4px); }
+  to { opacity: 1; transform: none; color: var(--text-2); }
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile, .howStep, .card, .reason, .profile, .loadingStep,
+  .journeyDone::before, .journeyNow::before, .journeyNow .journeyMark,
+  .emptyArt svg, .pending svg, .skeleton, .radar::before, .radar::after,
+  .tone-ACTION_REQUIRED.dot::after, .tone-ERROR.dot::after, .loadingStep::before {
+    animation: none;
+  }
+
+  .card { transition: none; }
+}

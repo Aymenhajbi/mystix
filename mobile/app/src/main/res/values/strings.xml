@@ -16,4 +16,19 @@
     <string name="diag_busy">Une opération est en cours : test impossible pour l\'instant.</string>
     <string name="diag_last_scan">Dernière lecture : %1$s (%2$s)</string>
     <string name="diag_hardware_note">Aucune intégration n\'est validée sur un vrai terminal Honeywell tant que le test ci-dessus n\'a pas réussi sur ce terminal.</string>
+    <string name="portal_title">Portail Atelys</string>
+    <string name="portal_signed_out">Non connecté : connectez-vous pour signaler ce terminal au portail.</string>
+    <string name="portal_signed_in">Connecté : %1$s (%2$s)</string>
+    <string name="portal_registered">Terminal enregistré : %1$s</string>
+    <string name="portal_preferred">L’administrateur conseille : %1$s (à confirmer par un test)</string>
+    <string name="portal_test_requested">Un test de lecture est demandé par l’administrateur.</string>
+    <string name="portal_pending">%1$d test(s) en attente d’envoi</string>
+    <string name="portal_error">Dernière erreur : %1$s</string>
+    <string name="portal_server">Adresse du serveur</string>
+    <string name="portal_email">E-mail</string>
+    <string name="portal_password">Mot de passe</string>
+    <string name="portal_sign_in">Se connecter</string>
+    <string name="portal_sign_out">Se déconnecter</string>
+    <string name="portal_sync">Synchroniser maintenant</string>
+    <string name="portal_connecting">Connexion au portail…</string>
 </resources>

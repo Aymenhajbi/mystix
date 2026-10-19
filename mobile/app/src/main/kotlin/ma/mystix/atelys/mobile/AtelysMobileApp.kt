@@ -22,6 +22,11 @@ class AtelysMobileApp : Application() {
         private set
     lateinit var diagnostics: ScannerDiagnosticService
         private set
+    lateinit var sync: DeviceSync
+        private set
+
+    /** One background thread for network calls: check-ins never run in parallel. */
+    val network: java.util.concurrent.ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
 
     /** No WMS operation exists in the app yet; the receipt screen will report its own state here. */
     val transactions = TransactionGuard { false }
@@ -34,5 +39,6 @@ class AtelysMobileApp : Application() {
         resolver = IntegrationResolver(registry, ResolverPolicy(minSupportedSdk = 26))
         scanner = ScannerController(registry, transactions)
         diagnostics = ScannerDiagnosticService(scanner, transactions) { System.currentTimeMillis() }
+        sync = DeviceSync(this, this, ApiClient(this))
     }
 }

@@ -299,6 +299,12 @@ public enum ErrorCode {
             new LocalizedText("Renvoyez exactement la même opération, ou créez-en une nouvelle avec un nouvel identifiant.",
                     "أعد إرسال العملية نفسها تماماً، أو أنشئ عملية جديدة بمعرّف جديد.")),
 
+    DEVICE_ADAPTER_UNKNOWN(HttpStatus.BAD_REQUEST, Stage.API, false,
+            new LocalizedText("Cette méthode de scan n'existe pas dans l'application mobile.",
+                    "طريقة المسح هذه غير موجودة في التطبيق المحمول."),
+            new LocalizedText("Choisissez une méthode de la liste : clavier ou Data Intent Honeywell.",
+                    "اختر طريقة من القائمة: لوحة المفاتيح أو Data Intent من Honeywell.")),
+
     UNIT_INCOMPATIBLE(HttpStatus.BAD_REQUEST, Stage.API, false,
             new LocalizedText("Cette unité n'est pas convertible dans l'unité de stock du produit.",
                     "هذه الوحدة غير قابلة للتحويل إلى وحدة مخزون المنتج."),

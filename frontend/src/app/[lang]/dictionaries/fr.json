@@ -1129,7 +1129,8 @@
       "production": "Production",
       "warehouse": "Stocks et entrepôts",
       "admin": "Administration",
-      "channels": "Canaux"
+      "channels": "Canaux",
+      "devices": "Terminaux"
     },
     "common": {
       "save": "Enregistrer",
@@ -1474,7 +1475,238 @@
       "VALIDATION_FAILED": "Le formulaire est incomplet ou invalide.",
       "NO_COMPANY": "Aucun environnement actif.",
       "API_UNREACHABLE": "L'API Mystix ne répond pas.",
-      "default": "Échec de l'opération ({code})."
+      "default": "Échec de l'opération ({code}).",
+      "DEVICE_ADAPTER_UNKNOWN": "Cette méthode de scan n'existe pas dans l'application mobile, ou ne convient pas à ce fabricant."
+    },
+    "devices": {
+      "title": "Terminaux et intégrations",
+      "lead": "Les terminaux Atelys Mobile, la méthode de scan de chacun et ce qu'il reste à faire pour qu'ils soient opérationnels.",
+      "profilesLink": "Profils de compatibilité",
+      "loading": {
+        "title": "Préparation de la vue des terminaux",
+        "steps": [
+          "Interrogation des terminaux enregistrés",
+          "Lecture des derniers tests de scan",
+          "Calcul de l'état de chaque terminal"
+        ],
+        "hint": "Les terminaux se signalent eux-mêmes à chaque démarrage d'Atelys Mobile. Rien ne leur est envoyé pendant ce chargement."
+      },
+      "summary": {
+        "total": "Terminaux",
+        "OK": "Opérationnels",
+        "ACTION_REQUIRED": "Action requise",
+        "ERROR": "En erreur",
+        "OFFLINE": "Hors ligne"
+      },
+      "health": {
+        "OK": "Opérationnel",
+        "ACTION_REQUIRED": "Action requise",
+        "ERROR": "En erreur",
+        "OFFLINE": "Hors ligne"
+      },
+      "healthHint": {
+        "OK": "Une méthode de scan validée par une vraie lecture est active.",
+        "ACTION_REQUIRED": "Le terminal attend un réglage, un choix ou un test de lecture.",
+        "ERROR": "Le dernier test de lecture ou le scanner a échoué depuis la dernière validation.",
+        "OFFLINE": "Aucun signe du terminal depuis plus de 24 heures."
+      },
+      "how": {
+        "title": "Comment un terminal rejoint Atelys",
+        "steps": [
+          {
+            "title": "Installer Atelys Mobile",
+            "text": "Installez l'application sur le terminal et connectez-vous avec un compte de cet environnement."
+          },
+          {
+            "title": "Détection automatique",
+            "text": "Au démarrage, Atelys relève le modèle, la version Android et les méthodes de scan possibles. Ni IMEI ni numéro de série."
+          },
+          {
+            "title": "Test de lecture",
+            "text": "L'opérateur lit une étiquette. Seule une vraie lecture valide la méthode de scan."
+          },
+          {
+            "title": "Terminal opérationnel",
+            "text": "La méthode validée reste sur le terminal, même sans réseau."
+          }
+        ]
+      },
+      "empty": {
+        "title": "Aucun terminal ne s'est encore signalé",
+        "text": "Dès qu'un terminal ouvre Atelys Mobile avec un compte de cet environnement, il apparaît ici avec son état."
+      },
+      "columns": {
+        "device": "Terminal",
+        "android": "Android",
+        "adapter": "Méthode active",
+        "lastSeen": "Dernier contact",
+        "health": "État"
+      },
+      "fields": {
+        "label": "Nom du terminal",
+        "installation": "Identifiant d'installation",
+        "manufacturer": "Fabricant",
+        "brand": "Marque",
+        "model": "Modèle",
+        "product": "Produit",
+        "android": "Version Android",
+        "api": "Niveau d'API",
+        "build": "Build",
+        "app": "Version d'Atelys Mobile",
+        "capabilities": "Capacités détectées",
+        "lastSeen": "Dernier contact",
+        "lastSeenBy": "Compte connecté",
+        "firstSeen": "Premier contact",
+        "active": "Méthode active",
+        "validatedAt": "Validée le",
+        "recommended": "Méthode recommandée par le terminal",
+        "preferred": "Méthode conseillée",
+        "resolution": "Décision du terminal",
+        "reasons": "Pourquoi",
+        "none": "Aucune"
+      },
+      "journey": {
+        "label": "Parcours du terminal",
+        "steps": [
+          "Détecté",
+          "Méthode proposée",
+          "Lecture testée",
+          "Opérationnel"
+        ]
+      },
+      "actions": {
+        "title": "Piloter ce terminal",
+        "rename": "Renommer",
+        "labelPlaceholder": "ex. Quai de réception 1",
+        "prefer": "Méthode conseillée par l'administrateur",
+        "preferHint": "Elle est proposée sur le terminal et ne s'active qu'après un test de lecture réussi.",
+        "noPreference": "Aucune préférence",
+        "savePrefer": "Enregistrer",
+        "requestTest": "Demander un test de lecture",
+        "requestTestHint": "Le terminal proposera le test à son prochain démarrage ou à son retour sur le réseau.",
+        "reset": "Réinitialiser la configuration",
+        "resetHint": "Le terminal oublie sa méthode validée et refait la détection. À utiliser après un changement de réglage du scanner.",
+        "pendingTest": "Test demandé le {at}",
+        "pendingReset": "Réinitialisation demandée le {at}",
+        "adminOnly": "Réservé aux administrateurs de l'environnement."
+      },
+      "resolution": {
+        "AUTO_SELECTED": "Méthode validée réutilisée",
+        "USER_SELECTION_REQUIRED": "Choix de l'opérateur attendu",
+        "CONFIGURATION_REQUIRED": "Réglage du scanner attendu",
+        "DEVICE_UNSUPPORTED": "Terminal non pris en charge",
+        "SCANNER_UNAVAILABLE": "Scanner indisponible",
+        "DIAGNOSTIC_REQUIRED": "Test de lecture attendu"
+      },
+      "reasons": {
+        "SDK_BELOW_MINIMUM": "Version Android trop ancienne pour Atelys Mobile",
+        "MANUFACTURER_NOT_SUPPORTED": "Méthode réservée à un autre fabricant",
+        "SDK_NOT_BUNDLED": "SDK du fabricant absent de cette version",
+        "CONFIGURATION_NOT_DETECTABLE": "Le réglage du scanner ne peut être vérifié que par une lecture",
+        "KEYBOARD_INPUT_ONLY": "Lecture en mode clavier : un test est indispensable",
+        "SCANNER_SERVICE_UNAVAILABLE": "Le service de scan ne répond pas",
+        "SAVED_CONFIGURATION_VALID": "Méthode déjà validée sur ce terminal",
+        "SAVED_CONFIGURATION_OTHER_INSTALLATION": "Configuration d'une autre installation ignorée",
+        "SAVED_CONFIGURATION_OTHER_DEVICE": "Configuration d'un autre modèle ignorée",
+        "SAVED_CONFIGURATION_ADAPTER_MISSING": "Méthode validée absente de cette version",
+        "SAVED_CONFIGURATION_INCOMPATIBLE": "Méthode validée devenue incompatible",
+        "PROFILE_VALIDATED": "Profil validé appliqué",
+        "PROFILE_EXPERIMENTAL": "Profil expérimental : il ne décide pas seul",
+        "PROFILE_RETIRED": "Profil retiré ignoré",
+        "PROFILE_ADAPTER_UNAVAILABLE": "La méthode du profil n'est pas utilisable ici",
+        "PROFILE_RECOMMENDS_OTHER_ADAPTER": "Un profil conseille une autre méthode (à tester)",
+        "NO_PROFILE": "Aucun profil pour ce modèle",
+        "SEVERAL_CANDIDATES": "Plusieurs méthodes possibles",
+        "SINGLE_CANDIDATE_LOW_CONFIDENCE": "Une seule méthode possible, à confirmer",
+        "NO_COMPATIBLE_ADAPTER": "Aucune méthode compatible"
+      },
+      "capabilities": {
+        "input.key-events": "Réception des touches clavier",
+        "honeywell.aidc.sdk-bundled": "SDK Honeywell intégré"
+      },
+      "adapters": {
+        "honeywell-data-intent": {
+          "name": "Honeywell Data Intent",
+          "text": "Le scanner Honeywell envoie chaque lecture à Atelys. Réglage Data Intent requis sur le terminal.",
+          "badge": "Expérimental"
+        },
+        "keyboard-wedge": {
+          "name": "Mode clavier",
+          "text": "Le scanner tape la lecture suivie d'Entrée. Fonctionne sur la plupart des terminaux.",
+          "badge": ""
+        }
+      },
+      "diagnostics": {
+        "title": "Tests de lecture",
+        "empty": "Aucun test de lecture reçu de ce terminal.",
+        "simulated": "Simulé",
+        "physical": "Lecture réelle",
+        "chars": "{n} caractères",
+        "outcome": {
+          "PASSED": "Réussi",
+          "MISMATCH": "Étiquette inattendue",
+          "TIMEOUT": "Aucune lecture dans le délai",
+          "OPEN_FAILED": "Scanner non ouvert",
+          "ADAPTER_ERROR": "Erreur du scanner",
+          "CANCELLED": "Annulé"
+        }
+      },
+      "audit": {
+        "title": "Historique",
+        "empty": "Aucun événement.",
+        "actions": {
+          "DEVICE_REGISTERED": "Terminal enregistré",
+          "DEVICE_RENAMED": "Terminal renommé",
+          "DEVICE_PREFERENCE": "Méthode conseillée modifiée",
+          "DEVICE_RESET_REQUESTED": "Réinitialisation demandée",
+          "DEVICE_TEST_REQUESTED": "Test de lecture demandé",
+          "DEVICE_DIAGNOSTIC": "Test de lecture reçu"
+        }
+      },
+      "hardwareNote": "Un test marqué « Simulé » vient d'un essai logiciel : il ne valide jamais un terminal.",
+      "profiles": {
+        "title": "Profils de compatibilité",
+        "lead": "Des règles par modèle, fabricant ou installation qui orientent le choix de la méthode de scan. Un profil conseille, il n'active rien : chaque terminal confirme par un test de lecture.",
+        "back": "Terminaux",
+        "new": "Nouveau profil",
+        "empty": "Aucun profil. Sans profil, chaque terminal propose ses méthodes possibles et l'opérateur choisit.",
+        "edit": "Modifier",
+        "save": "Enregistrer",
+        "create": "Créer le profil",
+        "retire": "Retirer",
+        "retiredNote": "Retiré : il n'est plus envoyé aux terminaux.",
+        "version": "v{n}",
+        "updated": "Modifié le {at} par {by}",
+        "fields": {
+          "name": "Nom",
+          "scope": "Portée",
+          "manufacturer": "Fabricant",
+          "models": "Modèles (séparés par des virgules)",
+          "installation": "Identifiant d'installation",
+          "minSdk": "API minimale",
+          "maxSdk": "API maximale",
+          "adapter": "Méthode conseillée",
+          "prerequisites": "Prérequis sur le terminal",
+          "confidence": "Confiance",
+          "status": "Statut",
+          "testProcedure": "Procédure de test"
+        },
+        "scope": {
+          "MODEL": "Modèle",
+          "MANUFACTURER": "Fabricant",
+          "INSTALLATION": "Une installation"
+        },
+        "status": {
+          "VALIDATED": "Validé",
+          "EXPERIMENTAL": "Expérimental",
+          "RETIRED": "Retiré"
+        },
+        "confidence": {
+          "LOW": "Faible",
+          "MEDIUM": "Moyenne",
+          "HIGH": "Élevée"
+        }
+      }
     }
   },
   "channels": {

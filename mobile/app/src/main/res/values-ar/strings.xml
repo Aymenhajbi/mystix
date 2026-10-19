@@ -16,4 +16,19 @@
     <string name="diag_busy">عملية جارية: لا يمكن الاختبار الآن.</string>
     <string name="diag_last_scan">آخر قراءة: %1$s (%2$s)</string>
     <string name="diag_hardware_note">لا تُعتمد أي طريقة على جهاز Honeywell حقيقي ما لم ينجح الاختبار أعلاه على هذا الجهاز.</string>
+    <string name="portal_title">بوابة Atelys</string>
+    <string name="portal_signed_out">غير متصل: سجّل الدخول للتعريف بهذا الجهاز لدى البوابة.</string>
+    <string name="portal_signed_in">متصل: %1$s (%2$s)</string>
+    <string name="portal_registered">الجهاز مسجل: %1$s</string>
+    <string name="portal_preferred">يقترح المسؤول: %1$s (يُؤكَّد باختبار)</string>
+    <string name="portal_test_requested">طلب المسؤول اختبار قراءة.</string>
+    <string name="portal_pending">%1$d اختبار(ات) في انتظار الإرسال</string>
+    <string name="portal_error">آخر خطأ: %1$s</string>
+    <string name="portal_server">عنوان الخادم</string>
+    <string name="portal_email">البريد الإلكتروني</string>
+    <string name="portal_password">كلمة المرور</string>
+    <string name="portal_sign_in">تسجيل الدخول</string>
+    <string name="portal_sign_out">تسجيل الخروج</string>
+    <string name="portal_sync">مزامنة الآن</string>
+    <string name="portal_connecting">الاتصال بالبوابة…</string>
 </resources>

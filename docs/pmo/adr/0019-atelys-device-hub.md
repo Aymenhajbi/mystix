@@ -102,6 +102,29 @@ un profil retiré est ignoré et signalé.
 - Vérifié : `./gradlew build` → APK debug et release (non signée), lint sans erreur, 42 tests unitaires, 0 échec.
 - Non fait : écran de réception mobile ; exécution sur émulateur ; **aucun essai sur terminal Honeywell**.
 
+## 3 ter. Lot D (et synchronisation du lot C) — livré le 19/10/2026
+
+- Migration `V28__mobile_devices.sql` : `mobile_device` (unique par société et identifiant d'installation),
+  `mobile_device_profile` (version incrémentée à chaque modification, retrait sans suppression),
+  `mobile_device_diagnostic` (identifiant fourni par le terminal : un renvoi est stocké une fois).
+- API `/api/v1/atelys` : `devices/check-in` et `devices/{id}/diagnostics` (terminal, membre connecté) ;
+  `devices`, `devices/{id}`, `device-profiles`, `device-adapters` (lecture) ; `label`, `preference`, `reset`,
+  `test-request`, création, modification et retrait de profils (`Access.requireManager`, audit `atelys_audit`).
+  État de santé calculé côté serveur : OK, ACTION_REQUIRED, ERROR, OFFLINE (24 h,
+  `mystix.devices.offline-after`).
+- Une préférence d'administrateur n'active rien : elle est affichée sur le terminal et ne devient active qu'après
+  un test de lecture réussi. Une réinitialisation est levée quand le terminal ne rapporte plus de configuration.
+- Portail Atelys, rubrique « Terminaux » (fr, ar, RTL, mode sombre, mobile) : flotte avec état, fiche terminal
+  (parcours, décision et raisons, tests de lecture marqués réels ou simulés, historique, pilotage), profils de
+  compatibilité, chargement explicatif animé ; animations coupées sous `prefers-reduced-motion`.
+- Application : connexion au portail, check-in au démarrage et après chaque test, profils mis en cache, file locale
+  des tests à envoyer. Jeton de session en préférences privées ; stockage chiffré (Keystore) prévu au lot E.
+  HTTP en clair autorisé seulement dans le build debug.
+- Vérifié : `mvnw verify` 157 tests, 0 échec (dont `DeviceApiTests` : droits, isolation, idempotence, reset,
+  profils) ; `npm run lint`, `typecheck`, `build` ; `./gradlew build` (APK, lint, 42 tests).
+  Parcours de bout en bout avec **deux terminaux simulés par appels HTTP**, libellés « (simulé) » dans la base de
+  dev. Pas d'essai avec l'APK sur un appareil.
+
 ## 4. Lots suivants (prévus)
 
 - B (reste) : écran de réception via `POST /wms/receipts` avec `Idempotency-Key`, connexion, file d'opérations.
