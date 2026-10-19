@@ -38,6 +38,8 @@ Thumbs.db
 desktop.ini
 
 # Local data
+# Local secrets, generated credentials and scratch files (scripts/init-env.ps1, scripts/seed-demo.ps1)
+.local/
 *.log
 tmp/
 
