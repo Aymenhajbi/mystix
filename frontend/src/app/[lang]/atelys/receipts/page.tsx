@@ -7,7 +7,7 @@ import { hasLocale } from "@/lib/i18n";
 import { getDictionary } from "../../dictionaries";
 import pstyles from "../../portal.module.css";
 import s from "../atelys.module.css";
-import { ActionForm, ApiDown, Badge, Head, Notice, one, Qty, when } from "../ui";
+import { ActionForm, ApiDown, Badge, Head, Notice, one, PartnerSelect, Qty, when } from "../ui";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/atelys/receipts">): Promise<Metadata> {
   const { lang } = await params;
@@ -24,7 +24,8 @@ export default async function ReceiptsPage({ params, searchParams }: PageProps<"
   const a = dict.atelys;
   const R = a.receipts;
   const query = await searchParams;
-  const [list, sites, products, locations, units] = await Promise.all([
+  const [partners, list, sites, products, locations, units] = await Promise.all([
+    atelys.partners(),
     atelys.receipts(),
     atelys.sites(),
     atelys.products(),
@@ -129,10 +130,13 @@ export default async function ReceiptsPage({ params, searchParams }: PageProps<"
                 ))}
               </select>
             </label>
-            <label>
-              {R.supplier}
-              <input name="f.supplier" maxLength={200} />
-            </label>
+            <PartnerSelect
+              name="f.supplier"
+              label={R.supplier}
+              partners={partners.kind === "ok" ? partners.data.filter((p) => p.type === "SUPPLIER") : []}
+              emptyLabel={a.common.partnerNone}
+              noneHint={a.common.noSuppliers}
+            />
             <label>
               {R.sourceDocument}
               <input name="f.sourceDocument" maxLength={100} />

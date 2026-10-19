@@ -111,6 +111,9 @@ class AtelysApiTests {
         // 3. Work order cannot be released on a draft BOM.
         UUID wo = id(post("/api/v1/gpao/work-orders", Map.of("productId", pallet, "bomId", bom, "plannedQuantity",
                 100, "siteId", site, "outputLocationId", output)));
+        // No order reference typed: one is generated, CMD-YYYY-000001 style.
+        assertThat((String) ((Map) get("/api/v1/gpao/work-orders/" + wo).get("order")).get("customerReference"))
+                .matches("CMD-\\d{4}-\\d{6}");
         assertThat(post("/api/v1/gpao/work-orders/" + wo + "/status", Map.of("status", "RELEASED")).getBody())
                 .containsEntry("errorCode", "BOM_NOT_VALIDATED");
         post("/api/v1/gpao/boms/" + bom + "/validate", null);

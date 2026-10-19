@@ -33,11 +33,7 @@ export default async function BomsPage({ params, searchParams }: PageProps<"/[la
 
   return (
     <>
-      <Head eyebrow={dict.atelys.nav.production} title={b.title} lead={b.lead}>
-        <a href="#new" className={s.flashBtn}>
-          {b.new}
-        </a>
-      </Head>
+      <Head eyebrow={dict.atelys.nav.production} title={b.title} lead={b.lead} />
       <Notice error={one(query.error)} ok={one(query.ok)} dict={dict} />
       <div style={{ display: "grid", gap: 14 }}>
         {boms.length === 0 && <p className={pstyles.muted}>{a.common.noData}</p>}

@@ -1,4 +1,4 @@
-import { getForCompany } from "./api";
+import { getForCompany, type Partner } from "./api";
 
 /** Atelys (GPAO + WMS, ADR-0014): types of the /api/v1/wms and /api/v1/gpao endpoints. Quantities are numbers in JSON. */
 
@@ -390,6 +390,8 @@ const q = (params: Record<string, string | undefined>) => {
 };
 
 export const atelys = {
+  /** Trading partners of the environment (shared with Mystix): suppliers for receipts, customers for shipments. */
+  partners: () => getForCompany<Partner[]>("/api/v1/partners"),
   units: () => getForCompany<Unit[]>("/api/v1/wms/units"),
   products: (category?: string) => getForCompany<Product[]>(`/api/v1/wms/products${q({ category })}`),
   sites: () => getForCompany<Site[]>("/api/v1/wms/sites"),

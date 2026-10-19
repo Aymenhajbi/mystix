@@ -1169,7 +1169,10 @@
       "actor": "Acteur",
       "at": "Le",
       "from": "De",
-      "to": "Vers"
+      "to": "Vers",
+      "partnerNone": "— Aucun —",
+      "noSuppliers": "Aucun fournisseur : ajoutez-les dans Mystix › Environnements clients › Partenaires.",
+      "noCustomers": "Aucun client : ajoutez-les dans Mystix › Environnements clients › Partenaires."
     },
     "quality": {
       "PENDING": "En attente",
@@ -1304,7 +1307,8 @@
         "CANCELLED": "Annuler",
         "DRAFT": "Repasser en brouillon"
       },
-      "formulas": "Réalisation = produit / planifié · Taux de rebut = rebut / produit · Écart = (consommé − théorique) / théorique"
+      "formulas": "Réalisation = produit / planifié · Taux de rebut = rebut / produit · Écart = (consommé − théorique) / théorique",
+      "customerRefAuto": "Générée à la création (CMD-AAAA-NNNNNN)"
     },
     "boms": {
       "title": "Nomenclatures",

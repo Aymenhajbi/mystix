@@ -77,6 +77,11 @@ export default async function WorkOrdersPage({ params, searchParams }: PageProps
                       <Link href={`${base}/${o.id}`} className={pstyles.mono}>
                         {o.number}
                       </Link>
+                      {o.customerReference && (
+                        <div className={pstyles.muted} style={{ fontSize: 12 }}>
+                          {o.customerReference}
+                        </div>
+                      )}
                     </td>
                     <td>
                       {o.productName}
@@ -177,7 +182,7 @@ export default async function WorkOrdersPage({ params, searchParams }: PageProps
             </label>
             <label>
               {w.customerRef}
-              <input name="f.customerReference" maxLength={100} />
+              <output className={pstyles.muted}>{w.customerRefAuto}</output>
             </label>
           </div>
           <div className={s.formFoot}>

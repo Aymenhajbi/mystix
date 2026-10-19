@@ -200,3 +200,36 @@ export function StockSplit({
     </div>
   );
 }
+
+/**
+ * A partner picked from the environment's list (suppliers or customers), never typed: the same name everywhere.
+ * The value sent is the partner's name, which is what receipts and shipments record.
+ */
+export function PartnerSelect({
+  name,
+  label,
+  partners,
+  emptyLabel,
+  noneHint,
+}: {
+  name: string;
+  label: string;
+  partners: { id: string; name: string }[];
+  emptyLabel: string;
+  noneHint: string;
+}) {
+  return (
+    <label>
+      {label}
+      <select name={name} defaultValue="">
+        <option value="">{emptyLabel}</option>
+        {partners.map((p) => (
+          <option key={p.id} value={p.name}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+      {partners.length === 0 && <span style={{ fontSize: 12, opacity: 0.8 }}>{noneHint}</span>}
+    </label>
+  );
+}

@@ -38,11 +38,19 @@ Thumbs.db
 desktop.ini
 
 # Local data
+# Local secrets, generated credentials and scratch files (scripts/init-env.ps1, scripts/seed-demo.ps1)
+.local/
 *.log
 tmp/
 
 # Server log files and their rotated archives
 backend/logs/
 bench-results.json
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+# Claude Code: only the shared skills are versioned; local files (credentials, captures, launch.json) stay out.
+.claude/*
+!.claude/skills/
+.playwright/
 # Local AS2 test bench: holds private keys, never versioned (see docs/dev-setup.md §5).
 as2-test/

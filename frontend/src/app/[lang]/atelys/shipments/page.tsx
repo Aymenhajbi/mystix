@@ -7,7 +7,7 @@ import { hasLocale } from "@/lib/i18n";
 import { getDictionary } from "../../dictionaries";
 import pstyles from "../../portal.module.css";
 import s from "../atelys.module.css";
-import { ActionForm, ApiDown, Badge, Head, Notice, num, one, Qty, when } from "../ui";
+import { ActionForm, ApiDown, Badge, Head, Notice, num, one, PartnerSelect, Qty, when } from "../ui";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/atelys/shipments">): Promise<Metadata> {
   const { lang } = await params;
@@ -24,7 +24,8 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps<
   const a = dict.atelys;
   const S = a.shipments;
   const query = await searchParams;
-  const [list, sites, stock] = await Promise.all([atelys.shipments(), atelys.sites(), atelys.stockLines({ quality: "RELEASED" })]);
+  const [list, sites, stock, partners] = await Promise.all([atelys.shipments(), atelys.sites(),
+    atelys.stockLines({ quality: "RELEASED" }), atelys.partners()]);
   if (list.kind !== "ok" || sites.kind !== "ok" || stock.kind !== "ok") return <ApiDown dict={dict} kind={list.kind} />;
   const details = await Promise.all(list.data.slice(0, 30).map((x) => atelys.shipment(x.id)));
   const shipments = details.flatMap((d) => (d.kind === "ok" ? [d.data] : []));
@@ -111,10 +112,13 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps<
                 ))}
               </select>
             </label>
-            <label>
-              {S.customer}
-              <input name="f.customer" maxLength={200} />
-            </label>
+            <PartnerSelect
+              name="f.customer"
+              label={S.customer}
+              partners={partners.kind === "ok" ? partners.data.filter((p) => p.type === "CUSTOMER") : []}
+              emptyLabel={a.common.partnerNone}
+              noneHint={a.common.noCustomers}
+            />
             <label>
               {S.orderRef}
               <input name="f.orderReference" maxLength={100} />

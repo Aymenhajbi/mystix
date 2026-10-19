@@ -103,6 +103,7 @@ Vérifiées le 2026-09-29 sur Windows 11 (PowerShell, depuis la racine du dépô
 | Action | Commande |
 | --- | --- |
 | Vérifier le poste | `powershell -ExecutionPolicy Bypass -File scripts\check-env.ps1` |
+| Créer ou compléter `.env` | `powershell -ExecutionPolicy Bypass -File scripts\init-env.ps1` (depuis `.env.example` ; mots de passe locaux générés, jamais affichés ni versionnés) |
 | Démarrer PostgreSQL | `scripts\dev-up.ps1` |
 | Arrêter les services | `scripts\dev-down.ps1` |
 | Backend : build + tests | `cd backend; .\mvnw.cmd -B verify` (Docker requis pour Testcontainers) |
@@ -112,7 +113,9 @@ Vérifiées le 2026-09-29 sur Windows 11 (PowerShell, depuis la racine du dépô
 | Frontend : lancer | `cd frontend; npm run dev` (http://localhost:3000, redirige vers `/fr` ou `/ar`) |
 | Logs métier (par société) | Portail `/fr/logs`, ou `GET /api/v1/logs?level=ERROR` (en-tête `X-Mystix-Company-Id`) |
 | Logs serveur | `backend/logs/mystix-backend.log` (rotation quotidienne et à 10 Mo) ; chercher le `X-Request-Id` affiché dans le portail |
+| Données de démo (Mystix et Atelys) | `scripts\seed-demo.ps1`, backend démarré : compte opérateur si la base est vide (identifiants dans `.local\dev-credentials.txt`), deux environnements fictifs, trois factures, données Atelys ; relançable sans doublon |
 | Atelys : données de démo | En profil dev : `POST /api/v1/atelys/demo` avec l'en-tête `X-Mystix-Company-Id` (données fictives) |
+| Navigateur (QA, agents) | `playwright-cli open http://localhost:3000/fr/login` puis `playwright-cli snapshot` (CLI global `@playwright/cli`, skill dans `.claude/skills/playwright-cli`) ; MCP Playwright déclaré dans `.mcp.json` |
 | Portail : premier compte | Sur une base vide, ouvrir `/fr/setup` : crée l'opérateur, puis la page se ferme (ADR-0013) |
 
 ## 9. Documentation

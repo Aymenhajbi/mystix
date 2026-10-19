@@ -21,7 +21,7 @@ git config --global core.autocrlf input
 ## 2. Services locaux
 
 ```powershell
-Copy-Item .env.example .env        # puis mettre des mots de passe locaux jetables
+powershell -ExecutionPolicy Bypass -File scripts\init-env.ps1   # crée .env depuis .env.example, mots de passe locaux générés
 scripts\dev-up.ps1                 # PostgreSQL 16 sur 127.0.0.1:5432 (base + file de travail)
 scripts\dev-up.ps1 -Storage        # + MinIO (à partir du Lot 4)
 scripts\dev-down.ps1               # arrêt, données conservées
