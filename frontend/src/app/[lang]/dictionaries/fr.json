@@ -1482,15 +1482,6 @@
       "title": "Terminaux et intégrations",
       "lead": "Les terminaux Atelys Mobile, la méthode de scan de chacun et ce qu'il reste à faire pour qu'ils soient opérationnels.",
       "profilesLink": "Profils de compatibilité",
-      "loading": {
-        "title": "Préparation de la vue des terminaux",
-        "steps": [
-          "Interrogation des terminaux enregistrés",
-          "Lecture des derniers tests de scan",
-          "Calcul de l'état de chaque terminal"
-        ],
-        "hint": "Les terminaux se signalent eux-mêmes à chaque démarrage d'Atelys Mobile. Rien ne leur est envoyé pendant ce chargement."
-      },
       "summary": {
         "total": "Terminaux",
         "OK": "Opérationnels",

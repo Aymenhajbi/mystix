@@ -1,12 +1,28 @@
-import { hasLocale } from "@/lib/i18n";
-import { getDictionary } from "../../dictionaries";
+"use client";
+
+import { useParams } from "next/navigation";
 import { DeviceIcon } from "./icons";
 import d from "./devices.module.css";
 
+// A loading file receives no params: the language comes from the URL on the client. Short texts kept here so the
+// full dictionaries are not shipped to the browser.
+const TEXT = {
+  fr: {
+    title: "Préparation de la vue des terminaux",
+    steps: ["Interrogation des terminaux enregistrés", "Lecture des derniers tests de scan", "Calcul de l'état de chaque terminal"],
+    hint: "Les terminaux se signalent eux-mêmes à chaque démarrage d'Atelys Mobile. Rien ne leur est envoyé pendant ce chargement.",
+  },
+  ar: {
+    title: "تحضير عرض الأجهزة",
+    steps: ["استعلام الأجهزة المسجلة", "قراءة آخر اختبارات المسح", "حساب حالة كل جهاز"],
+    hint: "تُعرّف الأجهزة بنفسها عند كل تشغيل لـ Atelys Mobile. لا يُرسل إليها شيء أثناء هذا التحميل.",
+  },
+} as const;
+
 /** Shown while the terminals load: says what is being done, step by step. */
-export default async function Loading({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang } = await params;
-  const L = hasLocale(lang) ? (await getDictionary(lang)).atelys.devices.loading : null;
+export default function Loading() {
+  const params = useParams<{ lang: string }>();
+  const L = params?.lang === "ar" ? TEXT.ar : TEXT.fr;
   return (
     <div className={d.loading} role="status" aria-live="polite" aria-busy="true">
       <div className={d.loadingCard}>
@@ -14,15 +30,15 @@ export default async function Loading({ params }: { params: Promise<{ lang: stri
           <DeviceIcon name="radar" />
         </div>
         <div>
-          <p className={d.loadingTitle}>{L?.title ?? "…"}</p>
+          <p className={d.loadingTitle}>{L.title}</p>
           <ol className={d.loadingSteps}>
-            {(L?.steps ?? []).map((step) => (
+            {L.steps.map((step) => (
               <li key={step} className={d.loadingStep}>
                 {step}
               </li>
             ))}
           </ol>
-          {L && <p className={d.loadingHint}>{L.hint}</p>}
+          <p className={d.loadingHint}>{L.hint}</p>
         </div>
       </div>
       <div className={d.skeletons} aria-hidden="true">
