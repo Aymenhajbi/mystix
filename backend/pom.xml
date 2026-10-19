@@ -72,7 +72,7 @@
 		<dependency>
 			<groupId>com.helger.as2</groupId>
 			<artifactId>as2-lib</artifactId>
-			<version>5.1.8</version>
+			<version>5.1.9</version>
 		</dependency>
 		<!-- ArtifactStore on the S3 API (ADR-0017): any S3-compatible store (MinIO in dev, risk R-07). Apache-2.0.
 		     The JDK HTTP client (url-connection-client) instead of the default Apache and Netty ones. -->
