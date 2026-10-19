@@ -70,7 +70,17 @@ Le mot de passe `root` a circulé en clair dans une messagerie : il doit être *
 
 Aujourd'hui Nginx envoie tout vers Next.js (`:3000`). La réception AS2 est servie par le backend (`:8080`) sur
 `/inbound/as2/{listenerId}` ; elle n'est pas soumise à la connexion du portail (l'authentification AS2 repose sur la
-signature et le certificat du partenaire). Ajouter dans le bloc `server` HTTPS de `/etc/nginx/sites-available/mystix`,
+signature et le certificat du partenaire).
+
+**Script prêt à lancer** sur le serveur (sauvegarde datée, restauration automatique si `nginx -t` échoue, sans effet
+s'il est relancé) :
+
+```bash
+cd /opt/mystix && git pull --ff-only origin main   # ou récupérer le script depuis la branche docs/as2-real-test
+sudo bash scripts/ops/nginx-as2-route.sh
+```
+
+Équivalent manuel : ajouter dans le bloc `server` HTTPS de `/etc/nginx/sites-available/mystix`,
 **avant** `location /` :
 
 ```nginx
