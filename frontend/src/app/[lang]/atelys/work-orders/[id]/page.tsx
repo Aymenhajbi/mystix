@@ -68,7 +68,7 @@ export default async function WorkOrderPage({ params, searchParams }: PageProps<
         <span aria-hidden="true">/</span>
         <span aria-current="page">{o.number}</span>
       </nav>
-      <Head eyebrow={dict.atelys.nav.production} title={`${o.number} · ${o.productName}`} lead={`${o.sku} · ${w.bom} v${o.bomVersion} · ${w.output} ${o.outputLocation}${o.productionLine ? ` · ${o.productionLine}` : ""}`}>
+      <Head eyebrow={dict.atelys.nav.production} title={`${o.number} · ${o.productName}`} lead={`${o.sku} · ${w.bom} v${o.bomVersion} · ${w.output} ${o.outputLocation}${o.productionLine ? ` · ${o.productionLine}` : ""}${o.customerReference ? ` · ${w.customerRef} ${o.customerReference}` : ""}`}>
         <WorkOrderBadge status={o.status} dict={dict} />
         {NEXT[o.status].map((target) => (
           <ActionForm key={target} lang={lang} path={`${api}/status`} back={page}>
