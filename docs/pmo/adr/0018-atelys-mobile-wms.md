@@ -28,8 +28,8 @@ Sources lues : `wms/WmsController.java`, `wms/Receipts.java`, `wms/Lots.java`, `
 2. **Scan Honeywell, sans mécanisme Zebra.** Deux voies officielles Honeywell, à confirmer sur l'appareil :
    le *Data Collection SDK* (`com.honeywell.aidc`, `AidcManager` / `BarcodeReader`) ou l'intention de données
    configurée dans les réglages du scanner. Le module `scanner` expose une interface ; une saisie clavier
-   (mode wedge) sert de repli et de support pour les tests. **Non vérifié** : modèle exact « CK67 », version
-   Android et version du SDK disponibles sur le terminal du pilote.
+   (mode wedge) sert de repli et de support pour les tests. Le CK67 existe (Android 14 selon les revendeurs, voir ADR-0019) ;
+   **non vérifié** : build Android et version du SDK présents sur le terminal du pilote.
 3. **File d'opérations locale** (Room) : chaque opération reçoit un UUID à sa création sur le terminal, réutilisé
    tel quel à chaque renvoi dans `Idempotency-Key`. États affichés : `EN ATTENTE` → `ENVOYÉE` → `CONFIRMÉE` ou
    `REFUSÉE`. Une opération n'est affichée « confirmée » qu'après la réponse 200/201 du serveur ; une réponse
