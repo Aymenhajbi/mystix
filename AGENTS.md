@@ -113,6 +113,7 @@ Vérifiées le 2026-09-29 sur Windows 11 (PowerShell, depuis la racine du dépô
 | Logs métier (par société) | Portail `/fr/logs`, ou `GET /api/v1/logs?level=ERROR` (en-tête `X-Mystix-Company-Id`) |
 | Logs serveur | `backend/logs/mystix-backend.log` (rotation quotidienne et à 10 Mo) ; chercher le `X-Request-Id` affiché dans le portail |
 | Atelys : données de démo | En profil dev : `POST /api/v1/atelys/demo` avec l'en-tête `X-Mystix-Company-Id` (données fictives) |
+| Navigateur (QA, agents) | `playwright-cli open http://localhost:3000/fr/login` puis `playwright-cli snapshot` (CLI global `@playwright/cli`, skill dans `.claude/skills/playwright-cli`) ; MCP Playwright déclaré dans `.mcp.json` |
 | Portail : premier compte | Sur une base vide, ouvrir `/fr/setup` : crée l'opérateur, puis la page se ferme (ADR-0013) |
 
 ## 9. Documentation
