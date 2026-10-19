@@ -1,0 +1,1064 @@
+<title>Mystix Cockpit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F6F5F9; --surface:#FFFFFF; --surface-2:#F3F1F8; --surface-3:#E9E5F2;
+  --line:#E3DFEC; --line-strong:#CEC8DB;
+  --text:#16121E; --text-2:#433D51; --muted:#6D6680;
+  --accent:#8500DE; --accent-soft:#F2E6FC; --accent-text:#FFFFFF; --logo:#8500DE;
+  --ok:#1D8A58; --ok-soft:#E1F3EA;
+  --warn:#B8650F; --warn-soft:#FBEEDD;
+  --crit:#CC3338; --crit-soft:#FBE4E4;
+  --info:#2A72C9; --info-soft:#E3EEFA;
+  --code-bg:#FAF9FC; --c-tag:#7A12C9; --c-attr:#2A72C9; --c-str:#1D7A50; --c-com:#8C869A; --c-num:#B8650F;
+  --shadow:0 12px 40px rgba(22,18,30,.16);
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E0C13; --surface:#15121C; --surface-2:#1B1824; --surface-3:#25202F;
+    --line:#2A2536; --line-strong:#3A3448;
+    --text:#ECE9F2; --text-2:#BDB6CB; --muted:#8C859C;
+    --accent:#B57BFF; --accent-soft:#2A1940; --accent-text:#120A1C; --logo:#FFFFFF;
+    --ok:#43B883; --ok-soft:#14261F;
+    --warn:#F0963F; --warn-soft:#2B2014;
+    --crit:#F0595E; --crit-soft:#2E1719;
+    --info:#6AA8F0; --info-soft:#16233A;
+    --code-bg:#110E17; --c-tag:#C59BFF; --c-attr:#7DB3F2; --c-str:#72CFA0; --c-com:#6C6580; --c-num:#F2AE6B;
+    --shadow:0 16px 48px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E0C13; --surface:#15121C; --surface-2:#1B1824; --surface-3:#25202F;
+  --line:#2A2536; --line-strong:#3A3448;
+  --text:#ECE9F2; --text-2:#BDB6CB; --muted:#8C859C;
+  --accent:#B57BFF; --accent-soft:#2A1940; --accent-text:#120A1C; --logo:#FFFFFF;
+  --ok:#43B883; --ok-soft:#14261F;
+  --warn:#F0963F; --warn-soft:#2B2014;
+  --crit:#F0595E; --crit-soft:#2E1719;
+  --info:#6AA8F0; --info-soft:#16233A;
+  --code-bg:#110E17; --c-tag:#C59BFF; --c-attr:#7DB3F2; --c-str:#72CFA0; --c-com:#6C6580; --c-num:#F2AE6B;
+  --shadow:0 16px 48px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+.t-crit{color:var(--crit)} .t-warn{color:var(--warn)} .t-ok{color:var(--ok)} .t-muted{color:var(--muted)} .t-info{color:var(--info)}
+
+/* shell */
+.shell{display:grid;grid-template-columns:64px 1fr;min-height:100vh}
+.rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;padding-block:16px;position:sticky;top:0;height:100vh}
+.logo{width:38px;height:38px;border-radius:11px;background:#8500DE;display:grid;place-items:center;margin-bottom:14px;border:0;padding:0}
+.logo svg{width:24px;height:24px}
+.wordmark{height:22px;width:auto;display:block;color:var(--logo)}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .sep{width:1px;height:22px;background:var(--line-strong)}
+.rail button.nav{width:40px;height:40px;border-radius:10px;border:0;background:none;color:var(--muted);display:grid;place-items:center;position:relative}
+.rail button.nav:hover{background:var(--surface-2);color:var(--text)}
+.rail button.nav.on{background:var(--accent-soft);color:var(--accent)}
+.tip{position:absolute;left:50px;background:var(--text);color:var(--bg);font-size:12px;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;z-index:5}
+.rail button:hover .tip{opacity:1}
+.rail .sp{flex:1}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;font-size:12px;font-weight:600}
+svg.i{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+.main{padding-inline:28px;padding-block:18px 40px;min-width:0}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.top h1{font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em}
+.crumbs{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--muted);width:100%;margin-bottom:-8px}
+.crumbs button{border:0;background:none;padding:0;color:var(--accent)}
+.crumbs button:hover{text-decoration:underline}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;letter-spacing:.02em;white-space:nowrap}
+.chip.env{background:var(--ok-soft);color:var(--ok)}
+.chip.demo{background:var(--warn-soft);color:var(--warn)}
+.chip.neutral{background:var(--surface-3);color:var(--text-2)}
+.tenant{color:var(--muted);font-size:13px}
+.search{flex:1;min-width:220px;max-width:520px;margin-inline:auto;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--muted);text-align:left}
+.search:hover{border-color:var(--line-strong)}
+.search span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line-strong);border-radius:5px;padding:1px 6px;color:var(--muted);background:var(--surface-2)}
+.live{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-2);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft);flex:none}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:3px}
+.seg button{border:0;background:none;padding:5px 10px;border-radius:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--surface-3);color:var(--text)}
+select.sel{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:13px;color:var(--text)}
+
+/* summary strip */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:18px}
+.strip > div{padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.strip > div + div{border-left:1px solid var(--line)}
+.lbl{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.02em}
+.big{font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
+.big small{font-size:14px;font-weight:500;color:var(--muted);margin-left:4px}
+.sub{font-size:12.5px;color:var(--text-2)}
+.sub b{font-weight:600}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-size:12.5px;font-weight:500;text-align:left}
+.linkbtn:hover{text-decoration:underline}
+
+.grid-a{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-bottom:18px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0}
+.panel + .panel{margin-top:18px}
+.ph{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ph h2{font-size:15px;font-weight:600;margin:0}
+.ph .hint{font-size:12.5px;color:var(--muted)}
+.ph .right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.count{font-size:11.5px;font-weight:600;background:var(--surface-3);color:var(--text-2);border-radius:10px;padding:1px 7px}
+
+/* journal */
+.jbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:4px 11px;font-size:12.5px;color:var(--text-2);display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.filters button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.jsearch{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--muted);min-width:200px}
+.jsearch input{border:0;background:none;outline:none;width:100%;font-size:13px;color:var(--text)}
+.tablewrap{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse}
+.t th{text-align:left;font-size:11.5px;font-weight:500;color:var(--muted);letter-spacing:.03em;padding:9px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface)}
+.t td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;font-size:13px}
+.t tbody tr:last-child td{border-bottom:0}
+.t tbody tr.click{cursor:pointer}
+.t tbody tr.click:hover td{background:var(--surface-2)}
+.t .r{text-align:right;font-variant-numeric:tabular-nums}
+.t td.wrap{white-space:normal;min-width:280px}
+.t .time{font-family:var(--mono);font-size:12px;color:var(--text-2)}
+.sevp{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:5px}
+.sevp.err{background:var(--crit-soft);color:var(--crit)}
+.sevp.warn{background:var(--warn-soft);color:var(--warn)}
+.sevp.info{background:var(--info-soft);color:var(--info)}
+.sevp.ok{background:var(--ok-soft);color:var(--ok)}
+.clientlink{border:0;background:none;padding:0;color:var(--text);font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:5px}
+.clientlink:hover{color:var(--accent);text-decoration:underline}
+.stage{font-family:var(--mono);font-size:11px;background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--text-2);white-space:nowrap}
+.ev{font-size:13px}
+.ev span{display:block;font-size:12px;color:var(--muted)}
+.ref{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.go{color:var(--muted)}
+tr.click:hover .go{color:var(--accent)}
+.jfoot{padding:11px 18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line)}
+.empty{padding:32px 18px;text-align:center;color:var(--muted)}
+
+/* deadlines / pipeline */
+.dl{list-style:none;margin:0;padding:6px 0}
+.dl li{display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;padding:9px 18px;align-items:start}
+.dl .when{font-family:var(--mono);font-size:12px;padding-top:1px}
+.dl .what{font-size:13px}
+.dl .what span{display:block;font-size:12px;color:var(--muted)}
+.pipe{list-style:none;margin:0;padding:10px 18px 14px}
+.pipe li{display:grid;grid-template-columns:118px minmax(0,1fr) 54px 42px;gap:10px;align-items:center;padding:5px 0;font-size:13px}
+.bar{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.pipe .n,.pipe .d{font-family:var(--mono);font-size:12px;text-align:right;color:var(--text-2)}
+.pipe li.stuck .name{color:var(--warn);font-weight:500}
+.pipe li.stuck .bar i{background:var(--warn)}
+
+.fname{font-weight:600}
+.fname span{display:block;font-weight:400;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;white-space:nowrap}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.st-ok{color:var(--ok)} .st-warn{color:var(--warn)} .st-err{color:var(--crit)} .st-run{color:var(--accent)}
+.channel{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--text-2);margin-right:4px}
+.target{font-size:11.5px;color:var(--muted)}
+
+/* client environment */
+.envhead{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.envid{display:flex;gap:14px;align-items:center}
+.mono-av{width:44px;height:44px;border-radius:11px;background:var(--accent-soft);color:var(--accent);font-weight:700;display:grid;place-items:center;font-size:16px;flex:none}
+.envid h1{margin:0;font-size:22px;font-weight:600}
+.envid p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.envtabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.envtabs button{border:0;background:none;padding:10px 14px;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;display:flex;gap:7px;align-items:center}
+.envtabs button:hover{color:var(--text)}
+.envtabs button.on{color:var(--text);border-bottom-color:var(--accent);font-weight:500}
+
+.split{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:18px;align-items:start}
+.mlist{list-style:none;margin:0;padding:0;max-height:calc(100vh - 290px);overflow-y:auto}
+.mlist li{border-bottom:1px solid var(--line)}
+.mlist li:last-child{border-bottom:0}
+.mitem{width:100%;border:0;background:none;text-align:left;padding:11px 16px;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:start}
+.mitem:hover{background:var(--surface-2)}
+.mitem.on{background:var(--accent-soft)}
+.dir{font-family:var(--mono);font-size:10.5px;font-weight:600;border-radius:5px;padding:2px 0;text-align:center;margin-top:2px}
+.dir.IN{background:var(--info-soft);color:var(--info)}
+.dir.OUT{background:var(--accent-soft);color:var(--accent)}
+.mitem.on .dir.OUT{background:var(--surface)}
+.mt{font-weight:600;font-size:13.5px;display:block}
+.ms{font-size:12px;color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.mr .time{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+.detail{display:flex;flex-direction:column;gap:18px;min-width:0}
+.dhead{padding:16px 18px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.dhead h2{margin:0;font-family:var(--mono);font-size:20px;font-weight:500;letter-spacing:-.01em;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.meta{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);margin-top:8px}
+.meta .mono{font-size:12px;color:var(--muted)}
+.actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:9px;padding:8px 13px;font-weight:500;font-size:13px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:5px 10px;font-size:12.5px;border-radius:7px}
+.confirm{display:none;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface-2);border-top:1px solid var(--line);padding:10px 18px;font-size:13px}
+.confirm.show{display:flex}
+.steps{display:flex;flex-wrap:wrap;gap:6px;padding:0 18px 16px}
+.step{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 9px;border-radius:6px;background:var(--surface-2);color:var(--text-2);white-space:nowrap}
+.step::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.step.err{background:var(--crit-soft);color:var(--crit);font-weight:600}
+.step.err::before{background:var(--crit)}
+.step.warn{background:var(--warn-soft);color:var(--warn);font-weight:600}
+.step.warn::before{background:var(--warn)}
+.step.skip{color:var(--muted);background:none;border:1px dashed var(--line-strong)}
+.step.skip::before{background:var(--line-strong)}
+
+.diag{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0}
+.diag > div{padding:14px 18px}
+.diag > div + div{border-left:1px solid var(--line)}
+.diag h4{margin:0 0 6px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;gap:6px;align-items:center}
+.diag p{margin:0 0 6px;font-size:13.5px;color:var(--text-2)}
+.diag .code{font-family:var(--mono);font-size:12px}
+.ai h4{color:var(--accent)}
+pre.diff{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:6px 0 10px;white-space:pre-wrap}
+pre.diff .add{color:var(--ok)} pre.diff .del{color:var(--crit)}
+
+.ftabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line);overflow-x:auto;align-items:flex-end}
+.ftabs button{border:1px solid transparent;border-bottom:0;background:none;padding:7px 12px;font-size:12.5px;font-family:var(--mono);color:var(--muted);border-radius:8px 8px 0 0;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.ftabs button:hover{color:var(--text)}
+.ftabs button.on{background:var(--code-bg);border-color:var(--line);color:var(--text);margin-bottom:-1px}
+.ftabs button.na{opacity:.5}
+.ftabs .edot{width:6px;height:6px;border-radius:50%;background:var(--crit)}
+.ftabs .wdot{width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.fbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 14px;background:var(--code-bg);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.fbar .fn{font-family:var(--mono);color:var(--text-2)}
+.fbar .right{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.viewer{background:var(--code-bg);font-family:var(--mono);font-size:12.5px;line-height:1.6;overflow:auto;max-height:520px;border-radius:0 0 14px 14px;padding-block:8px}
+.ln{display:grid;grid-template-columns:46px minmax(0,1fr);white-space:pre;min-width:max-content}
+.ln .no{color:var(--c-com);text-align:right;padding-right:14px;user-select:none;opacity:.8}
+.ln.err{background:var(--crit-soft)}
+.ln.err .no{color:var(--crit);opacity:1;font-weight:600}
+.ln.warnl{background:var(--warn-soft)}
+.lnmsg{display:grid;grid-template-columns:46px minmax(0,1fr);background:var(--crit-soft);color:var(--crit);font-family:var(--sans);font-size:12.5px;padding-bottom:6px;min-width:max-content}
+.lnmsg.w{background:var(--warn-soft);color:var(--warn)}
+.tg{color:var(--c-tag)} .at{color:var(--c-attr)} .st{color:var(--c-str)} .cm{color:var(--c-com);font-style:italic} .nm{color:var(--c-num)}
+.na-box{padding:40px 18px;text-align:center;color:var(--muted);font-family:var(--sans);font-size:13.5px;white-space:normal}
+
+/* palette & toast */
+.scrim{position:fixed;inset:0;background:rgba(8,10,15,.45);opacity:0;pointer-events:none;transition:opacity .18s;z-index:30}
+.scrim.open{opacity:1;pointer-events:auto}
+.pal{position:fixed;left:50%;top:12vh;transform:translateX(-50%);width:min(640px,calc(100% - 32px));background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow);z-index:31;overflow:hidden}
+.pal input{width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:15px 18px;font-size:15px;outline:none}
+.pal ul{list-style:none;margin:0;padding:6px;max-height:50vh;overflow-y:auto}
+.pal li{padding:9px 12px;border-radius:8px;display:flex;gap:10px;align-items:center;cursor:pointer;font-size:13.5px}
+.pal li.act,.pal li:hover{background:var(--surface-2)}
+.pal li .k{font-size:11px;color:var(--muted);width:78px;flex:none;text-transform:uppercase;letter-spacing:.05em}
+.pal li .x{margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13.5px;opacity:0;transition:all .2s;z-index:40;max-width:calc(100% - 32px);pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* mapping studio */
+.sthead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+.sthead h1{margin:0;font-family:var(--mono);font-size:21px;font-weight:500;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sthead p{margin:4px 0 0;font-size:12.5px;color:var(--muted)}
+.chip.draft{background:var(--accent-soft);color:var(--accent)}
+.stbar{display:flex;gap:0;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
+.stbar > div{padding:10px 16px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);min-width:0}
+.stbar > div + div{border-left:1px solid var(--line)}
+.stbar b{font-size:14px;color:var(--text);font-weight:600}
+.stbar .grow{flex:1}
+.studio{display:grid;grid-template-columns:minmax(220px,250px) minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0;overflow:hidden}
+.pane .ph{padding:11px 14px}
+.pane .ph h2{font-size:13.5px}
+.tree{font-family:var(--mono);font-size:12px;padding:6px 0;max-height:640px;overflow:auto}
+.tree .sgm{padding:6px 14px 2px;color:var(--c-tag);font-weight:500}
+.tree .fld{display:grid;grid-template-columns:10px minmax(0,auto) minmax(0,1fr);gap:8px;align-items:center;padding:3px 14px 3px 24px;border:0;background:none;width:100%;text-align:left;font-family:var(--mono);font-size:12px;cursor:pointer}
+.tree .fld:hover{background:var(--surface-2)}
+.tree .fld.sel{background:var(--accent-soft)}
+.tree .fld .u{width:7px;height:7px;border-radius:50%;background:var(--line-strong)}
+.tree .fld.used .u{background:var(--accent)}
+.tree .fld .k{color:var(--text-2)}
+.tree .fld .v{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.tree .fld.miss .v{color:var(--crit)}
+.rules{width:100%;border-collapse:collapse;font-size:12.5px}
+.rules th{text-align:left;font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.rules td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.rules tr.grp td{background:var(--surface-2);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:5px 10px}
+.rules tr.rule{cursor:pointer}
+.rules tr.rule:hover td{background:var(--surface-2)}
+.rules tr.rule.sel td{background:var(--accent-soft)}
+.rules .tgt{font-family:var(--mono);font-size:12px;white-space:nowrap}
+.rules .req{color:var(--crit);margin-left:3px}
+.rules .src{font-family:var(--mono);font-size:11.5px;color:var(--text-2)}
+.rules select{font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);max-width:170px}
+.fmtchip{display:inline-block;font-size:11.5px;padding:2px 7px;border-radius:5px;background:var(--surface-3);color:var(--text-2);white-space:nowrap}
+.tgl{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tgl input{accent-color:var(--accent)}
+.mod{font-size:10.5px;font-weight:600;letter-spacing:.04em;padding:1px 6px;border-radius:4px;background:var(--warn-soft);color:var(--warn);margin-left:6px}
+tr.aisug td{background:var(--accent-soft)}
+.aibox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--text-2)}
+.aibox b{color:var(--accent)}
+.fixtures{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line)}
+.fx{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 10px;font-family:var(--mono);font-size:11.5px;display:inline-flex;gap:7px;align-items:center}
+.fx.on{border-color:var(--accent);background:var(--accent-soft)}
+.fx .s{width:7px;height:7px;border-radius:50%}
+.fx .s.pass{background:var(--ok)} .fx .s.fail{background:var(--crit)}
+.xsd{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:5px}
+.xsd.ok{background:var(--ok-soft);color:var(--ok)} .xsd.ko{background:var(--crit-soft);color:var(--crit)}
+.ln.hit{background:var(--accent-soft)}
+.diffbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:14px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap}
+.diffbox .add{color:var(--ok)} .diffbox .del{color:var(--crit)} .diffbox .h{color:var(--muted)}
+.inspector{padding:10px 14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-2);display:flex;flex-direction:column;gap:4px}
+.inspector b{color:var(--text)}
+
+@media (max-width:1280px){ .studio{grid-template-columns:minmax(220px,260px) minmax(0,1fr)} .studio .outpane{grid-column:1 / -1} }
+@media (max-width:1100px){
+  .grid-a{grid-template-columns:1fr}
+  .studio{grid-template-columns:1fr}
+  .strip{grid-template-columns:repeat(2,1fr)}
+  .strip > div:nth-child(3){border-left:0}
+  .strip > div:nth-child(n+3){border-top:1px solid var(--line)}
+  .split{grid-template-columns:1fr}
+  .mlist{max-height:340px}
+}
+@media (max-width:720px){
+  .shell{grid-template-columns:1fr}
+  .rail{display:none}
+  .main{padding-inline:16px}
+  .strip{grid-template-columns:1fr}
+  .strip > div + div{border-left:0;border-top:1px solid var(--line)}
+  .search{order:5;max-width:none;flex-basis:100%}
+  .jsearch{margin-left:0;flex-basis:100%}
+  .diag{grid-template-columns:1fr}
+  .diag > div + div{border-left:0;border-top:1px solid var(--line)}
+  .actions{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="shell">
+  <nav class="rail" aria-label="Navigation principale">
+    <button class="logo" data-go="cockpit" aria-label="Accueil Mystix"><svg viewBox="-0.6 1.6 9 7.6" aria-hidden="true"><path fill="#FFFFFF" d="M6.864 4.416C6.864 4.192 6.828 4.004 6.756 3.852C6.692 3.7 6.6 3.576 6.48 3.48C6.36 3.384 6.224 3.316 6.072 3.276C5.92 3.236 5.756 3.216 5.58 3.216C5.46 3.216 5.324 3.232 5.172 3.264C5.02 3.288 4.864 3.332 4.704 3.396C4.544 3.452 4.376 3.532 4.2 3.636C4.24 3.748 4.268 3.868 4.284 3.996C4.3 4.116 4.308 4.248 4.308 4.392V8.52H3.444V4.416C3.444 4.192 3.408 4.004 3.336 3.852C3.272 3.7 3.18 3.576 3.06 3.48C2.948 3.384 2.816 3.316 2.664 3.276C2.512 3.236 2.348 3.216 2.172 3.216C2.02 3.216 1.876 3.232 1.74 3.264C1.604 3.288 1.468 3.328 1.332 3.384C1.196 3.44 1.052 3.512 0.9 3.6V8.52H0V2.52H0.9V2.88C1.028 2.8 1.164 2.724 1.308 2.652C1.46 2.58 1.62 2.524 1.788 2.484C1.964 2.436 2.144 2.412 2.328 2.412C2.568 2.412 2.784 2.436 2.976 2.484C3.176 2.532 3.356 2.604 3.516 2.7C3.676 2.788 3.812 2.904 3.924 3.048C4.092 2.928 4.272 2.82 4.464 2.724C4.656 2.628 4.86 2.552 5.076 2.496C5.292 2.44 5.516 2.412 5.748 2.412C6.052 2.412 6.324 2.452 6.564 2.532C6.804 2.604 7.012 2.72 7.188 2.88C7.364 3.04 7.496 3.248 7.584 3.504C7.68 3.752 7.728 4.048 7.728 4.392V8.52H6.864V4.416Z"/></svg></button>
+    <button class="nav on" id="navCockpit" data-go="cockpit" aria-label="Cockpit"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span class="tip">Cockpit</span></button>
+    <button class="nav" id="navClients" data-go="clients" aria-label="Clients"><svg class="i" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6M9 11h.01M15 11h.01"/></svg><span class="tip">Environnements clients</span></button>
+    <button class="nav" aria-label="Factures"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg><span class="tip">Factures &amp; clearance</span></button>
+    <button class="nav" id="navStudio" data-go="studio" aria-label="Mapping Studio"><svg class="i" viewBox="0 0 24 24"><path d="M8 6 3 12l5 6M16 6l5 6-5 6M14 4l-4 16"/></svg><span class="tip">Mapping Studio</span></button>
+    <button class="nav" aria-label="Certificats"><svg class="i" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg><span class="tip">Certificats &amp; sécurité</span></button>
+    <div class="sp"></div>
+    <button class="nav" id="themeBtn" aria-label="Changer de thème"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="tip">Thème clair / sombre</span></button>
+    <div class="avatar" title="Amina S. · SYSADMIN">AS</div>
+  </nav>
+  <main class="main" id="main"></main>
+</div>
+
+<div class="scrim" id="palScrim"></div>
+<div class="pal" id="pal" role="dialog" aria-label="Recherche et actions" hidden>
+  <input id="palInput" placeholder="Client, n° de facture, ID de message, ICE…" autocomplete="off">
+  <ul id="palList"></ul>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt = n => n.toLocaleString('fr-FR').replace(/[  ]/g,' ');
+const fmt2 = n => n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace(/[  ]/g,' ');
+const r2 = n => Math.round(n*100)/100;
+
+/* ---------- données démo ---------- */
+const CLIENTS = {
+  atlas:{name:'Atlas Distribution', ice:'002145698000031', city:'Casablanca', sap:'ATLASCLNT100', channels:['AS2','SFTP','API'], msgs:1112, errs:1, rate:99.6, st:'warn', spark:[40,42,38,45,50,48,52,55,51,49,53,56],
+    partners:[['Hyper Anfa','AS2','HYPERANFA-AS2','INVOIC · ORDERS · DESADV',412,'ok'],['Grands Magasins du Nord','AS2','GMN-EDI-PROD','INVOIC · ORDERS · DESADV',286,'ok'],['Magasin Maarif','SFTP','/in/stock/maarif','Stock XML',96,'ok'],['DGI (clearance)','API','simulation','Factures UBL 2.1',818,'ok']],
+    mappings:[['invoic02-ubl','IDoc INVOIC02 → UBL 2.1','v3.2','28/09 13:20 · Amina S.','24/24'],['orders-d96a-orders05','EDIFACT ORDERS → IDoc ORDERS05','v1.4','02/09 · Karim E.','16/16'],['desadv01-d96a','IDoc DESADV01 → EDIFACT DESADV','v2.1','12/08 · Amina S.','11/11'],['stock-xml','XML magasin → StockMovement','v2.0','30/07 · Karim E.','9/9']],
+    connectors:[['AS2 · Hyper Anfa','https://edi.hyperanfa.ma/as2','Certificat MYSTIX-ATLAS expire le 10/10/2026','warn'],['AS2 · Grands Magasins du Nord','https://as2.gmn.ma/receive','Certificat valide jusqu\'au 14/03/2028','ok'],['SFTP · Magasins','sftp.mystix.ma:/atlas/in','Clé SSH ed25519 · rotation 01/2027','ok'],['API REST','/api/v1 · clé atlas-prod-…7f2','12 480 appels aujourd\'hui','ok']]},
+  rif:{name:'Rif Textiles', ice:'001236987000054', city:'Tanger', sap:'RIFCLNT200', channels:['SFTP','IDoc'], msgs:96, errs:5, rate:94.1, st:'err', spark:[8,9,10,9,11,10,9,8,6,4,3,2],
+    partners:[['Atlas Distribution','AS2','ATLAS-AS2','INVOIC',64,'err'],['DGI (clearance)','API','simulation','Factures UBL 2.1',58,'ok']],
+    mappings:[['invoic02-ubl','IDoc INVOIC02 → UBL 2.1','v3.2','28/09 13:20 · Amina S.','24/24']],
+    connectors:[['SFTP · SAP Rif','sftp.mystix.ma:/rif/out','Clé SSH ed25519','ok']]},
+  oasis:{name:'Oasis Pharma', ice:'001523874000045', city:'Rabat', sap:'—', channels:['Portail','API'], msgs:142, errs:6, rate:98.2, st:'err', spark:[12,13,14,12,15,14,16,15,13,12,11,12],
+    partners:[['Pharmacies Centrales','Portail','—','Factures',88,'err'],['DGI (clearance)','API','simulation','Factures UBL 2.1',142,'warn']],
+    mappings:[['portal-ubl','Portail → UBL 2.1','v1.9','20/09 · Amina S.','18/18']],
+    connectors:[['API REST','/api/v1 · clé oasis-prod-…c11','842 appels aujourd\'hui','ok']]},
+  casa:{name:'Casa Logistique', ice:'003011457000012', city:'Casablanca', sap:'CASACLNT300', channels:['SFTP'], msgs:164, errs:1, rate:97.6, st:'warn', spark:[18,19,20,18,21,20,19,15,12,10,9,8],
+    partners:[['Hyper Anfa','SFTP','/out/desadv','DESADV',120,'warn'],['Entrepôt Zenata','SFTP','/in/stock/zenata','Stock XML',44,'err']],
+    mappings:[['desadv01-d96a','IDoc DESADV01 → EDIFACT DESADV','v2.1','12/08 · Amina S.','11/11'],['stock-xml','XML magasin → StockMovement','v2.0','30/07 · Karim E.','9/9']],
+    connectors:[['SFTP · Hyper Anfa','sftp.hyperanfa.ma:/in','p95 dépôt 4,2 s (objectif 0,6 s)','warn']]},
+  medina:{name:'Médina Retail', ice:'002998741000023', city:'Fès', sap:'—', channels:['AS2','UBL'], msgs:282, errs:1, rate:99.4, st:'ok', spark:[25,27,26,28,30,29,31,30,32,31,33,32],
+    partners:[['Grands Magasins du Nord','AS2','GMN-EDI-PROD','ORDERS · INVOIC',180,'warn'],['DGI (clearance)','API','simulation','Factures UBL 2.1',102,'ok']],
+    mappings:[['orders-d96a-orders05','EDIFACT ORDERS → IDoc ORDERS05','v1.4','02/09 · Karim E.','16/16'],['invoic02-ubl','IDoc INVOIC02 → UBL 2.1','v3.2','28/09 13:20 · Amina S.','24/24']],
+    connectors:[['AS2 · Grands Magasins du Nord','https://as2.gmn.ma/receive','Certificat valide jusqu\'au 02/05/2027','ok']]},
+  souss:{name:'Souss Agro SARL', ice:'001874520000067', city:'Agadir', sap:'—', channels:['API','Portail'], msgs:188, errs:1, rate:99.7, st:'ok', spark:[20,22,19,24,25,23,22,26,24,27,25,26],
+    partners:[['Hyper Anfa','API','—','ORDERS · INVOIC',120,'warn'],['DGI (clearance)','API','simulation','Factures UBL 2.1',68,'ok']],
+    mappings:[['orders-json','API JSON → Order','v1.1','15/09 · Karim E.','8/8'],['portal-ubl','Portail → UBL 2.1','v1.9','20/09 · Amina S.','18/18']],
+    connectors:[['API REST','/api/v1 · clé souss-prod-…a90','Clé renouvelée à 10:20','ok']]}
+};
+const PARTY_ICE = {'Hyper Anfa':'002457811000092','Grands Magasins du Nord':'001998230000076','Pharmacies Centrales':'002310045000018','Atlas Distribution':'002145698000031','Magasin Maarif':'—','Entrepôt Zenata':'—'};
+const TYPE = {invoice:'Facture', order:'Commande', desadv:'Avis d\'expédition', stock:'Mouvement de stock'};
+const MAP = {invoice:'invoic02-ubl v3.2', order:'orders-d96a-orders05 v1.4', desadv:'desadv01-d96a v2.1', stock:'stock-xml v2.0'};
+const FMT = {invoice:['IDoc INVOIC02','UBL 2.1'], order:['EDIFACT ORDERS D96A','IDoc ORDERS05'], desadv:['IDoc DESADV01','EDIFACT DESADV D96A'], stock:['XML magasin','StockMovement']};
+
+const MSGS = [
+  {id:'MX-A1C4-7702',c:'atlas',t:'14:20:51',dir:'OUT',type:'invoice',partner:'Hyper Anfa',ref:'FA-900045901',amount:38400,st:'ok'},
+  {id:'MX-A1C4-7701',c:'atlas',t:'14:18:12',dir:'OUT',type:'invoice',partner:'Grands Magasins du Nord',ref:'FA-900045900',amount:52180,st:'err',fail:'Validation sortie',noTax2:true,
+    e:{code:'OUT-XSD-0107',title:'UBL invalide : catégorie de TVA absente sur la ligne 2',detail:'La ligne 2 de la facture générée ne contient pas cac:ClassifiedTaxCategory, obligatoire en UBL 2.1 et pour la DGI.',field:'InvoiceLine[2]/Item/ClassifiedTaxCategory',cause:'Le code TVA MWSKZ est absent du poste 000020 dans l\'IDoc reçu de SAP. Le mapping ne peut pas déduire la catégorie.',action:'Corriger le code TVA du poste dans SAP et renvoyer, ou appliquer la règle par défaut du profil partenaire.',tab:'out',match:'<cbc:ID>2</cbc:ID>',tab2:'in',match2:'<POSEX>000020</POSEX>',
+      ai:['profil-partenaire/grands-magasins-du-nord','<span class="add">+ defaults.MWSKZ: "A1"   # TVA 20 %</span>'],aiNote:'À valider par la comptabilité d\'Atlas Distribution : appliquer TVA 20 % quand le code manque.'}},
+  {id:'MX-A1C4-7698',c:'atlas',t:'14:12:40',dir:'IN',type:'order',partner:'Hyper Anfa',ref:'PO-55120',amount:3660,st:'ok'},
+  {id:'MX-A1C4-7695',c:'atlas',t:'14:05:02',dir:'OUT',type:'desadv',partner:'Hyper Anfa',ref:'DESADV-88012',st:'warn',warn:'Accusé',
+    e:{code:'AS2-MDN-0002',title:'Accusé MDN non reçu après 10 min',detail:'Le message a été livré (HTTP 200) mais Hyper Anfa n\'a pas encore renvoyé son MDN asynchrone. Relance 2 sur 5.',field:'MDN asynchrone',cause:'Le serveur AS2 du partenaire accepte les messages mais met en file ses accusés. Même comportement le 21/09 entre 14:00 et 14:30.',action:'Aucune action immédiate. Prochaine relance à 14:25. Prévenir le partenaire si la relance 5 échoue.'}},
+  {id:'MX-A1C4-7690',c:'atlas',t:'13:58:30',dir:'OUT',type:'invoice',partner:'Hyper Anfa',ref:'FA-900045899',amount:41250,st:'ok'},
+  {id:'MX-A1C4-7684',c:'atlas',t:'13:41:11',dir:'IN',type:'stock',partner:'Magasin Maarif',ref:'STK-20260928-014',st:'ok'},
+  {id:'MX-A1C4-7671',c:'atlas',t:'13:02:10',dir:'OUT',type:'invoice',partner:'Grands Magasins du Nord',ref:'FA-900045897',amount:29900,st:'ok',note:'Relancée automatiquement après indisponibilité de la clearance (12:48 → 13:02).'},
+  {id:'MX-A1C4-7666',c:'atlas',t:'12:47:55',dir:'IN',type:'order',partner:'Grands Magasins du Nord',ref:'PO-9031',amount:5340,st:'ok'},
+  {id:'MX-A1C4-7660',c:'atlas',t:'12:30:03',dir:'OUT',type:'desadv',partner:'Grands Magasins du Nord',ref:'DESADV-88010',st:'ok'},
+
+  {id:'MX-7F37-5C62',c:'rif',t:'14:21:07',dir:'OUT',type:'invoice',partner:'Atlas Distribution',ref:'FA-900045812',amount:38400,st:'err',fail:'Transformation',noBsart:true,
+    e:{code:'MAP-RULE-0031',title:'Type de document (BSART) absent',detail:'Le mapping ne peut pas déterminer s\'il s\'agit d\'une facture ou d\'un avoir. 5 messages identiques en quarantaine.',field:'E1EDK01/BSART',cause:'Le défaut est en amont de Mystix : BSART est déjà absent du fichier reçu. Le parseur et le mapping sont conformes.',action:'Demander à Rif Textiles de corriger l\'export SAP, ou publier le profil v4 avec une valeur par défaut.',tab:'in',match:'<E1EDK01 ',
+      ai:['profil-partenaire/rif-textiles','<span class="del">- version: 3</span>','<span class="add">+ version: 4</span>','<span class="add">+ defaults.BSART: "INVO"   # facture</span>'],aiNote:'Le rejeu à blanc exécute les 5 messages avec le profil v4 sans rien livrer, puis compare les sorties.'}},
+  {id:'MX-7F37-5C61',c:'rif',t:'14:20:44',dir:'OUT',type:'invoice',partner:'Atlas Distribution',ref:'FA-900045811',amount:22150,st:'err',fail:'Transformation',noBsart:true,
+    e:{code:'MAP-RULE-0031',title:'Type de document (BSART) absent',detail:'Même cause que MX-7F37-5C62.',field:'E1EDK01/BSART',cause:'BSART absent du fichier reçu.',action:'Voir MX-7F37-5C62.',tab:'in',match:'<E1EDK01 '}},
+  {id:'MX-7F20-1A03',c:'rif',t:'12:05:18',dir:'OUT',type:'invoice',partner:'Atlas Distribution',ref:'FA-900045790',amount:17600,st:'ok',note:'Rejeu de MX-7F1E-0B77. Sortie identique à l\'original.'},
+
+  {id:'MX-0B12-3390',c:'oasis',t:'13:55:20',dir:'OUT',type:'invoice',partner:'Pharmacies Centrales',ref:'FA-2026-01874',amount:18240,st:'err',fail:'Clearance DGI',badIce:'23100450000180'.slice(0,14),
+    e:{code:'DGI-ICE-0001',title:'Rejet DGI : ICE acheteur invalide',detail:'L\'ICE de l\'acheteur contient 14 chiffres au lieu de 15. 6 factures sont concernées.',field:'AccountingCustomerParty/PartyTaxScheme/CompanyID',cause:'La fiche client Pharmacies Centrales a perdu son zéro initial lors d\'un import Excel le 27/09.',action:'Corriger la fiche client, puis resoumettre les 6 factures.',tab:'dgi',match:'ICE_FORMAT',
+      ai:['clients/pharmacies-centrales','<span class="del">- ice: 23100450000180</span>','<span class="add">+ ice: 002310045000018</span>'],aiNote:'Valeur trouvée dans le registre ICE du tenant. À confirmer avec le client avant de resoumettre.'}},
+  {id:'MX-0B12-3371',c:'oasis',t:'11:12:09',dir:'OUT',type:'invoice',partner:'Pharmacies Centrales',ref:'FA-2026-01869',amount:9900.01,st:'warn',warn:'Validation',soft:true,
+    e:{code:'INV-VAL-0204',title:'Écart d\'arrondi de 0,01 MAD sur le total TTC',detail:'Le total déclaré diffère de 0,01 MAD du total recalculé. Toléré, mais signalé.',field:'totals.taxInclusive',cause:'Arrondi ligne par ligne dans le portail au lieu d\'un arrondi sur le total de TVA.',action:'Aucune action sur cette facture. Corriger la règle d\'arrondi du portail (ticket MYS-412).'}},
+  {id:'MX-0B12-3350',c:'oasis',t:'10:40:51',dir:'OUT',type:'invoice',partner:'Pharmacies Centrales',ref:'FA-2026-01866',amount:12420,st:'ok'},
+
+  {id:'MX-C5A0-1120',c:'casa',t:'14:15:00',dir:'OUT',type:'desadv',partner:'Hyper Anfa',ref:'DESADV-31177',st:'warn',warn:'Livraison',
+    e:{code:'SFTP-SLOW-0003',title:'Dépôt SFTP ralenti, 8 messages en file',detail:'Le serveur SFTP d\'Hyper Anfa répond en 4,2 s au lieu de 0,6 s. Le plus ancien message attend depuis 6 min.',field:'connecteur sftp.hyperanfa.ma',cause:'Lenteur côté serveur partenaire depuis 12:40. Les dépôts aboutissent.',action:'Prévenir le contact technique d\'Hyper Anfa si l\'attente dépasse 15 min.'}},
+  {id:'MX-C5A0-1098',c:'casa',t:'12:47:31',dir:'IN',type:'stock',partner:'Entrepôt Zenata',ref:'STK-20260928-006',st:'err',fail:'Lecture',badXml:true,
+    e:{code:'PARSE-XML-0001',title:'XML mal formé : balise <Qty> non fermée',detail:'Le fichier ne peut pas être lu. Aucune quantité n\'a été modifiée en stock.',field:'ligne 12',cause:'L\'export de l\'entrepôt produit </Qt> au lieu de </Qty> sur la deuxième ligne.',action:'Demander un nouvel export à l\'Entrepôt Zenata. Le fichier original est conservé tel quel.',tab:'in',match:'</Qt>'}},
+  {id:'MX-C5A0-1080',c:'casa',t:'10:55:12',dir:'OUT',type:'desadv',partner:'Hyper Anfa',ref:'DESADV-31160',st:'ok',note:'MDN reçu après 2 relances.'},
+
+  {id:'MX-D2E1-0451',c:'medina',t:'13:40:02',dir:'OUT',type:'invoice',partner:'Grands Magasins du Nord',ref:'FA-MR-2026-0772',amount:12300,st:'ok',note:'Resoumise après correction de l\'ICE acheteur (rejet DGI de 11:20).'},
+  {id:'MX-D2E1-0433',c:'medina',t:'11:48:26',dir:'IN',type:'order',partner:'Grands Magasins du Nord',ref:'PO-9018',amount:3660,st:'err',fail:'Validation',badUnt:true,
+    e:{code:'EDI-SYN-0074',title:'EDIFACT ORDERS : nombre de segments incorrect (UNT)',detail:'UNT annonce 12 segments, le message en contient 14.',field:'UNT/0074',cause:'Le traducteur du partenaire ne compte pas les segments LIN/QTY/PRI de la ligne 2.',action:'Renvoyer un CONTRL négatif au partenaire (automatique) et demander la correction.',tab:'in',match:'UNT+'}},
+  {id:'MX-D2E1-0420',c:'medina',t:'10:12:40',dir:'IN',type:'order',partner:'Grands Magasins du Nord',ref:'PO-9011',amount:5340,st:'ok'},
+
+  {id:'MX-5A77-2210',c:'souss',t:'13:31:00',dir:'IN',type:'order',partner:'Hyper Anfa',ref:'PO-77810',amount:84000,st:'warn',warn:'Rapprochement',soft:true,
+    e:{code:'REC-INV-0048',title:'Commande livrée sans facture depuis 48 h',detail:'La commande a un avis d\'expédition livré le 26/09 mais aucune facture associée. 3 commandes dans ce cas pour 212 000 MAD.',field:'rapprochement ORDERS → DESADV → INVOIC',cause:'Les factures n\'ont pas été créées dans le portail après la livraison.',action:'Préparer les factures depuis les commandes livrées.'}},
+  {id:'MX-5A77-2201',c:'souss',t:'11:30:44',dir:'OUT',type:'invoice',partner:'Hyper Anfa',ref:'FA-SA-2026-0341',amount:21500,st:'ok'},
+  {id:'MX-5A77-2190',c:'souss',t:'09:58:10',dir:'IN',type:'stock',partner:'Hyper Anfa',ref:'STK-20260928-002',st:'ok'}
+];
+const byId = id => MSGS.find(m => m.id===id);
+
+const JOURNAL = [
+  {t:'14:21',s:'err',c:'rif',p:'Facture sortante',stg:'TRANSFORMATION',ev:'Type de document (BSART) absent',sub:'5 messages en quarantaine · 184 320 MAD',msg:'MX-7F37-5C62'},
+  {t:'14:18',s:'err',c:'atlas',p:'Facture sortante',stg:'VALIDATION SORTIE',ev:'UBL invalide : catégorie de TVA absente ligne 2',sub:'Grands Magasins du Nord · 52 180 MAD',msg:'MX-A1C4-7701'},
+  {t:'14:15',s:'warn',c:'casa',p:'Avis d\'expédition',stg:'LIVRAISON',ev:'Dépôt SFTP ralenti, 8 messages en file',sub:'Hyper Anfa · plus ancien : 6 min',msg:'MX-C5A0-1120'},
+  {t:'14:05',s:'warn',c:'atlas',p:'Avis d\'expédition',stg:'ACCUSÉ',ev:'MDN AS2 non reçu après 10 min',sub:'Hyper Anfa · relance 2/5',msg:'MX-A1C4-7695'},
+  {t:'13:58',s:'info',c:'medina',p:'Partenaire',stg:'ONBOARDING',ev:'Grands Magasins du Nord passé en production',sub:'AS2 · test signature et MIC réussi',tab:'partners'},
+  {t:'13:55',s:'err',c:'oasis',p:'Facture sortante',stg:'CLEARANCE DGI',ev:'Rejet DGI : ICE acheteur invalide',sub:'6 factures · 96 540 MAD',msg:'MX-0B12-3390'},
+  {t:'13:40',s:'ok',c:'medina',p:'Facture sortante',stg:'CLEARANCE DGI',ev:'ICE corrigé, 2 factures resoumises et validées',sub:'Rejet de 11:20 résolu par Karim E.',msg:'MX-D2E1-0451'},
+  {t:'13:31',s:'warn',c:'souss',p:'Rapprochement',stg:'FACTURATION',ev:'3 commandes livrées sans facture depuis 48 h',sub:'Hyper Anfa · 212 000 MAD à facturer',msg:'MX-5A77-2210'},
+  {t:'13:20',s:'info',c:'atlas',p:'Mapping',stg:'PUBLICATION',ev:'invoic02-ubl publié en v3.2',sub:'Amina S. · 24/24 fixtures conformes',tab:'mappings'},
+  {t:'13:02',s:'ok',c:'atlas',p:'Facture sortante',stg:'CLEARANCE DGI',ev:'Clearance de nouveau disponible, 14 factures relancées',sub:'Indisponibilité de 12:48 à 13:02 (simulation)',msg:'MX-A1C4-7671'},
+  {t:'12:47',s:'err',c:'casa',p:'Stock entrant',stg:'LECTURE',ev:'XML stock mal formé : balise <Qty> non fermée',sub:'Entrepôt Zenata · aucun stock modifié',msg:'MX-C5A0-1098'},
+  {t:'12:40',s:'warn',c:'casa',p:'Connecteur',stg:'SFTP',ev:'Temps de dépôt au-dessus de l\'objectif',sub:'p95 4,2 s pour un objectif de 0,6 s',tab:'connectors'},
+  {t:'12:22',s:'warn',c:'atlas',p:'Certificat',stg:'AS2',ev:'Certificat MYSTIX-ATLAS expire le 10/10/2026',sub:'Rotation à préparer avec Hyper Anfa',tab:'connectors'},
+  {t:'12:05',s:'ok',c:'rif',p:'Facture sortante',stg:'REJEU',ev:'Rejeu terminé, sortie identique à l\'original',sub:'MX-7F1E-0B77 → MX-7F20-1A03',msg:'MX-7F20-1A03'},
+  {t:'11:48',s:'err',c:'medina',p:'Commande entrante',stg:'VALIDATION',ev:'EDIFACT ORDERS : nombre de segments incorrect',sub:'Grands Magasins du Nord · CONTRL négatif envoyé',msg:'MX-D2E1-0433'},
+  {t:'11:30',s:'info',c:'souss',p:'Portail',stg:'IMPORT',ev:'42 factures importées depuis Excel',sub:'Karim E. · 0 erreur',tab:'flows'},
+  {t:'11:12',s:'warn',c:'oasis',p:'Facture sortante',stg:'VALIDATION',ev:'Écart d\'arrondi de 0,01 MAD sur le total',sub:'Toléré · règle d\'arrondi du portail à corriger',msg:'MX-0B12-3371'},
+  {t:'10:55',s:'ok',c:'casa',p:'Avis d\'expédition',stg:'ACCUSÉ',ev:'MDN reçus après relance, 3 messages acquittés',sub:'Hyper Anfa',msg:'MX-C5A0-1080'},
+  {t:'10:31',s:'info',c:'atlas',p:'Partenaire',stg:'AS2',ev:'Test AS2 réussi avec Grands Magasins du Nord',sub:'Signature, chiffrement et MIC conformes',tab:'partners'},
+  {t:'10:20',s:'ok',c:'souss',p:'API',stg:'SÉCURITÉ',ev:'Clé API renouvelée, 12 appels refusés entre-temps',sub:'Les appels ont été rejoués par le client',tab:'connectors'}
+];
+const SEV = {err:'Erreur', warn:'Attention', info:'Info', ok:'Résolu'};
+
+/* ---------- générateurs de fichiers ---------- */
+function inv(m){
+  const cl=CLIENTS[m.c]; const ttc=m.amount, ht=r2(ttc/1.2), tva=r2(ttc-ht), l1=r2(ht*.6), l2=r2(ht-l1);
+  const bIce = m.badIce || PARTY_ICE[m.partner] || '000000000000000';
+  return {cl,ttc,ht,tva,l1,l2,q1:24,q2:10,p1:r2(l1/24),p2:r2(l2/10),bIce};
+}
+function fileIn(m){
+  if(m.type==='invoice'){ const d=inv(m); return [
+'<?xml version="1.0" encoding="UTF-8"?>','<INVOIC02>','  <IDOC BEGIN="1">','    <EDI_DC40 SEGMENT="1">',
+`      <DOCNUM>00000000${m.id.slice(-4)}812</DOCNUM>`,'      <MESTYP>INVOIC</MESTYP>',`      <SNDPRN>${d.cl.sap}</SNDPRN>`,'      <RCVPRN>MYSTIX</RCVPRN>','    </EDI_DC40>',
+'    <E1EDK01 SEGMENT="1">','      <CURCY>MAD</CURCY>', ...(m.noBsart?[]:['      <BSART>INVO</BSART>']), `      <BELNR>${m.ref}</BELNR>`,'    </E1EDK01>',
+'    <E1EDKA1 SEGMENT="1">','      <PARVW>RS</PARVW>',`      <NAME1>${d.cl.name}</NAME1>`,`      <ICE>${d.cl.ice}</ICE>`,'    </E1EDKA1>',
+'    <E1EDKA1 SEGMENT="1">','      <PARVW>RE</PARVW>',`      <NAME1>${m.partner}</NAME1>`,`      <ICE>${d.bIce}</ICE>`,'    </E1EDKA1>',
+'    <E1EDK03 SEGMENT="1">','      <IDDAT>012</IDDAT>','      <DATUM>20260928</DATUM>','    </E1EDK03>',
+'    <E1EDP01 SEGMENT="1">','      <POSEX>000010</POSEX>',`      <MENGE>${d.q1}</MENGE>`,'      <MENEE>PCE</MENEE>',`      <VPREI>${d.p1.toFixed(2)}</VPREI>`,'      <MWSKZ>A1</MWSKZ>','      <E1EDP19 SEGMENT="1"><KTEXT>Huile d\'olive extra vierge 1 L</KTEXT></E1EDP19>','    </E1EDP01>',
+'    <E1EDP01 SEGMENT="1">','      <POSEX>000020</POSEX>',`      <MENGE>${d.q2}</MENGE>`,'      <MENEE>PCE</MENEE>',`      <VPREI>${d.p2.toFixed(2)}</VPREI>`, ...(m.noTax2?[]:['      <MWSKZ>A1</MWSKZ>']),'      <E1EDP19 SEGMENT="1"><KTEXT>Couscous fin 5 kg</KTEXT></E1EDP19>','    </E1EDP01>',
+'    <E1EDS01 SEGMENT="1">','      <SUMID>011</SUMID>',`      <SUMME>${d.ttc.toFixed(2)}</SUMME>`,'    </E1EDS01>','  </IDOC>','</INVOIC02>'].join('\n'); }
+  if(m.type==='order'){ const snd=m.partner==='Hyper Anfa'?'HYPERANFA':'GMN'; const rcv=m.c==='medina'?'MEDINA':m.c==='souss'?'SOUSSAGRO':'ATLAS'; return [
+`UNA:+.? '`,`UNB+UNOC:3+${snd}:14+${rcv}:14+260928:1412+${m.ref.replace(/\D/g,'')}'`,`UNH+1+ORDERS:D:96A:UN'`,`BGM+220+${m.ref}+9'`,`DTM+137:20260928:102'`,`DTM+2:20261001:102'`,`NAD+BY+${snd}::9'`,`NAD+SU+${rcv}::9'`,
+`LIN+1++6111245000123:EN'`,`QTY+21:120'`,`PRI+AAA:18.50'`,`LIN+2++6111245000130:EN'`,`QTY+21:60'`,`PRI+AAA:24.00'`,`UNS+S'`,`UNT+${m.badUnt?12:14}+1'`,`UNZ+1+${m.ref.replace(/\D/g,'')}'`].join('\n'); }
+  if(m.type==='desadv'){ return [
+'<?xml version="1.0" encoding="UTF-8"?>','<DESADV01>','  <IDOC BEGIN="1">','    <EDI_DC40 SEGMENT="1">','      <MESTYP>DESADV</MESTYP>',`      <SNDPRN>${CLIENTS[m.c].sap}</SNDPRN>`,'    </EDI_DC40>',
+'    <E1EDL20 SEGMENT="1">',`      <VBELN>${m.ref}</VBELN>`,'      <BTGEW>1240.500</BTGEW>','      <GEWEI>KGM</GEWEI>','      <E1EDL24 SEGMENT="1">','        <POSNR>000010</POSNR>','        <MATNR>6111245000123</MATNR>','        <LFIMG>120</LFIMG>','      </E1EDL24>','      <E1EDL24 SEGMENT="1">','        <POSNR>000020</POSNR>','        <MATNR>6111245000130</MATNR>','        <LFIMG>60</LFIMG>','      </E1EDL24>','    </E1EDL20>','  </IDOC>','</DESADV01>'].join('\n'); }
+  return [
+'<?xml version="1.0" encoding="UTF-8"?>',`<StockReceipt store="${m.partner==='Magasin Maarif'?'MAARIF-01':m.partner==='Entrepôt Zenata'?'ZENATA-02':'AGADIR-01'}">`,`  <ReceiptId>${m.ref}</ReceiptId>`,'  <Date>2026-09-28T13:41:00+01:00</Date>',
+'  <Line>','    <Sku>6111245000123</Sku>','    <Qty>120</Qty>','    <Unit>PCE</Unit>','  </Line>','  <Line>','    <Sku>6111245000130</Sku>', m.badXml?'    <Qty>60</Qt>':'    <Qty>60</Qty>','    <Unit>PCE</Unit>','  </Line>','</StockReceipt>'].join('\n');
+}
+function fileXsl(m){
+  if(m.type==='invoice') return [
+'<xsl:stylesheet version="2.0"','    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"','    xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"','    xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"','    xmlns:mx="urn:mystix:functions">',
+'  <!-- invoic02-ubl v3.2 · publié le 28/09/2026 13:20 par Amina S. · 24 fixtures -->','',
+'  <xsl:template match="/INVOIC02/IDOC">','    <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">','      <cbc:UBLVersionID>2.1</cbc:UBLVersionID>',
+'      <cbc:ID><xsl:value-of select="E1EDK01/BELNR"/></cbc:ID>','      <cbc:IssueDate><xsl:value-of select="mx:date(E1EDK03[IDDAT=\'012\']/DATUM)"/></cbc:IssueDate>',
+'      <!-- BSART obligatoire : INVO → 380 (facture), CRME → 381 (avoir) -->','      <cbc:InvoiceTypeCode>','        <xsl:value-of select="mx:require(mx:lookup(\'bsart-untdid1001\', E1EDK01/BSART), \'MAP-RULE-0031\')"/>','      </cbc:InvoiceTypeCode>',
+'      <cbc:DocumentCurrencyCode><xsl:value-of select="E1EDK01/CURCY"/></cbc:DocumentCurrencyCode>','      <xsl:apply-templates select="E1EDKA1[PARVW=\'RS\']" mode="supplier"/>','      <xsl:apply-templates select="E1EDKA1[PARVW=\'RE\']" mode="customer"/>','      <xsl:call-template name="tax-total"/>','      <xsl:call-template name="monetary-total"/>','      <xsl:apply-templates select="E1EDP01"/>','    </Invoice>','  </xsl:template>','',
+'  <xsl:template match="E1EDP01">','    <cac:InvoiceLine>','      <cbc:ID><xsl:value-of select="position()"/></cbc:ID>','      <cbc:InvoicedQuantity unitCode="{mx:lookup(\'unit-rec20\', MENEE)}">','        <xsl:value-of select="MENGE"/>','      </cbc:InvoicedQuantity>','      <cbc:LineExtensionAmount currencyID="MAD">','        <xsl:value-of select="format-number(MENGE * VPREI, \'0.00\')"/>','      </cbc:LineExtensionAmount>','      <cac:Item>','        <cbc:Name><xsl:value-of select="E1EDP19/KTEXT"/></cbc:Name>',
+'        <!-- MWSKZ → catégorie et taux TVA via le référentiel fiscal daté -->','        <xsl:if test="MWSKZ">','          <cac:ClassifiedTaxCategory>','            <cbc:ID><xsl:value-of select="mx:lookup(\'mwskz-category\', MWSKZ)"/></cbc:ID>','            <cbc:Percent><xsl:value-of select="mx:vatRate(MWSKZ, $issueDate)"/></cbc:Percent>','            <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>','          </cac:ClassifiedTaxCategory>','        </xsl:if>','      </cac:Item>','    </cac:InvoiceLine>','  </xsl:template>','</xsl:stylesheet>'].join('\n');
+  if(m.type==='order') return ['<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">','  <!-- orders-d96a-orders05 v1.4 · entrée : EDIFACT parsé en XML -->','  <xsl:template match="/Interchange/ORDERS">','    <ORDERS05>','      <IDOC BEGIN="1">','        <E1EDK01 SEGMENT="1">','          <BELNR><xsl:value-of select="BGM/C106/e1004"/></BELNR>','          <CURCY>MAD</CURCY>','        </E1EDK01>','        <E1EDK03 SEGMENT="1">','          <IDDAT>002</IDDAT>','          <DATUM><xsl:value-of select="DTM[C507/e2005=\'2\']/C507/e2380"/></DATUM>','        </E1EDK03>','        <xsl:for-each select="SG25">','          <E1EDP01 SEGMENT="1">','            <POSEX><xsl:value-of select="format-number(LIN/e1082 * 10, \'000000\')"/></POSEX>','            <MENGE><xsl:value-of select="QTY/C186/e6060"/></MENGE>','            <VPREI><xsl:value-of select="SG28/PRI/C509/e5118"/></VPREI>','            <E1EDP19 SEGMENT="1"><IDTNR><xsl:value-of select="LIN/C212/e7140"/></IDTNR></E1EDP19>','          </E1EDP01>','        </xsl:for-each>','      </IDOC>','    </ORDERS05>','  </xsl:template>','</xsl:stylesheet>'].join('\n');
+  if(m.type==='desadv') return ['<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:mx="urn:mystix:functions">','  <!-- desadv01-d96a v2.1 · sortie : arbre EDIFACT sérialisé par le générateur -->','  <xsl:template match="/DESADV01/IDOC">','    <DESADV>','      <BGM e1001="351" e1004="{E1EDL20/VBELN}" e1225="9"/>','      <DTM e2005="11" e2380="{mx:today()}" e2379="102"/>','      <MEA e6311="AAX" e6313="AAD" e6411="KGM" e6314="{E1EDL20/BTGEW}"/>','      <xsl:for-each select="E1EDL20/E1EDL24">','        <LIN e1082="{position()}" e7140="{MATNR}" e7143="EN"/>','        <QTY e6063="12" e6060="{LFIMG}"/>','      </xsl:for-each>','    </DESADV>','  </xsl:template>','</xsl:stylesheet>'].join('\n');
+  return ['<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">','  <!-- stock-xml v2.0 · XML magasin → StockMovement canonique -->','  <xsl:template match="/StockReceipt">','    <StockMovement type="RECEIPT" store="{@store}" reference="{ReceiptId}" at="{Date}">','      <xsl:for-each select="Line">','        <Item sku="{Sku}" quantity="{Qty}" unit="{Unit}"/>','      </xsl:for-each>','    </StockMovement>','  </xsl:template>','</xsl:stylesheet>'].join('\n');
+}
+function fileCanon(m){
+  if(m.type==='invoice'){ const d=inv(m); return JSON.stringify({canonicalVersion:'invoice/1.3',type:m.noBsart?null:'INVOICE',number:m.ref,issueDate:'2026-09-28',currency:'MAD',
+    seller:{name:d.cl.name,ice:d.cl.ice},buyer:{name:m.partner,ice:d.bIce},
+    lines:[{lineNumber:1,itemName:'Huile d\'olive extra vierge 1 L',quantity:d.q1,unitCode:'C62',unitPrice:d.p1,netAmount:d.l1,taxCategory:'S',taxRate:20},{lineNumber:2,itemName:'Couscous fin 5 kg',quantity:d.q2,unitCode:'C62',unitPrice:d.p2,netAmount:d.l2,taxCategory:m.noTax2?null:'S',taxRate:m.noTax2?null:20}],
+    totals:{taxExclusive:d.ht,taxTotal:d.tva,taxInclusive:d.ttc,payable:d.ttc}},null,2); }
+  if(m.type==='order') return JSON.stringify({canonicalVersion:'order/1.1',number:m.ref,orderDate:'2026-09-28',requestedDelivery:'2026-10-01',buyer:m.partner,supplier:CLIENTS[m.c].name,lines:[{lineNumber:1,gtin:'6111245000123',quantity:120,unitPrice:18.5},{lineNumber:2,gtin:'6111245000130',quantity:60,unitPrice:24}]},null,2);
+  if(m.type==='desadv') return JSON.stringify({canonicalVersion:'despatch/1.0',number:m.ref,despatchDate:'2026-09-28',grossWeightKg:1240.5,lines:[{gtin:'6111245000123',quantity:120},{gtin:'6111245000130',quantity:60}]},null,2);
+  return JSON.stringify({canonicalVersion:'stock/2.0',type:'RECEIPT',reference:m.ref,store:m.partner,items:[{sku:'6111245000123',quantity:120,unit:'PCE'},{sku:'6111245000130',quantity:60,unit:'PCE'}]},null,2);
+}
+function fileOut(m){
+  if(m.type==='invoice'){ const d=inv(m); const line=(n,q,amt,name,p,tax)=>[
+'  <cac:InvoiceLine>',`    <cbc:ID>${n}</cbc:ID>`,`    <cbc:InvoicedQuantity unitCode="C62">${q}</cbc:InvoicedQuantity>`,`    <cbc:LineExtensionAmount currencyID="MAD">${amt.toFixed(2)}</cbc:LineExtensionAmount>`,'    <cac:Item>',`      <cbc:Name>${name}</cbc:Name>`,
+ ...(tax?['      <cac:ClassifiedTaxCategory>','        <cbc:ID>S</cbc:ID>','        <cbc:Percent>20</cbc:Percent>','        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>','      </cac:ClassifiedTaxCategory>']:[]),
+'    </cac:Item>',`    <cac:Price><cbc:PriceAmount currencyID="MAD">${p.toFixed(2)}</cbc:PriceAmount></cac:Price>`,'  </cac:InvoiceLine>'];
+  return [
+'<?xml version="1.0" encoding="UTF-8"?>','<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"','         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"','         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">',
+'  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>',`  <cbc:ID>${m.ref}</cbc:ID>`,'  <cbc:IssueDate>2026-09-28</cbc:IssueDate>','  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>','  <cbc:DocumentCurrencyCode>MAD</cbc:DocumentCurrencyCode>',
+'  <cac:AccountingSupplierParty>','    <cac:Party>',`      <cac:PartyName><cbc:Name>${d.cl.name}</cbc:Name></cac:PartyName>`,'      <cac:PartyTaxScheme>',`        <cbc:CompanyID schemeID="ICE">${d.cl.ice}</cbc:CompanyID>`,'        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>','      </cac:PartyTaxScheme>','    </cac:Party>','  </cac:AccountingSupplierParty>',
+'  <cac:AccountingCustomerParty>','    <cac:Party>',`      <cac:PartyName><cbc:Name>${m.partner}</cbc:Name></cac:PartyName>`,'      <cac:PartyTaxScheme>',`        <cbc:CompanyID schemeID="ICE">${d.bIce}</cbc:CompanyID>`,'        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>','      </cac:PartyTaxScheme>','    </cac:Party>','  </cac:AccountingCustomerParty>',
+'  <cac:TaxTotal>',`    <cbc:TaxAmount currencyID="MAD">${d.tva.toFixed(2)}</cbc:TaxAmount>`,'  </cac:TaxTotal>',
+'  <cac:LegalMonetaryTotal>',`    <cbc:LineExtensionAmount currencyID="MAD">${d.ht.toFixed(2)}</cbc:LineExtensionAmount>`,`    <cbc:TaxExclusiveAmount currencyID="MAD">${d.ht.toFixed(2)}</cbc:TaxExclusiveAmount>`,`    <cbc:TaxInclusiveAmount currencyID="MAD">${d.ttc.toFixed(2)}</cbc:TaxInclusiveAmount>`,`    <cbc:PayableAmount currencyID="MAD">${d.ttc.toFixed(2)}</cbc:PayableAmount>`,'  </cac:LegalMonetaryTotal>',
+ ...line(1,d.q1,d.l1,'Huile d\'olive extra vierge 1 L',d.p1,true), ...line(2,d.q2,d.l2,'Couscous fin 5 kg',d.p2,!m.noTax2),'</Invoice>'].join('\n'); }
+  if(m.type==='order') return ['<?xml version="1.0" encoding="UTF-8"?>','<ORDERS05>','  <IDOC BEGIN="1">','    <EDI_DC40 SEGMENT="1">','      <MESTYP>ORDERS</MESTYP>','      <SNDPRN>MYSTIX</SNDPRN>',`      <RCVPRN>${CLIENTS[m.c].sap}</RCVPRN>`,'    </EDI_DC40>','    <E1EDK01 SEGMENT="1">',`      <BELNR>${m.ref}</BELNR>`,'      <CURCY>MAD</CURCY>','    </E1EDK01>','    <E1EDP01 SEGMENT="1">','      <POSEX>000010</POSEX>','      <MENGE>120</MENGE>','      <VPREI>18.50</VPREI>','    </E1EDP01>','    <E1EDP01 SEGMENT="1">','      <POSEX>000020</POSEX>','      <MENGE>60</MENGE>','      <VPREI>24.00</VPREI>','    </E1EDP01>','  </IDOC>','</ORDERS05>'].join('\n');
+  if(m.type==='desadv'){ const snd=m.c==='casa'?'CASALOG':'ATLAS', rcv=m.partner==='Hyper Anfa'?'HYPERANFA':'GMN'; return [`UNA:+.? '`,`UNB+UNOC:3+${snd}:14+${rcv}:14+260928:1405+${m.ref.replace(/\D/g,'')}'`,`UNH+1+DESADV:D:96A:UN'`,`BGM+351+${m.ref}+9'`,`DTM+11:20260928:102'`,`MEA+AAX+AAD+KGM:1240.5'`,`LIN+1++6111245000123:EN'`,`QTY+12:120'`,`LIN+2++6111245000130:EN'`,`QTY+12:60'`,`UNT+10+1'`,`UNZ+1+${m.ref.replace(/\D/g,'')}'`].join('\n'); }
+  return null;
+}
+function fileDgi(m){
+  const d=inv(m);
+  if(m.fail==='Clearance DGI') return JSON.stringify({mode:'SIMULATION',status:'REJECTED',invoiceNumber:m.ref,sellerIce:d.cl.ice,receivedAt:'2026-09-28T13:55:21+01:00',errors:[{code:'ICE_FORMAT',field:'AccountingCustomerParty/PartyTaxScheme/CompanyID',value:d.bIce,message:'L\'ICE doit contenir exactement 15 chiffres'}]},null,2);
+  return JSON.stringify({mode:'SIMULATION',status:'CLEARED',clearanceId:`DGI-SIM-20260928-${m.id.slice(-4)}`,invoiceNumber:m.ref,sellerIce:d.cl.ice,buyerIce:d.bIce,taxInclusiveAmount:d.ttc,clearedAt:`2026-09-28T${m.t}+01:00`,documentHash:'sha256:3f9a61c2…c21e'},null,2);
+}
+function fileMdn(m){
+  const to = m.partner==='Hyper Anfa'?'HYPERANFA-AS2':'GMN-EDI-PROD';
+  return ['Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256','','--mdn-boundary','Content-Type: message/disposition-notification','',`Reporting-UA: ${to} AS2 Server`,`Original-Recipient: rfc822; ${to}`,`Final-Recipient: rfc822; ${to}`,`Original-Message-ID: <${m.id}@mystix.ma>`,'Disposition: automatic-action/MDN-sent-automatically; processed','Received-Content-MIC: 9KxQ2mN8vT1c0bYl4ZrE6pWf3Hs7AaUj5dGk2oLq8wI=, sha-256','','--mdn-boundary--'].join('\n');
+}
+const STAGES = {
+  invoice:['Réception','Validation','Lecture','Normalisation','Transformation','Génération','Validation sortie','Clearance DGI','Livraison','Accusé'],
+  order:['Réception','Validation','Lecture','Normalisation','Transformation','Génération','Validation sortie','Livraison','Accusé'],
+  desadv:['Réception','Validation','Lecture','Normalisation','Transformation','Génération','Validation sortie','Livraison','Accusé'],
+  stock:['Réception','Validation','Lecture','Normalisation','Transformation','Mise à jour stock']
+};
+function files(m){
+  const S=STAGES[m.type]; const fi = m.fail?S.indexOf(m.fail):99; const at = s => S.indexOf(s);
+  const hasOut = m.type!=='stock' && fi>at('Génération');
+  const list = [
+    {k:'in',label:'IN',name:`${m.ref}.${m.type==='order'?'edi':'xml'}`,lang:m.type==='order'?'edi':'xml',body:fileIn(m),desc:`Fichier original reçu · ${FMT[m.type][0]} · immuable`},
+    {k:'xsl',label:'MAPPING · XSL',name:`${MAP[m.type].replace(' ','-')}.xsl`,lang:'xml',body:fileXsl(m),desc:`Mapping ${MAP[m.type]} utilisé pour cette exécution`},
+    {k:'canon',label:'CANONIQUE',name:'canonical.json',lang:'json',body:fi>at('Normalisation')?fileCanon(m):null,desc:'Modèle canonique Mystix'},
+    {k:'out',label:'OUT',name:m.type==='stock'?'—':`${m.ref}.${m.type==='desadv'?'edi':'xml'}`,lang:m.type==='desadv'?'edi':'xml',body:hasOut?fileOut(m):null,desc:m.type==='stock'?'Flux interne : pas de fichier de sortie, le stock est mis à jour directement':`Fichier généré · ${FMT[m.type][1]}`}
+  ];
+  if(m.type==='invoice') list.push({k:'dgi',label:'DGI',name:'clearance.json',lang:'json',body:fi>=at('Clearance DGI')?fileDgi(m):null,desc:'Réponse de clearance · simulation Mystix, format officiel DGI en attente'});
+  if(m.type!=='stock'){ const pend = m.warn==='Accusé' ? `MDN en attente depuis ${m.t}. Relance 2 sur 5, prochaine à 14:25.` : m.warn==='Livraison' ? `Message en file d'envoi SFTP depuis ${m.t}. L'accusé suivra le dépôt.` : null; list.push({k:'mdn',label:m.type==='order'?'CONTRL':'MDN',name:m.type==='order'?'contrl.edi':'mdn.txt',lang:m.type==='order'?'edi':'txt',
+    body: m.type==='order' ? (m.fail? [`UNH+1+CONTRL:D:3:UN'`,`UCI+${m.ref.replace(/\D/g,'')}+GMN:14+MEDINA:14+4'`,`UCM+1+ORDERS:D:96A:UN+4'`,`UCS+16+13'`,`UNT+5+1'`].join('\n') : (fi>at('Livraison')?[`UNH+1+CONTRL:D:3:UN'`,`UCI+${m.ref.replace(/\D/g,'')}+${m.partner==='Hyper Anfa'?'HYPERANFA':'GMN'}:14+MYSTIX:14+7'`,`UNT+3+1'`].join('\n'):null))
+      : (pend||fi<=at('Livraison')?null:fileMdn(m)),
+    pending: pend, desc: m.type==='order'?'Accusé syntaxique EDIFACT renvoyé au partenaire':'Accusé AS2 signé du partenaire'}); }
+  return list;
+}
+
+/* ---------- coloration ---------- */
+function hl(line, lang){
+  let s = esc(line);
+  if(lang==='xml'){
+    s = s.replace(/(\s)([\w:.-]+)(=)("[^"]*")/g,'$1<span class="at">$2</span>$3<span class="st">$4</span>')
+         .replace(/(&lt;!--.*?--&gt;)/g,'<span class="cm">$1</span>')
+         .replace(/(&lt;\/?)([\w:.-]+)/g,'$1<span class="tg">$2</span>');
+  } else if(lang==='json'){
+    s = s.replace(/("[^"]*")(\s*:)/g,'<span class="at">$1</span>$2')
+         .replace(/(:\s*)("[^"]*")/g,'$1<span class="st">$2</span>')
+         .replace(/(:\s*)(-?\d+(?:\.\d+)?|null|true|false)/g,'$1<span class="nm">$2</span>');
+  } else if(lang==='edi'){
+    s = s.replace(/^([A-Z]{3})/,'<span class="tg">$1</span>').replace(/([+:'])/g,'<span class="cm">$1</span>');
+  } else {
+    s = s.replace(/^([\w-]+:)/,'<span class="at">$1</span>');
+  }
+  return s;
+}
+
+/* ---------- état et routage ---------- */
+const state = {view:'cockpit', client:null, tab:'flows', msg:null, file:'in', jf:'all', jc:'all', jq:'', dirF:'all', stF:'all'};
+function go(view, opts={}){
+  Object.assign(state, {view}, opts);
+  const h = view==='client' ? state.client : view;
+  if(location.hash.slice(1)!==h){ try{ history.replaceState(null,'','#'+h); }catch(e){} }
+  render(); window.scrollTo(0,0);
+}
+function openClient(c, tab='flows', msg=null){
+  const list = MSGS.filter(m=>m.c===c);
+  go('client',{client:c, tab, msg: msg || (list[0]&&list[0].id), file:null, dirF:'all', stF:'all'});
+}
+function openMsg(id){ const m=byId(id); openClient(m.c,'flows',id); }
+function fromHash(){ const h=location.hash.slice(1); if(CLIENTS[h]) openClient(h); else if(h==='clients'||h==='studio') go(h); else go('cockpit'); }
+
+function render(){
+  $('#navCockpit').classList.toggle('on', state.view==='cockpit');
+  $('#navClients').classList.toggle('on', state.view==='clients'||state.view==='client');
+  $('#navStudio').classList.toggle('on', state.view==='studio');
+  const main = $('#main');
+  if(state.view==='cockpit') main.innerHTML = viewCockpit();
+  else if(state.view==='clients') main.innerHTML = viewClients();
+  else if(state.view==='studio') main.innerHTML = viewStudio();
+  else main.innerHTML = viewClient();
+  bind();
+  if(state.view==='studio') bindStudio();
+}
+
+/* ---------- vues ---------- */
+const WORDMARK = `<svg class="wordmark" viewBox="0 0 29 12" role="img" aria-label="mystix"><g fill="currentColor"><path d="M6.864 4.416C6.864 4.192 6.828 4.004 6.756 3.852C6.692 3.7 6.6 3.576 6.48 3.48C6.36 3.384 6.224 3.316 6.072 3.276C5.92 3.236 5.756 3.216 5.58 3.216C5.46 3.216 5.324 3.232 5.172 3.264C5.02 3.288 4.864 3.332 4.704 3.396C4.544 3.452 4.376 3.532 4.2 3.636C4.24 3.748 4.268 3.868 4.284 3.996C4.3 4.116 4.308 4.248 4.308 4.392V8.52H3.444V4.416C3.444 4.192 3.408 4.004 3.336 3.852C3.272 3.7 3.18 3.576 3.06 3.48C2.948 3.384 2.816 3.316 2.664 3.276C2.512 3.236 2.348 3.216 2.172 3.216C2.02 3.216 1.876 3.232 1.74 3.264C1.604 3.288 1.468 3.328 1.332 3.384C1.196 3.44 1.052 3.512 0.9 3.6V8.52H0V2.52H0.9V2.88C1.028 2.8 1.164 2.724 1.308 2.652C1.46 2.58 1.62 2.524 1.788 2.484C1.964 2.436 2.144 2.412 2.328 2.412C2.568 2.412 2.784 2.436 2.976 2.484C3.176 2.532 3.356 2.604 3.516 2.7C3.676 2.788 3.812 2.904 3.924 3.048C4.092 2.928 4.272 2.82 4.464 2.724C4.656 2.628 4.86 2.552 5.076 2.496C5.292 2.44 5.516 2.412 5.748 2.412C6.052 2.412 6.324 2.452 6.564 2.532C6.804 2.604 7.012 2.72 7.188 2.88C7.364 3.04 7.496 3.248 7.584 3.504C7.68 3.752 7.728 4.048 7.728 4.392V8.52H6.864V4.416Z"/><path d="M13.3533 2.628C13.2305 2.676 13.1453 2.824 13.0893 2.952C13.0333 3.08 13.0053 3.276 13.0053 3.54V9.3C13.0053 9.636 12.9613 9.916 12.8733 10.14C12.7933 10.364 12.6613 10.548 12.4773 10.692C12.2933 10.836 12.0493 10.96 11.7453 11.064L11.6373 10.752C11.8133 10.68 11.9653 10.6 12.0933 10.512C12.2213 10.432 12.3253 10.336 12.4053 10.224C12.4933 10.112 12.5533 9.98 12.5853 9.828C12.6253 9.676 12.6453 9.496 12.6453 9.288V7.524C12.5413 7.748 12.3933 7.94 12.2013 8.1C12.0173 8.26 11.8053 8.384 11.5653 8.472C11.3253 8.56 11.0813 8.608 10.8333 8.616C10.5773 8.632 10.3133 8.616 10.0413 8.568C9.77728 8.52 9.53328 8.428 9.30928 8.292C9.09328 8.148 8.91328 7.944 8.76928 7.68C8.63328 7.408 8.56528 7.056 8.56528 6.624V2.508H8.96128V6.612C8.96128 6.932 9.00528 7.204 9.09328 7.428C9.18928 7.644 9.32528 7.816 9.50128 7.944C9.67728 8.072 9.88128 8.164 10.1133 8.22C10.3453 8.268 10.6013 8.284 10.8813 8.268C11.1453 8.252 11.3853 8.196 11.6013 8.1C11.8173 7.996 12.0013 7.86 12.1533 7.692C12.3133 7.524 12.4333 7.336 12.5133 7.128C12.6013 6.912 12.6453 6.692 12.6453 6.468V3.528C12.6453 3.344 12.6613 3.184 12.6933 3.048C12.7333 2.904 12.7893 2.78 12.8613 2.676C12.9413 2.564 13.043 2.376 13.1613 2.376L13.3533 2.628Z"/><path d="M17.5062 3.072C17.4022 3 17.2782 2.94 17.1342 2.892C16.9902 2.836 16.8382 2.792 16.6782 2.76C16.5182 2.728 16.3542 2.712 16.1862 2.712C16.0022 2.712 15.8142 2.732 15.6222 2.772C15.4382 2.812 15.2662 2.876 15.1062 2.964C14.9462 3.052 14.8182 3.168 14.7222 3.312C14.6262 3.456 14.5782 3.628 14.5782 3.828C14.5782 4.06 14.6422 4.256 14.7702 4.416C14.9062 4.576 15.0782 4.716 15.2862 4.836C15.5022 4.948 15.7382 5.052 15.9942 5.148C16.2502 5.244 16.5062 5.344 16.7622 5.448C17.0262 5.552 17.2622 5.672 17.4702 5.808C17.6862 5.944 17.8582 6.116 17.9862 6.324C18.1222 6.524 18.1902 6.772 18.1902 7.068C18.1902 7.348 18.1262 7.592 17.9982 7.8C17.8782 8.008 17.7182 8.18 17.5182 8.316C17.3182 8.444 17.0942 8.54 16.8462 8.604C16.5982 8.676 16.3502 8.712 16.1022 8.712C15.6622 8.712 15.2582 8.632 14.8902 8.472C14.5222 8.304 14.1982 8.048 13.9182 7.704L14.1462 7.464C14.3222 7.672 14.5062 7.844 14.6982 7.98C14.8982 8.116 15.1142 8.216 15.3462 8.28C15.5782 8.336 15.8262 8.364 16.0902 8.364C16.2982 8.364 16.5022 8.34 16.7022 8.292C16.9102 8.244 17.0982 8.168 17.2662 8.064C17.4342 7.952 17.5702 7.816 17.6742 7.656C17.7862 7.496 17.8422 7.308 17.8422 7.092C17.8422 6.836 17.7742 6.62 17.6382 6.444C17.5102 6.268 17.3382 6.12 17.1222 6C16.9062 5.872 16.6702 5.76 16.4142 5.664C16.1582 5.568 15.9022 5.472 15.6462 5.376C15.3902 5.272 15.1542 5.156 14.9382 5.028C14.7222 4.892 14.5462 4.732 14.4102 4.548C14.2822 4.356 14.2182 4.124 14.2182 3.852C14.2182 3.596 14.2742 3.376 14.3862 3.192C14.4982 3.008 14.6462 2.856 14.8302 2.736C15.0222 2.616 15.2302 2.528 15.4542 2.472C15.6862 2.408 15.9182 2.376 16.1502 2.376C16.3982 2.376 16.6222 2.404 16.8222 2.46C17.0302 2.516 17.2102 2.576 17.3622 2.64C17.5142 2.704 17.6222 2.76 17.6862 2.808L17.5062 3.072Z"/><path d="M19.5444 6.936C19.5444 7.2 19.5764 7.424 19.6404 7.608C19.7124 7.792 19.8204 7.944 19.9644 8.064C20.1164 8.184 20.3084 8.284 20.5404 8.364L20.4204 8.676C19.9804 8.54 19.6604 8.332 19.4604 8.052C19.2604 7.772 19.1604 7.4 19.1604 6.936V0.12H19.5444V2.52H21.2844L21.1164 2.868H19.5444V6.936Z"/><path d="M21.9378 8.52V2.508H22.3098V8.52H21.9378ZM22.1298 0C22.2098 0 22.2738 0.0280001 22.3218 0.0840003C22.3778 0.132 22.4058 0.196 22.4058 0.276C22.4058 0.348 22.3778 0.412 22.3218 0.468C22.2738 0.516 22.2098 0.54 22.1298 0.54C22.0578 0.54 21.9938 0.516 21.9378 0.468C21.8818 0.412 21.8538 0.348 21.8538 0.276C21.8538 0.196 21.8818 0.132 21.9378 0.0840003C21.9938 0.0280001 22.0578 0 22.1298 0Z"/><path d="M25.3129 5.196L26.9569 2.52H27.3769L25.5289 5.52L28.043 9.52002H27.611L25.3129 5.856L23.6329 8.52H23.1889L25.0969 5.52L23.2489 2.52H23.6929L25.3129 5.196Z"/></g></svg>`;
+function topbar(title, extra=''){
+  return `<header class="top">${extra}
+    <div class="brand">${WORDMARK}<span class="sep" aria-hidden="true"></span><h1>${title}</h1></div><span class="chip env">PROD</span><span class="tenant">Mystix Administration</span>
+    <button class="search" data-act="pal" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Client, n° de facture, ID de message, ICE…</span><kbd>Ctrl K</kbd></button>
+    <span class="chip demo">Données démo</span><span class="live"><span class="dot" aria-hidden="true"></span>En direct · 14:21</span></header>`;
+}
+function journalRows(){
+  const q = state.jq.toLowerCase();
+  const rows = JOURNAL.filter(j => (state.jf==='all'||j.s===state.jf) && (state.jc==='all'||j.c===state.jc) &&
+    (!q || (j.ev+' '+j.sub+' '+CLIENTS[j.c].name+' '+(j.msg||'')+' '+j.p).toLowerCase().includes(q)));
+  if(!rows.length) return `<tr><td colspan="8" class="empty">Aucun fait marquant ne correspond à ces filtres.</td></tr>`;
+  return rows.map(j => { const i=JOURNAL.indexOf(j); return `<tr class="click" tabindex="0" data-j="${i}">
+    <td class="time">${j.t}</td>
+    <td><span class="sevp ${j.s}">${SEV[j.s]}</span></td>
+    <td><button class="clientlink" data-client="${j.c}">${CLIENTS[j.c].name}</button></td>
+    <td>${j.p}</td>
+    <td><span class="stage">${j.stg}</span></td>
+    <td class="wrap"><span class="ev">${esc(j.ev)}<span>${esc(j.sub)}</span></span></td>
+    <td>${j.msg?`<span class="ref">${j.msg}</span>`:`<span class="t-muted">—</span>`}</td>
+    <td class="go">→</td></tr>`; }).join('');
+}
+function viewCockpit(){
+  const cnt = s => JOURNAL.filter(j=>j.s===s).length;
+  const stages=[['Réception',1284,0],['Validation',1284,0],['Lecture',1281,3],['Normalisation',1281,0],['Transformation',1276,5],['Génération',1276,0],['Clearance DGI',1270,6],['Livraison',1262,8],['Accusé',1248,0]];
+  return topbar('Cockpit') + `
+  <section class="strip" aria-label="Situation du jour">
+    <div><span class="lbl">Documents bloqués</span><span class="big t-crit">19</span><span class="sub">chez <b>4</b> clients · le plus ancien depuis <b>12:40</b></span></div>
+    <div><span class="lbl">Montant facturé bloqué</span><span class="big">280 860<small>MAD</small></span><span class="sub">TVA déductible en attente : <b>46 810 MAD</b></span></div>
+    <div><span class="lbl">Clearance DGI aujourd'hui</span><span class="big">98,5<small>%</small></span><span class="sub"><b>406</b> validées · <b class="t-crit">6</b> rejetées · <span class="t-muted">mode simulé</span></span></div>
+    <div><span class="lbl">À facturer</span><span class="big">212 000<small>MAD</small></span><span class="sub"><b>3</b> commandes livrées sans facture</span></div>
+  </section>
+
+  <section class="panel" aria-labelledby="jh">
+    <div class="ph"><h2 id="jh">Journal</h2><span class="hint">Les 20 derniers faits marquants, tous clients et tous processus</span>
+      <div class="right"><select class="sel" id="jc" aria-label="Filtrer par client"><option value="all">Tous les clients</option>${Object.entries(CLIENTS).map(([k,c])=>`<option value="${k}" ${state.jc===k?'selected':''}>${c.name}</option>`).join('')}</select></div></div>
+    <div class="jbar">
+      <div class="filters" id="jf">
+        <button data-f="all" class="${state.jf==='all'?'on':''}">Tout · ${JOURNAL.length}</button>
+        <button data-f="err" class="${state.jf==='err'?'on':''}">Erreurs · ${cnt('err')}</button>
+        <button data-f="warn" class="${state.jf==='warn'?'on':''}">Attention · ${cnt('warn')}</button>
+        <button data-f="ok" class="${state.jf==='ok'?'on':''}">Résolus · ${cnt('ok')}</button>
+        <button data-f="info" class="${state.jf==='info'?'on':''}">Info · ${cnt('info')}</button>
+      </div>
+      <label class="jsearch"><svg class="i" viewBox="0 0 24 24" style="width:15px;height:15px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="jq" placeholder="Filtrer le journal" value="${esc(state.jq)}"></label>
+    </div>
+    <div class="tablewrap"><table class="t">
+      <thead><tr><th>Heure</th><th>Gravité</th><th>Client</th><th>Processus</th><th>Étape</th><th>Événement</th><th>Message</th><th></th></tr></thead>
+      <tbody id="jrows">${journalRows()}</tbody></table></div>
+    <div class="jfoot"><span>Cliquez un client pour ouvrir son environnement, ou une ligne pour ouvrir le message et ses fichiers.</span><button class="linkbtn">Journal complet et export</button></div>
+  </section>
+
+  <div class="grid-a" style="margin-top:18px">
+    <section class="panel"><div class="ph"><h2>Échéances</h2><span class="hint">Engagements partenaires et DGI</span></div>
+      <ul class="dl">
+        <li><span class="when t-crit">16:00</span><span class="what">Factures Rif Textiles, fenêtre SLA<span>5 factures bloquées · reste 1 h 39</span></span></li>
+        <li><span class="when t-warn">18:00</span><span class="what">Avis d'expédition Atlas Distribution<span>DESADV attendus avant la livraison de demain</span></span></li>
+        <li><span class="when">Demain</span><span class="what">Commandes non facturées Souss Agro<span>3 commandes · 212 000 MAD</span></span></li>
+        <li><span class="when t-warn">12 j</span><span class="what">Certificat AS2 MYSTIX-ATLAS<span>Expire le 10/10/2026 · rotation à préparer</span></span></li>
+      </ul></section>
+    <section class="panel"><div class="ph"><h2>Où ça bloque</h2><span class="hint">Documents par étape, tous clients</span></div>
+      <ul class="pipe">${stages.map(([n,v,d])=>`<li class="${d?'stuck':''}"><span class="name">${n}</span><span class="bar"><i style="width:${(v/1284*100).toFixed(1)}%"></i></span><span class="n">${fmt(v)}</span><span class="d ${d?'t-warn':'t-muted'}">${d?'−'+d:'·'}</span></li>`).join('')}</ul></section>
+  </div>
+
+  ${clientsTable()}`;
+}
+function spark(a, st){
+  const w=110,h=24,max=Math.max(...a),min=Math.min(...a),rg=(max-min)||1;
+  const pts=a.map((v,i)=>[i*(w-4)/(a.length-1)+2, h-3-(v-min)/rg*(h-8)]);
+  const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const col = st==='ok'?'var(--accent)':st==='warn'?'var(--warn)':'var(--crit)'; const l=pts[pts.length-1];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true" style="display:block"><path d="${d} L${l[0]} ${h} L2 ${h}Z" fill="${col}" opacity=".12"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${l[0]}" cy="${l[1]}" r="2.6" fill="${col}"/></svg>`;
+}
+const ST = {ok:'Normal',warn:'Dégradé',err:'Incident'};
+function clientsTable(){
+  return `<section class="panel" aria-labelledby="ch"><div class="ph"><h2 id="ch">Environnements clients</h2><span class="hint">Cliquez pour ouvrir les flux IN/OUT, mappings et connecteurs du client</span></div>
+  <div class="tablewrap"><table class="t"><thead><tr><th>Client</th><th>Canaux</th><th class="r">Messages aujourd'hui</th><th class="r">Erreurs ouvertes</th><th>Activité 24 h</th><th class="r">Taux de livraison</th><th>État</th><th></th></tr></thead><tbody>
+  ${Object.entries(CLIENTS).map(([k,c])=>`<tr class="click" tabindex="0" data-open="${k}"><td><span class="fname">${c.name}<span>ICE ${c.ice} · ${c.city}</span></span></td>
+    <td>${c.channels.map(x=>`<span class="channel">${x}</span>`).join('')}</td><td class="r">${fmt(c.msgs)}</td>
+    <td class="r ${c.errs?'t-crit':''}">${c.errs}</td><td>${spark(c.spark,c.st)}</td>
+    <td class="r"><span class="${c.rate<99.5?'t-warn':''}">${c.rate.toFixed(1).replace('.',',')} %</span><div class="target">obj. 99,5 %</div></td>
+    <td><span class="status st-${c.st}">${ST[c.st]}</span></td><td class="go">→</td></tr>`).join('')}
+  </tbody></table></div></section>`;
+}
+function viewClients(){ return topbar('Environnements clients') + clientsTable(); }
+
+function viewClient(){
+  const c = CLIENTS[state.client]; const k = state.client;
+  const list = MSGS.filter(m=>m.c===k);
+  const errs = list.filter(m=>m.st==='err').length, warns=list.filter(m=>m.st==='warn').length;
+  const crumbs = `<nav class="crumbs" aria-label="Fil d'Ariane"><button data-go="cockpit">Cockpit</button><span>/</span><button data-go="clients">Clients</button><span>/</span><span>${c.name}</span></nav>`;
+  const tabs = [['flows','Flux IN / OUT',list.length],['partners','Partenaires',c.partners.length],['mappings','Mappings',c.mappings.length],['connectors','Connecteurs & certificats',c.connectors.length]];
+  let body='';
+  if(state.tab==='flows') body = flowsView(list);
+  if(state.tab==='partners') body = `<section class="panel"><div class="tablewrap"><table class="t"><thead><tr><th>Partenaire</th><th>Canal</th><th>Identifiant</th><th>Documents</th><th class="r">Échanges aujourd'hui</th><th>État</th></tr></thead><tbody>
+    ${c.partners.map(p=>`<tr><td class="fname">${p[0]}</td><td><span class="channel">${p[1]}</span></td><td class="mono" style="font-size:12px">${p[2]}</td><td>${p[3]}</td><td class="r">${fmt(p[4])}</td><td><span class="status st-${p[5]}">${ST[p[5]]}</span></td></tr>`).join('')}</tbody></table></div></section>`;
+  if(state.tab==='mappings') body = `<section class="panel"><div class="tablewrap"><table class="t"><thead><tr><th>Mapping</th><th>Transformation</th><th>Version publiée</th><th>Fixtures</th><th>Dernière publication</th><th></th></tr></thead><tbody>
+    ${c.mappings.map(p=>`<tr class="click" tabindex="0" data-mapping="${p[0]}"><td class="mono" style="font-size:12.5px">${p[0]}</td><td>${p[1]}</td><td><span class="chip env">${p[2]}</span></td><td class="t-ok">${p[4]} conformes</td><td class="t-muted">${p[3]}</td><td class="go">Voir le XSL →</td></tr>`).join('')}</tbody></table></div></section>
+    <div id="mapview"></div>`;
+  if(state.tab==='connectors') body = `<section class="panel"><div class="tablewrap"><table class="t"><thead><tr><th>Connecteur</th><th>Adresse</th><th>Sécurité / état</th><th></th></tr></thead><tbody>
+    ${c.connectors.map(p=>`<tr><td class="fname">${p[0]}</td><td class="mono" style="font-size:12px">${p[1]}</td><td><span class="status st-${p[3]}">${p[2]}</span></td><td><button class="btn sm" data-toast="Test de connexion lancé sur ${p[0]}.">Tester</button></td></tr>`).join('')}</tbody></table></div></section>`;
+  return `<header class="top">${crumbs}</header>
+  <div class="envhead">
+    <div class="envid"><div class="mono-av">${c.name.split(' ').map(w=>w[0]).slice(0,2).join('')}</div><div><h1>${c.name}</h1><p>ICE <span class="mono">${c.ice}</span> · ${c.city} · SAP ${c.sap}</p></div></div>
+    <span class="chip env" style="margin-top:6px">PROD</span>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select class="sel" id="switchClient" aria-label="Changer de client">${Object.entries(CLIENTS).map(([kk,cc])=>`<option value="${kk}" ${kk===k?'selected':''}>${cc.name}</option>`).join('')}</select>
+      <button class="search" data-act="pal" style="min-width:180px;max-width:260px;margin:0"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Rechercher</span><kbd>Ctrl K</kbd></button>
+    </div>
+  </div>
+  <section class="strip">
+    <div><span class="lbl">Messages aujourd'hui</span><span class="big">${fmt(c.msgs)}</span><span class="sub">${c.channels.join(' · ')}</span></div>
+    <div><span class="lbl">En échec</span><span class="big ${errs?'t-crit':''}">${errs}</span><span class="sub">${warns} à surveiller</span></div>
+    <div><span class="lbl">Taux de livraison</span><span class="big">${c.rate.toFixed(1).replace('.',',')}<small>%</small></span><span class="sub">objectif 99,5 %</span></div>
+    <div><span class="lbl">Partenaires actifs</span><span class="big">${c.partners.length}</span><span class="sub">${c.mappings.length} mapping${c.mappings.length>1?'s':''} publié${c.mappings.length>1?'s':''}</span></div>
+  </section>
+  <nav class="envtabs" role="tablist">${tabs.map(t=>`<button role="tab" data-tab="${t[0]}" class="${state.tab===t[0]?'on':''}">${t[1]} <span class="count">${t[2]}</span></button>`).join('')}</nav>
+  ${body}`;
+}
+function flowsView(all){
+  const list = all.filter(m => (state.dirF==='all'||m.dir===state.dirF) && (state.stF==='all'||m.st!=='ok'));
+  const m = byId(state.msg) || list[0];
+  const stLbl = {ok:'Terminé',err:'Échec',warn:'Attention'};
+  return `<div class="split">
+    <section class="panel">
+      <div class="jbar" style="border-radius:14px 14px 0 0">
+        <div class="seg" id="dirF">${[['all','Tous'],['IN','Entrants'],['OUT','Sortants']].map(([v,l])=>`<button data-v="${v}" class="${state.dirF===v?'on':''}">${l}</button>`).join('')}</div>
+        <div class="seg" id="stF">${[['all','Tous états'],['issues','À traiter']].map(([v,l])=>`<button data-v="${v}" class="${state.stF===v?'on':''}">${l}</button>`).join('')}</div>
+      </div>
+      <ul class="mlist">${list.length?list.map(x=>`<li><button class="mitem ${m&&x.id===m.id?'on':''}" data-msg="${x.id}">
+        <span class="dir ${x.dir}">${x.dir}</span>
+        <span style="min-width:0"><span class="mt">${TYPE[x.type]} ${x.ref}</span><span class="ms">${x.dir==='IN'?'de':'vers'} ${x.partner}${x.amount?' · '+fmt2(x.amount)+' MAD':''}</span><span class="ms mono" style="font-size:11px">${x.id}</span></span>
+        <span class="mr"><span class="time">${x.t}</span><span class="status st-${x.st}">${stLbl[x.st]}</span></span></button></li>`).join(''):`<li class="empty">Aucun message pour ces filtres.</li>`}</ul>
+    </section>
+    ${m?detailView(m):'<section class="panel empty">Sélectionnez un message.</section>'}
+  </div>`;
+}
+function detailView(m){
+  const S = STAGES[m.type]; const fi = m.fail?S.indexOf(m.fail):99; let wi = m.warn?S.indexOf(m.warn):99; if(wi<0) wi=99;
+  const fl = files(m);
+  const errTab = m.e && m.e.tab;
+  if(!state.file || !fl.find(f=>f.k===state.file)) state.file = errTab || 'in';
+  const f = fl.find(x=>x.k===state.file);
+  const stChip = m.st==='err'?`<span class="sevp err">Échec · ${m.fail}</span>`:m.st==='warn'?`<span class="sevp warn">Attention · ${m.warn}</span>`:`<span class="sevp ok">Terminé</span>`;
+  const steps = S.map((s,i)=>{ let cls=''; if(i===fi) cls='err'; else if(i>fi) cls='skip'; else if(i===wi) cls='warn'; else if(i>wi && !m.soft) cls='skip'; return `<span class="step ${cls}">${s}</span>`; }).join('');
+  const diag = m.e ? `<section class="panel"><div class="diag">
+      <div><h4>Diagnostic · <span class="code">${m.e.code}</span></h4><p><b>${esc(m.e.title)}</b></p><p>${esc(m.e.detail)}</p><p><span class="t-muted">Champ :</span> <span class="code">${esc(m.e.field)}</span></p><p><span class="t-muted">Cause :</span> ${esc(m.e.cause)}</p><p style="margin:0"><span class="t-muted">Action :</span> ${esc(m.e.action)}</p></div>
+      ${m.e.ai?`<div class="ai"><h4><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Suggestion IA · validation humaine requise</h4><pre class="diff">${m.e.ai.join('\n')}</pre><p>${esc(m.e.aiNote)}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary sm" data-confirm="Rejouer à blanc avec cette correction, sans rien livrer ?|Rejeu à blanc lancé. Aucun document ne sera livré.">Rejeu à blanc</button><button class="btn sm" data-toast="Suggestion ignorée et consignée dans l'audit.">Ignorer</button></div></div>`
+      :`<div><h4>Contexte</h4><p>Client : <b>${CLIENTS[m.c].name}</b></p><p>Partenaire : <b>${m.partner}</b></p><p>Mapping : <span class="code">${MAP[m.type]}</span></p>${m.e.tab2?'':'<p class="t-muted" style="margin:0">Aucune correction automatique proposée pour ce cas.</p>'}</div>`}
+    </div></section>` : (m.note?`<section class="panel" style="padding:12px 18px;font-size:13px;color:var(--text-2)">${esc(m.note)}</section>`:'');
+  return `<div class="detail">
+    <section class="panel">
+      <div class="dhead">
+        <div style="min-width:0">
+          <h2>${m.id} ${stChip}</h2>
+          <div class="meta"><span>${TYPE[m.type]} <b>${m.ref}</b></span><span>${m.dir==='IN'?m.partner+' → '+CLIENTS[m.c].name:CLIENTS[m.c].name+' → '+m.partner}</span><span>${FMT[m.type][0]} → ${FMT[m.type][1]}</span>${m.amount?`<span><b>${fmt2(m.amount)} MAD</b></span>`:''}</div>
+          <div class="meta"><span class="mono">corr. c-${m.id.slice(3,7).toLowerCase()}-0a7d</span><span class="mono">sha256 3f9a…${m.id.slice(-4).toLowerCase()}</span><span class="mono">${MAP[m.type]}</span><span class="mono">reçu 28/09 ${m.t}</span></div>
+        </div>
+        <div class="actions">
+          ${m.st!=='ok'?`<button class="btn primary" data-confirm="Rejouer ${m.id} avec la configuration actuelle ? Un nouveau message rattaché à l'original sera créé.|Rejeu lancé : nouveau message rattaché à ${m.id}.">Rejouer</button>`:''}
+          ${m.type==='invoice'?'<button class="btn" data-go="studio">Ouvrir le mapping</button>':''}
+          <button class="btn" data-confirm="Exécuter ${m.id} sans rien livrer et comparer la sortie ?|Rejeu à blanc lancé sur ${m.id}.">Rejeu à blanc</button>
+        </div>
+      </div>
+      <div class="steps" aria-label="Étapes du traitement">${steps}</div>
+      <div class="confirm" id="confirm"><span id="confirmTxt" style="flex:1;min-width:200px"></span><button class="btn sm" id="cNo">Annuler</button><button class="btn primary sm" id="cYes">Confirmer</button></div>
+    </section>
+    ${diag}
+    <section class="panel">
+      <div class="ftabs" role="tablist">${fl.map(x=>{ const mark = m.e && (m.e.tab===x.k) ? (m.st==='err'?'<span class="edot"></span>':'<span class="wdot"></span>') : (m.e && m.e.tab2===x.k ? '<span class="wdot"></span>':''); return `<button role="tab" data-file="${x.k}" class="${x.k===state.file?'on':''} ${x.body||x.pending?'':'na'}">${mark}${x.label}</button>`; }).join('')}</div>
+      <div class="fbar"><span class="fn">${f.name}</span><span>${f.desc}</span>
+        <span class="right">${f.body?`<span class="t-muted">${f.body.split('\n').length} lignes</span><button class="btn sm" id="copyBtn">Copier</button>${f.k==='out'&&f.lang==='xml'?`<button class="btn sm" data-toast="${m.fail==='Validation sortie'?'XSD UBL 2.1 : 1 erreur (ligne 2, ClassifiedTaxCategory).':'XSD conforme · 0 erreur.'}">Valider XSD</button>`:''}${f.k==='in'?`<button class="btn sm" data-toast="Comparaison IN ↔ OUT ouverte.">Comparer avec OUT</button>`:''}`:''}</span></div>
+      <div class="viewer" id="viewer">${viewerBody(m,f)}</div>
+    </section>
+  </div>`;
+}
+function viewerBody(m,f){
+  if(f.pending) return `<div class="na-box">${f.pending}</div>`;
+  if(!f.body) return `<div class="na-box">${f.k==='out'&&m.type==='stock'?f.desc:`Non généré : le traitement s'est arrêté à l'étape « ${m.fail} ».`}</div>`;
+  const lines = f.body.split('\n');
+  const marks = {};
+  if(m.e){
+    const addMark=(tab,match,cls,msg)=>{ if(tab!==f.k||!match) return; let idx=lines.findIndex(l=>l.includes(match)); if(idx>=0) marks[idx]={cls,msg}; };
+    addMark(m.e.tab,m.e.match,m.st==='err'?'err':'warnl',`${m.e.code} · ${m.e.title}`);
+    addMark(m.e.tab2,m.e.match2,'warnl','Cause probable : code TVA MWSKZ absent sur ce poste');
+    if(m.noBsart && f.k==='in'){ const i=lines.findIndex(l=>l.includes('<CURCY>')); if(i>=0) marks[i]={cls:'err',msg:'BSART attendu ici (INVO = facture, CRME = avoir)'}; }
+  }
+  return lines.map((l,i)=>{ const mk=marks[i]; return `<div class="ln ${mk?mk.cls:''}"><span class="no">${i+1}</span><span>${hl(l,f.lang)||' '}</span></div>${mk?`<div class="lnmsg ${mk.cls==='warnl'?'w':''}"><span></span><span>↳ ${esc(mk.msg)}</span></div>`:''}`; }).join('');
+}
+
+/* ---------- interactions ---------- */
+function bind(){
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+  document.querySelectorAll('[data-act="pal"]').forEach(b=>b.onclick=openPal);
+  document.querySelectorAll('[data-toast]').forEach(b=>b.onclick=e=>{e.stopPropagation();toast(b.dataset.toast);});
+  document.querySelectorAll('[data-open]').forEach(r=>{ r.onclick=()=>openClient(r.dataset.open); r.onkeydown=e=>{if(e.key==='Enter')openClient(r.dataset.open);}; });
+  const jr = $('#jrows'); if(jr){
+    jr.onclick = e => { const cl=e.target.closest('[data-client]'); if(cl){ e.stopPropagation(); openClient(cl.dataset.client); return; }
+      const r=e.target.closest('tr[data-j]'); if(r) openJ(+r.dataset.j); };
+    jr.onkeydown = e => { const r=e.target.closest('tr[data-j]'); if(r&&e.key==='Enter') openJ(+r.dataset.j); };
+    $('#jf').onclick = e => { const b=e.target.closest('button'); if(!b) return; state.jf=b.dataset.f; document.querySelectorAll('#jf button').forEach(x=>x.classList.toggle('on',x===b)); jr.innerHTML=journalRows(); };
+    $('#jc').onchange = e => { state.jc=e.target.value; jr.innerHTML=journalRows(); };
+    $('#jq').oninput = e => { state.jq=e.target.value; jr.innerHTML=journalRows(); };
+  }
+  const sw=$('#switchClient'); if(sw) sw.onchange=e=>openClient(e.target.value, state.tab);
+  document.querySelectorAll('.envtabs [data-tab]').forEach(b=>b.onclick=()=>go('client',{tab:b.dataset.tab}));
+  document.querySelectorAll('[data-msg]').forEach(b=>b.onclick=()=>{ state.msg=b.dataset.msg; state.file=null; render(); });
+  document.querySelectorAll('[data-file]').forEach(b=>b.onclick=()=>{ state.file=b.dataset.file; render(); });
+  const df=$('#dirF'); if(df) df.onclick=e=>{const b=e.target.closest('button'); if(b){state.dirF=b.dataset.v; state.msg=null; state.file=null; render();}};
+  const sf=$('#stF'); if(sf) sf.onclick=e=>{const b=e.target.closest('button'); if(b){state.stF=b.dataset.v; state.msg=null; state.file=null; render();}};
+  document.querySelectorAll('[data-confirm]').forEach(b=>b.onclick=()=>{ const [q,done]=b.dataset.confirm.split('|'); $('#confirmTxt').textContent=q; $('#confirm').classList.add('show'); $('#cYes').onclick=()=>{ $('#confirm').classList.remove('show'); toast(done); }; $('#confirm').scrollIntoView({block:'nearest',behavior:'smooth'}); });
+  const cn=$('#cNo'); if(cn) cn.onclick=()=>$('#confirm').classList.remove('show');
+  const cp=$('#copyBtn'); if(cp) cp.onclick=()=>{ const m=byId(state.msg)||MSGS.find(x=>x.c===state.client); const f=files(m).find(x=>x.k===state.file);
+    const fallback=()=>{ const r=document.createRange(); r.selectNodeContents($('#viewer')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('Texte sélectionné : Ctrl C pour copier.'); };
+    try{ navigator.clipboard.writeText(f.body).then(()=>toast(`${f.name} copié.`),fallback); }catch(e){ fallback(); } };
+  document.querySelectorAll('[data-mapping]').forEach(r=>r.onclick=()=>{
+    const type = Object.keys(MAP).find(t=>MAP[t].startsWith(r.dataset.mapping)) || 'invoice';
+    const m = MSGS.find(x=>x.type===type) ; const body=fileXsl(m);
+    $('#mapview').innerHTML = `<section class="panel" style="margin-top:18px"><div class="fbar" style="border-radius:14px 14px 0 0"><span class="fn">${r.dataset.mapping}.xsl</span><span>Version publiée · lecture seule</span><span class="right"><button class="btn sm" data-toast="Ouverture dans Mapping Studio.">Ouvrir dans Mapping Studio</button></span></div><div class="viewer">${body.split('\n').map((l,i)=>`<div class="ln"><span class="no">${i+1}</span><span>${hl(l,'xml')||' '}</span></div>`).join('')}</div></section>`;
+    $('#mapview').querySelectorAll('[data-toast]').forEach(b=>b.onclick=()=>go('studio'));
+    $('#mapview').scrollIntoView({block:'start',behavior:'smooth'});
+  });
+}
+function openJ(i){ const j=JOURNAL[i]; if(j.msg) openMsg(j.msg); else openClient(j.c, j.tab||'flows'); }
+
+/* ---------- Mapping Studio ---------- */
+const FIX = {
+  std:{file:'atlas-facture-standard.xml', BELNR:'FA-900045901', DATUM:'20260928', BSART:'INVO', CURCY:'MAD', rsName:'Atlas Distribution', rsIce:'002145698000031', reName:'Hyper Anfa', reIce:'002457811000092',
+    lines:[{POSEX:'000010',MENGE:24,MENEE:'PCE',VPREI:800,MWSKZ:'A1',KTEXT:"Huile d'olive extra vierge 1 L"},{POSEX:'000020',MENGE:10,MENEE:'PCE',VPREI:1280,MWSKZ:'A1',KTEXT:'Couscous & semoule fine 5 kg'}]},
+  gmn:{file:'gmn-poste-sans-mwskz.xml', BELNR:'FA-900045900', DATUM:'20260928', BSART:'INVO', CURCY:'MAD', rsName:'Atlas Distribution', rsIce:'002145698000031', reName:'Grands Magasins du Nord', reIce:'001998230000076',
+    lines:[{POSEX:'000010',MENGE:30,MENEE:'PCE',VPREI:1100,MWSKZ:'A1',KTEXT:'Thon à l\'huile 160 g <carton 48>'},{POSEX:'000020',MENGE:10,MENEE:'PCE',VPREI:1048.33,MWSKZ:null,KTEXT:'Sardines & citron 125 g'}]},
+  avoir:{file:'rif-avoir-crme.xml', BELNR:'AV-900045120', DATUM:'20260927', BSART:'CRME', CURCY:'MAD', rsName:'Rif Textiles', rsIce:'001236987000054', reName:'Atlas Distribution', reIce:'002145698000031',
+    lines:[{POSEX:'000010',MENGE:5,MENEE:'MTR',VPREI:420,MWSKZ:'A1',KTEXT:'Retour tissu coton, lot 44'}]}
+};
+const RULES = [
+  {g:'En-tête'},
+  {id:'r1',t:'cbc:ID',bt:'BT-1 · numéro de facture',src:'E1EDK01/BELNR',keys:['BELNR'],fmt:'Texte'},
+  {id:'r2',t:'cbc:IssueDate',bt:'BT-2 · date d\'émission',src:'E1EDK03[IDDAT=012]/DATUM',keys:['DATUM'],fmt:'date'},
+  {id:'r3',t:'cbc:InvoiceTypeCode',bt:'BT-3 · type de document',src:'lookup(bsart-untdid1001, BSART)',keys:['BSART'],fmt:'Table bsart → UNTDID 1001'},
+  {id:'r4',t:'cbc:DocumentCurrencyCode',bt:'BT-5 · devise',src:'E1EDK01/CURCY',keys:['CURCY'],fmt:'ISO 4217'},
+  {g:'Vendeur'},
+  {id:'r5',t:'cbc:Name',bt:'BT-27 · nom du vendeur',src:'E1EDKA1[RS]/NAME1',keys:['rsName'],fmt:'Texte',cd:1},
+  {id:'r6',t:'cbc:CompanyID @ICE',bt:'BT-31 · identifiant fiscal (ICE)',src:'E1EDKA1[RS]/ICE',keys:['rsIce'],fmt:'ICE · 15 chiffres'},
+  {g:'Acheteur'},
+  {id:'r7',t:'cbc:Name',bt:'BT-44 · nom de l\'acheteur',src:'E1EDKA1[RE]/NAME1',keys:['reName'],fmt:'Texte',cd:1},
+  {id:'r8',t:'cbc:CompanyID @ICE',bt:'BT-48 · identifiant fiscal (ICE)',src:'E1EDKA1[RE]/ICE',keys:['reIce'],fmt:'ICE · 15 chiffres'},
+  {g:'Lignes · pour chaque E1EDP01'},
+  {id:'r9',t:'cbc:InvoicedQuantity',bt:'BT-129 · quantité facturée',src:'MENGE · lookup(unit-rec20, MENEE)',keys:['MENGE','MENEE'],fmt:'Quantité · UN/ECE Rec 20'},
+  {id:'r10',t:'cbc:Name',bt:'BT-153 · désignation article',src:'E1EDP19/KTEXT',keys:['KTEXT'],fmt:'Texte',cd:1},
+  {id:'r11',t:'cac:ClassifiedTaxCategory',bt:'BT-151/152 · catégorie et taux de TVA',src:'mx:vatRate(MWSKZ, IssueDate)',keys:['MWSKZ'],fmt:'Référentiel TVA daté'},
+  {id:'r12',t:'cbc:PriceAmount',bt:'BT-146 · prix unitaire net',src:'VPREI',keys:['VPREI'],fmt:'Montant · 2 déc.'},
+  {g:'Totaux'},
+  {id:'r13',t:'cbc:TaxAmount',bt:'BT-110 · total TVA',src:'Σ lignes × taux',keys:[],fmt:'Montant · 2 déc.'},
+  {id:'r14',t:'cbc:PayableAmount',bt:'BT-115 · montant à payer',src:'E1EDS01[SUMID=011]/SUMME',keys:['SUMME'],fmt:'Montant · 2 déc.'}
+];
+const ST2 = {fix:'gmn', sel:'r11', dateFmt:'iso', cdata:{r5:false,r7:false,r10:false}, ai:null, showDiff:false, pane:'out', confirm:false};
+const xe = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function fixCalc(f){
+  const lines = f.lines.map(l=>({...l, net:r2(l.MENGE*l.VPREI), taxed: !!(l.MWSKZ || ST2.ai==='ok')}));
+  const ht = r2(lines.reduce((s,l)=>s+l.net,0));
+  const tva = r2(lines.filter(l=>l.taxed).reduce((s,l)=>s+l.net*.2,0));
+  const summe = r2(ht*1.2);
+  return {lines, ht, tva, summe};
+}
+function studioOut(f){
+  const c = fixCalc(f); const L=[]; const add=(t,r)=>L.push({t,r});
+  const txt = (v,id) => ST2.cdata[id] ? `<![CDATA[${v}]]>` : xe(v);
+  const date = ST2.dateFmt==='iso' ? `${f.DATUM.slice(0,4)}-${f.DATUM.slice(4,6)}-${f.DATUM.slice(6)}` : `${f.DATUM.slice(6)}/${f.DATUM.slice(4,6)}/${f.DATUM.slice(0,4)}`;
+  add('<?xml version="1.0" encoding="UTF-8"?>');
+  add('<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"');
+  add('         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"');
+  add('         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">');
+  add('  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>');
+  add(`  <cbc:ID>${f.BELNR}</cbc:ID>`,'r1');
+  add(`  <cbc:IssueDate>${date}</cbc:IssueDate>`,'r2');
+  add(`  <cbc:InvoiceTypeCode>${f.BSART==='CRME'?'381':'380'}</cbc:InvoiceTypeCode>`,'r3');
+  add(`  <cbc:DocumentCurrencyCode>${f.CURCY}</cbc:DocumentCurrencyCode>`,'r4');
+  [['AccountingSupplierParty',f.rsName,f.rsIce,'r5','r6'],['AccountingCustomerParty',f.reName,f.reIce,'r7','r8']].forEach(([tag,n,ice,rn,ri])=>{
+    add(`  <cac:${tag}>`); add('    <cac:Party>');
+    add(`      <cac:PartyName><cbc:Name>${txt(n,rn)}</cbc:Name></cac:PartyName>`,rn);
+    add('      <cac:PartyTaxScheme>'); add(`        <cbc:CompanyID schemeID="ICE">${ice}</cbc:CompanyID>`,ri);
+    add('        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>'); add('      </cac:PartyTaxScheme>'); add('    </cac:Party>'); add(`  </cac:${tag}>`);
+  });
+  add('  <cac:TaxTotal>'); add(`    <cbc:TaxAmount currencyID="MAD">${c.tva.toFixed(2)}</cbc:TaxAmount>`,'r13'); add('  </cac:TaxTotal>');
+  add('  <cac:LegalMonetaryTotal>');
+  add(`    <cbc:TaxExclusiveAmount currencyID="MAD">${c.ht.toFixed(2)}</cbc:TaxExclusiveAmount>`);
+  add(`    <cbc:PayableAmount currencyID="MAD">${c.summe.toFixed(2)}</cbc:PayableAmount>`,'r14');
+  add('  </cac:LegalMonetaryTotal>');
+  c.lines.forEach((l,i)=>{
+    add('  <cac:InvoiceLine>'); add(`    <cbc:ID>${i+1}</cbc:ID>`);
+    add(`    <cbc:InvoicedQuantity unitCode="${l.MENEE==='MTR'?'MTR':'C62'}">${l.MENGE}</cbc:InvoicedQuantity>`,'r9');
+    add(`    <cbc:LineExtensionAmount currencyID="MAD">${l.net.toFixed(2)}</cbc:LineExtensionAmount>`);
+    add('    <cac:Item>'); add(`      <cbc:Name>${txt(l.KTEXT,'r10')}</cbc:Name>`,'r10');
+    if(l.taxed){ add('      <cac:ClassifiedTaxCategory>','r11'); add('        <cbc:ID>S</cbc:ID>','r11'); add('        <cbc:Percent>20</cbc:Percent>','r11'); add('        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>','r11'); add('      </cac:ClassifiedTaxCategory>','r11'); }
+    else add('      <!-- ClassifiedTaxCategory non générée : MWSKZ absent -->','r11');
+    add('    </cac:Item>');
+    add(`    <cac:Price><cbc:PriceAmount currencyID="MAD">${l.VPREI.toFixed(2)}</cbc:PriceAmount></cac:Price>`,'r12');
+    add('  </cac:InvoiceLine>');
+  });
+  add('</Invoice>');
+  return L;
+}
+function studioErrors(f){
+  const e=[];
+  if(ST2.dateFmt!=='iso') e.push({r:'r2',m:'cbc:IssueDate : « '+f.DATUM.slice(6)+'/'+f.DATUM.slice(4,6)+'/'+f.DATUM.slice(0,4)+' » n\'est pas une date xs:date valide'});
+  fixCalc(f).lines.forEach((l,i)=>{ if(!l.taxed) e.push({r:'r11',m:`InvoiceLine[${i+1}] : cac:ClassifiedTaxCategory obligatoire (BR-CO-04)`}); });
+  return e;
+}
+function studioChanges(){
+  const ch=[];
+  if(ST2.ai==='ok') ch.push(['+','Lignes · cac:ClassifiedTaxCategory','si MWSKZ absent → "A1" (TVA 20 %), trace dans les événements']);
+  if(ST2.dateFmt!=='iso') ch.push(['~','En-tête · cbc:IssueDate','format ISO AAAA-MM-JJ → JJ/MM/AAAA']);
+  [['r5','Vendeur · cbc:Name'],['r7','Acheteur · cbc:Name'],['r10','Lignes · cbc:Name']].forEach(([id,l])=>{ if(ST2.cdata[id]) ch.push(['~',l,'sortie en CDATA']); });
+  return ch;
+}
+function studioCanon(f){
+  const c=fixCalc(f);
+  return JSON.stringify({canonicalVersion:'invoice/1.3',type:f.BSART==='CRME'?'CREDIT_NOTE':'INVOICE',number:f.BELNR,issueDate:`${f.DATUM.slice(0,4)}-${f.DATUM.slice(4,6)}-${f.DATUM.slice(6)}`,currency:f.CURCY,
+    seller:{name:f.rsName,ice:f.rsIce},buyer:{name:f.reName,ice:f.reIce},
+    lines:c.lines.map((l,i)=>({lineNumber:i+1,itemName:l.KTEXT,quantity:l.MENGE,unitPrice:l.VPREI,netAmount:l.net,taxCategory:l.taxed?'S':null,taxRate:l.taxed?20:null})),
+    totals:{taxExclusive:c.ht,taxTotal:c.tva,payable:c.summe}},null,2);
+}
+function viewStudio(){
+  const f = FIX[ST2.fix]; const c=fixCalc(f); const errs=studioErrors(f); const ch=studioChanges();
+  const passAll = Object.keys(FIX).filter(k=>{ const s=ST2.fix; ST2.fix=k; const ok=!studioErrors(FIX[k]).length; ST2.fix=s; return ok; }).length;
+  const total = 21 + passAll; const sel = RULES.find(r=>r.id===ST2.sel);
+  const usedKeys = new Set(RULES.flatMap(r=>r.keys||[])); const selKeys = new Set(sel?sel.keys:[]);
+  const fld = (k,label,v) => `<button class="fld ${usedKeys.has(k)?'used':''} ${selKeys.has(k)?'sel':''} ${v===null?'miss':''}" data-key="${k}"><span class="u"></span><span class="k">${label}</span><span class="v" title="${v===null?'absent':esc(v)}">${v===null?'absent':esc(v)}</span></button>`;
+  const tree = `<div class="sgm">EDI_DC40</div>${fld('MESTYP','MESTYP','INVOIC')}
+    <div class="sgm">E1EDK01</div>${fld('CURCY','CURCY',f.CURCY)}${fld('BSART','BSART',f.BSART)}${fld('BELNR','BELNR',f.BELNR)}
+    <div class="sgm">E1EDKA1 · RS</div>${fld('rsName','NAME1',f.rsName)}${fld('rsIce','ICE',f.rsIce)}
+    <div class="sgm">E1EDKA1 · RE</div>${fld('reName','NAME1',f.reName)}${fld('reIce','ICE',f.reIce)}
+    <div class="sgm">E1EDK03</div>${fld('IDDAT','IDDAT','012')}${fld('DATUM','DATUM',f.DATUM)}
+    ${f.lines.map(l=>`<div class="sgm">E1EDP01 · ${l.POSEX}</div>${fld('MENGE','MENGE',String(l.MENGE))}${fld('MENEE','MENEE',l.MENEE)}${fld('VPREI','VPREI',l.VPREI.toFixed(2))}${fld('MWSKZ','MWSKZ',l.MWSKZ)}${fld('KTEXT','E1EDP19/KTEXT',l.KTEXT)}`).join('')}
+    <div class="sgm">E1EDS01</div>${fld('SUMID','SUMID','011')}${fld('SUMME','SUMME',c.summe.toFixed(2))}`;
+  const rows = RULES.map(r=>{
+    if(r.g) return `<tr class="grp"><td colspan="4">${r.g}</td></tr>`;
+    const fmt = r.fmt==='date' ? `<select data-date aria-label="Format de date"><option value="iso" ${ST2.dateFmt==='iso'?'selected':''}>Date ISO · AAAA-MM-JJ</option><option value="dmy" ${ST2.dateFmt==='dmy'?'selected':''}>Date · JJ/MM/AAAA</option></select>` : `<span class="fmtchip">${r.fmt}</span>`;
+    const opt = r.cd ? `<label class="tgl"><input type="checkbox" data-cdata="${r.id}" ${ST2.cdata[r.id]?'checked':''}> CDATA</label>` : '';
+    const changed = (r.id==='r11'&&ST2.ai==='ok')||(r.id==='r2'&&ST2.dateFmt!=='iso')||(r.cd&&ST2.cdata[r.id]);
+    const err = errs.some(e=>e.r===r.id);
+    let row = `<tr class="rule ${ST2.sel===r.id?'sel':''}" data-rule="${r.id}"><td class="tgt">${r.t}<span class="req" title="Obligatoire">*</span>${changed?'<span class="mod">MODIFIÉ</span>':''}${err?' <span class="t-crit" title="Erreur de validation">●</span>':''}</td>
+      <td class="src">${esc(r.id==='r11'&&ST2.ai==='ok'?'mx:vatRate(MWSKZ ?? "A1", IssueDate)':r.src)}</td><td>${fmt}</td><td>${opt}</td></tr>`;
+    if(r.id==='r11' && !ST2.ai) row += `<tr class="aisug"><td colspan="4"><div class="aibox"><svg class="i" viewBox="0 0 24 24" style="width:15px;height:15px;color:var(--accent)"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg><span><b>Suggestion IA</b> · Quand MWSKZ est absent, appliquer « A1 » (TVA 20 %). Constaté sur 1 204 des 1 206 factures Grands Magasins du Nord. À valider par un humain.</span><span style="margin-left:auto;display:flex;gap:6px"><button class="btn primary sm" data-ai="ok">Accepter</button><button class="btn sm" data-ai="no">Refuser</button></span></div></td></tr>`;
+    return row;
+  }).join('');
+  const out = studioOut(f);
+  const viewer = ST2.pane==='out'
+    ? out.map((o,i)=>`<div class="ln ${o.r&&o.r===ST2.sel?'hit':''} ${o.t.includes('non générée')||(ST2.dateFmt!=='iso'&&o.r==='r2')?'err':''}"><span class="no">${i+1}</span><span>${hl(o.t,'xml')||' '}</span></div>`).join('')
+    : studioCanon(f).split('\n').map((l,i)=>`<div class="ln"><span class="no">${i+1}</span><span>${hl(l,'json')||' '}</span></div>`).join('');
+  return `<header class="top"><div class="brand">${WORDMARK}<span class="sep" aria-hidden="true"></span><h1>Mapping Studio</h1></div><span class="chip env">PROD</span>
+    <button class="search" data-act="pal" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Mapping, fixture, champ…</span><kbd>Ctrl K</kbd></button><span class="chip demo">Données démo</span></header>
+  <div class="sthead">
+    <div style="min-width:0"><h1>invoic02-ubl <span class="chip draft">Brouillon v3.3</span><span class="chip neutral">Publié v3.2 · 28/09 13:20</span></h1>
+      <p>IDoc INVOIC02 → canonique invoice/1.3 → UBL 2.1 · structure de sortie générée depuis le XSD UBL · utilisé par Atlas Distribution, Rif Textiles et Médina Retail</p></div>
+    <div class="actions">
+      <button class="btn" data-sact="diff">${ST2.showDiff?'Masquer':'Comparer avec'} v3.2</button>
+      <button class="btn" data-sact="run">Rejouer les 24 fixtures</button>
+      <button class="btn primary" data-sact="pub">Publier v3.3</button>
+    </div>
+  </div>
+  ${ST2.confirm?`<div class="panel" style="padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="flex:1;min-width:220px">Publier <b>v3.3</b> (${ch.length} modification${ch.length>1?'s':''}, 24/24 fixtures conformes) ? Les prochains messages utiliseront cette version. Retour à v3.2 possible en un clic.</span><button class="btn sm" data-sact="cancel">Annuler</button><button class="btn primary sm" data-sact="confirm">Publier</button></div>`:''}
+  ${ST2.showDiff?`<div class="diffbox"><span class="h">invoic02-ubl v3.2 (publié) → v3.3 (brouillon)</span>\n${ch.length?ch.map(x=>`<span class="${x[0]==='+'?'add':'del'}">${x[0]} ${esc(x[1])}</span>  ${esc(x[2])}`).join('\n'):'<span class="h">Aucune différence pour l\'instant.</span>'}</div>`:''}
+  <div class="stbar">
+    <div><span>Fixtures</span><b class="${total===24?'t-ok':'t-crit'}">${total}/24 conformes</b></div>
+    <div><span>Fixture affichée</span><b class="${errs.length?'t-crit':'t-ok'}">${errs.length?errs.length+' erreur'+(errs.length>1?'s':''):'Conforme'}</b></div>
+    <div><span>Champs obligatoires UBL</span><b>14/14 mappés</b></div>
+    <div><span>Modifications</span><b>${ch.length}</b></div>
+    <div class="grow"><span>Dernière erreur en production</span><b style="font-size:13px">MX-A1C4-7701 · ligne 2 sans TVA</b></div>
+  </div>
+  <div class="studio">
+    <section class="pane"><div class="ph"><h2>Source · IN</h2><span class="hint mono" style="font-size:11px">${f.file}</span></div><div class="tree">${tree}</div></section>
+    <section class="pane"><div class="ph"><h2>Règles</h2><span class="hint">Cible UBL 2.1 générée depuis le schéma</span></div>
+      <div class="tablewrap"><table class="rules"><thead><tr><th>Cible</th><th>Source</th><th>Format</th><th>Sortie</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${sel?`<div class="inspector"><span><b>${sel.t}</b> · ${sel.bt} (EN 16931)</span><span>Source : <span class="mono" style="font-size:12px">${esc(sel.src)}</span></span><span class="t-muted">Obligatoire. L'ordre, les namespaces et l'échappement sont gérés par le générateur.</span></div>`:''}
+      <div class="fixtures">${Object.entries(FIX).map(([k,x])=>{ const s=ST2.fix; ST2.fix=k; const ok=!studioErrors(x).length; ST2.fix=s; return `<button class="fx ${k===ST2.fix?'on':''}" data-fix="${k}"><span class="s ${ok?'pass':'fail'}"></span>${x.file}</button>`; }).join('')}<span class="fx" style="border-style:dashed;color:var(--muted)">+ 21 autres conformes</span></div>
+    </section>
+    <section class="pane outpane"><div class="ph"><div class="seg" id="spane"><button data-p="out" class="${ST2.pane==='out'?'on':''}">OUT · UBL</button><button data-p="canon" class="${ST2.pane==='canon'?'on':''}">Canonique</button></div>
+      <span class="right">${ST2.pane==='out'?`<span class="xsd ${errs.length?'ko':'ok'}">XSD UBL 2.1 ${errs.length?'· '+errs.length+' erreur'+(errs.length>1?'s':''):'conforme'}</span>`:''}</span></div>
+      ${errs.length&&ST2.pane==='out'?`<div style="padding:8px 14px;font-size:12.5px;color:var(--crit);background:var(--crit-soft)">${errs.map(e=>'↳ '+esc(e.m)).join('<br>')}</div>`:''}
+      <div class="viewer" style="border-radius:0;max-height:600px">${viewer}</div></section>
+  </div>`;
+}
+function bindStudio(){
+  const m=$('#main');
+  m.querySelectorAll('[data-rule]').forEach(r=>r.onclick=e=>{ if(e.target.closest('input,select,label')) return; ST2.sel=r.dataset.rule; render(); });
+  m.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>{ const r=RULES.find(x=>x.keys&&x.keys.includes(b.dataset.key)); if(r){ST2.sel=r.id; render();} else toast('Champ non utilisé par ce mapping.'); });
+  m.querySelectorAll('[data-cdata]').forEach(i=>i.onchange=()=>{ ST2.cdata[i.dataset.cdata]=i.checked; ST2.sel=i.dataset.cdata; render(); });
+  const d=m.querySelector('[data-date]'); if(d) d.onchange=()=>{ ST2.dateFmt=d.value; ST2.sel='r2'; render(); };
+  m.querySelectorAll('[data-ai]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); ST2.ai=b.dataset.ai; render(); toast(ST2.ai==='ok'?'Suggestion acceptée dans le brouillon v3.3. Elle sera tracée à la publication.':'Suggestion refusée et consignée dans l\'audit.'); });
+  m.querySelectorAll('[data-fix]').forEach(b=>b.onclick=()=>{ ST2.fix=b.dataset.fix; render(); });
+  const sp=$('#spane'); if(sp) sp.onclick=e=>{ const b=e.target.closest('button'); if(b){ ST2.pane=b.dataset.p; render(); } };
+  m.querySelectorAll('[data-sact]').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.sact, ch=studioChanges();
+    const fails = Object.keys(FIX).filter(k=>{ const s=ST2.fix; ST2.fix=k; const ko=studioErrors(FIX[k]).length; ST2.fix=s; return ko; }).length;
+    if(a==='diff'){ ST2.showDiff=!ST2.showDiff; render(); }
+    if(a==='run') toast(fails?`Fixtures rejouées : ${24-fails}/24 conformes, ${fails} en échec.`:'Fixtures rejouées : 24/24 conformes.');
+    if(a==='pub'){ if(!ch.length) toast('Aucune modification à publier.'); else if(fails) toast(`Publication bloquée : ${fails} fixture${fails>1?'s':''} en échec.`); else { ST2.confirm=true; render(); } }
+    if(a==='cancel'){ ST2.confirm=false; render(); }
+    if(a==='confirm'){ ST2.confirm=false; render(); toast('invoic02-ubl v3.3 publié. Retour à v3.2 possible depuis l\'historique.'); }
+  });
+}
+
+/* palette */
+function palItems(){
+  return [
+    ...Object.entries(CLIENTS).map(([k,c])=>['Client',`${c.name} · ICE ${c.ice}`,ST[c.st],()=>openClient(k)]),
+    ...MSGS.map(m=>[TYPE[m.type].split(' ')[0],`${m.ref} · ${m.id} · ${CLIENTS[m.c].name}`,m.st==='ok'?'':m.st==='err'?'Échec':'Attention',()=>openMsg(m.id)]),
+    ['Mapping','invoic02-ubl · IDoc INVOIC02 → UBL 2.1','v3.3 brouillon',()=>go('studio')],
+    ['Action','Ajouter un partenaire AS2','',()=>toast('Assistant d\'onboarding AS2.')],
+    ['Action','Rejouer un message…','',()=>toast('Choisissez un message à rejouer.')]
+  ];
+}
+let palIdx=0, palView=[];
+function renderPal(){
+  const q=$('#palInput').value.trim().toLowerCase();
+  palView = palItems().filter(p=>!q||(p[0]+' '+p[1]).toLowerCase().includes(q)).slice(0,12);
+  palIdx=Math.min(palIdx,Math.max(palView.length-1,0));
+  $('#palList').innerHTML = palView.length?palView.map((p,i)=>`<li class="${i===palIdx?'act':''}" data-i="${i}"><span class="k">${p[0]}</span><span>${esc(p[1])}</span><span class="x">${p[2]}</span></li>`).join(''):`<li><span class="t-muted">Aucun résultat. Essayez un nom de client, un numéro de facture ou un ICE.</span></li>`;
+}
+function openPal(){ $('#pal').hidden=false; $('#palScrim').classList.add('open'); $('#palInput').value=''; palIdx=0; renderPal(); $('#palInput').focus(); }
+function closePal(){ $('#pal').hidden=true; $('#palScrim').classList.remove('open'); }
+function runPal(i){ const p=palView[i]; if(!p) return; closePal(); p[3](); }
+$('#palScrim').onclick=closePal;
+$('#palInput').addEventListener('input',()=>{palIdx=0;renderPal();});
+$('#palInput').addEventListener('keydown',e=>{
+  if(e.key==='ArrowDown'){palIdx=Math.min(palIdx+1,palView.length-1);renderPal();e.preventDefault();}
+  if(e.key==='ArrowUp'){palIdx=Math.max(palIdx-1,0);renderPal();e.preventDefault();}
+  if(e.key==='Enter') runPal(palIdx);
+});
+$('#palList').addEventListener('click',e=>{const li=e.target.closest('li[data-i]'); if(li) runPal(+li.dataset.i);});
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); $('#pal').hidden?openPal():closePal();}
+  if(e.key==='Escape'&&!$('#pal').hidden) closePal();
+});
+
+let tt; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),3200); }
+$('#themeBtn').onclick=()=>{ const r=document.documentElement; const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme=dark?'light':'dark'; };
+window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(h!==(state.view==='client'?state.client:state.view)) fromHash(); });
+fromHash();
+</script>
