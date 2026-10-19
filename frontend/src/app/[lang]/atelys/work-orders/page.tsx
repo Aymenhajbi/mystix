@@ -77,6 +77,11 @@ export default async function WorkOrdersPage({ params, searchParams }: PageProps
                       <Link href={`${base}/${o.id}`} className={pstyles.mono}>
                         {o.number}
                       </Link>
+                      {o.customerReference && (
+                        <div className={pstyles.muted} style={{ fontSize: 12 }}>
+                          {o.customerReference}
+                        </div>
+                      )}
                     </td>
                     <td>
                       {o.productName}
