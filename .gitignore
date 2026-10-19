@@ -52,3 +52,5 @@ bench-results.json
 .claude/*
 !.claude/skills/
 .playwright/
+# Local AS2 test bench: holds private keys, never versioned (see docs/dev-setup.md §5).
+as2-test/
