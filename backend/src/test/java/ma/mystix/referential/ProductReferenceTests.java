@@ -64,8 +64,8 @@ class ProductReferenceTests {
     void setUp(@TempDir Path dir) throws IOException {
         http = RestClient.builder().baseUrl("http://localhost:" + port)
                 .defaultStatusHandler(status -> true, (request, response) -> { }).build();
-        company = companies.register(new Ice("000000060000060"), "Epicerie Fictive SARL", null).id();
-        other = companies.register(new Ice("000000061000061"), "Autre Epicerie Fictive SARL", null).id();
+        company = companies.register(new Ice("000000083000083"), "Epicerie Fictive SARL", null).id();
+        other = companies.register(new Ice("000000084000084"), "Autre Epicerie Fictive SARL", null).id();
 
         Path export = dir.resolve(ProductReference.Source.OFF.file);
         String header = "code\turl\tcreator\tlast_modified_t\tproduct_name\tquantity\tbrands\tcategories_en\tcountries_en";
