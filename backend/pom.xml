@@ -60,7 +60,7 @@
 		<dependency>
 			<groupId>net.sf.saxon</groupId>
 			<artifactId>Saxon-HE</artifactId>
-			<version>13.0</version>
+			<version>13.1</version>
 		</dependency>
 		<!-- SFTP client of the polling listeners (ADR-0016); the tests also use its server, embedded. Apache-2.0. -->
 		<dependency>
