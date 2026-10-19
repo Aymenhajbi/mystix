@@ -433,6 +433,7 @@
 
 .controls {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   padding: 16px 18px 18px;
 }
@@ -454,6 +455,7 @@
 }
 
 .inline {
+  min-width: 0;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -463,6 +465,8 @@
 .inline input,
 .inline select {
   flex: 1 1 180px;
+  min-width: 0;
+  max-width: 100%;
   height: 40px;
   border-radius: 9px;
   border: 1px solid var(--line-strong);
