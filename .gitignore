@@ -44,3 +44,9 @@ tmp/
 # Server log files and their rotated archives
 backend/logs/
 bench-results.json
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+# Claude Code: only the shared skills are versioned; local files (credentials, captures, launch.json) stay out.
+.claude/*
+!.claude/skills/
+.playwright/

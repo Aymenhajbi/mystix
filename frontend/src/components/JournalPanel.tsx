@@ -89,7 +89,7 @@ export function JournalPanel({ rows, labels, allHref }: { rows: JournalRow[]; la
         </div>
         <label className={styles.searchBox}>
           <Icon name="search" size={15} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={labels.search} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={labels.search} aria-label={labels.search} />
         </label>
       </div>
       <div className={styles.tableWrap}>
