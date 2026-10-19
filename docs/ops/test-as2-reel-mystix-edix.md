@@ -76,8 +76,10 @@ signature et le certificat du partenaire).
 s'il est relancé) :
 
 ```bash
-cd /opt/mystix && git pull --ff-only origin main   # ou récupérer le script depuis la branche docs/as2-real-test
-sudo bash scripts/ops/nginx-as2-route.sh
+cd /opt/mystix
+git fetch origin docs/as2-real-test
+git show origin/docs/as2-real-test:scripts/ops/nginx-as2-route.sh > /tmp/nginx-as2-route.sh
+sudo bash /tmp/nginx-as2-route.sh
 ```
 
 Équivalent manuel : ajouter dans le bloc `server` HTTPS de `/etc/nginx/sites-available/mystix`,
