@@ -103,7 +103,7 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
+			<!-- compile scope: the product reference import uses the driver COPY API (ADR-0020). -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

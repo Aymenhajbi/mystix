@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import ma.mystix.shared.Gtin;
 import ma.mystix.shared.error.ErrorCode;
 import ma.mystix.shared.error.MystixException;
 import ma.mystix.tenant.CompanyService;
@@ -49,11 +50,16 @@ public class WmsCatalog {
      */
     public record Product(UUID id, String sku, String name, String description, String category, String baseUnit,
                           boolean lotTracked, String receiptQuality, BigDecimal alertThreshold, boolean active,
-                          Map<String, BigDecimal> conversions) {
+                          Map<String, BigDecimal> conversions, String gtin) {
     }
 
     public record NewProduct(String sku, String name, String description, String category, String baseUnit,
-                             boolean lotTracked, String receiptQuality, BigDecimal alertThreshold) {
+                             boolean lotTracked, String receiptQuality, BigDecimal alertThreshold, String gtin) {
+
+        public NewProduct(String sku, String name, String description, String category, String baseUnit,
+                          boolean lotTracked, String receiptQuality, BigDecimal alertThreshold) {
+            this(sku, name, description, category, baseUnit, lotTracked, receiptQuality, alertThreshold, null);
+        }
     }
 
     public record Site(UUID id, String code, String name, boolean active, UUID transitLocationId) {
@@ -96,16 +102,43 @@ public class WmsCatalog {
         insert(() -> jdbc.sql("""
                         INSERT INTO wms_product (id, company_id, sku, name, description, category, base_unit,
                                                  lot_tracked, receipt_quality, alert_threshold, active, created_at,
-                                                 updated_at)
+                                                 updated_at, gtin)
                         VALUES (:id, :c, :sku, :name, :description, :category, :unit, :lot, :quality, :threshold,
-                                TRUE, :now, :now)
+                                TRUE, :now, :now, :gtin)
                         """)
                 .param("id", id).param("c", companyId).param("sku", p.sku().strip())
                 .param("name", p.name().strip()).param("description", p.description())
                 .param("category", p.category()).param("unit", p.baseUnit().strip().toUpperCase())
                 .param("lot", p.lotTracked()).param("quality", p.receiptQuality())
-                .param("threshold", p.alertThreshold()).param("now", now).update(), "product " + p.sku());
+                .param("threshold", p.alertThreshold()).param("now", now).param("gtin", gtin14(p.gtin()))
+                .update(), "product " + p.sku());
         return product(companyId, id);
+    }
+
+    /** Sets or removes (blank) the GTIN of a product; the check digit is verified, never corrected. */
+    @Transactional
+    public Product setGtin(UUID companyId, UUID productId, String gtin) {
+        product(companyId, productId);
+        String value = gtin == null || gtin.isBlank() ? null : gtin14(gtin);
+        insert(() -> jdbc.sql("UPDATE wms_product SET gtin = :g, updated_at = :now WHERE company_id = :c AND id = :id")
+                .param("g", value).param("now", OffsetDateTime.now(clock)).param("c", companyId)
+                .param("id", productId).update(), "GTIN " + gtin);
+        return product(companyId, productId);
+    }
+
+    /** The product of this environment carrying the scanned code, if any. */
+    public java.util.Optional<Product> productByGtin(UUID companyId, String code) {
+        String g = gtin14(code);
+        return jdbc.sql("SELECT id FROM wms_product WHERE company_id = :c AND gtin = :g")
+                .param("c", companyId).param("g", g).query(UUID.class).optional().map(id -> product(companyId, id));
+    }
+
+    private static String gtin14(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        return Gtin.parse(code).map(Gtin::gtin14).orElseThrow(() -> new MystixException(ErrorCode.GTIN_INVALID,
+                "Not a GTIN with a valid check digit: " + code));
     }
 
     /** One {@code unit} is worth {@code factor} base units of the product. */
@@ -143,14 +176,16 @@ public class WmsCatalog {
                         WHERE company_id = :c
                           AND (CAST(:id AS uuid) IS NULL OR id = :id)
                           AND (CAST(:category AS varchar) IS NULL OR category = :category)
-                          AND (CAST(:like AS varchar) IS NULL OR lower(sku) LIKE :like OR lower(name) LIKE :like)
+                          AND (CAST(:like AS varchar) IS NULL OR lower(sku) LIKE :like OR lower(name) LIKE :like
+                               OR gtin = :gtin)
                         ORDER BY sku
                         """)
                 .param("c", companyId).param("id", productId).param("category", category).param("like", like)
+                .param("gtin", search == null ? null : Gtin.parse(search).map(Gtin::gtin14).orElse(null))
                 .query((rs, n) -> new Product(rs.getObject("id", UUID.class), rs.getString("sku"),
                         rs.getString("name"), rs.getString("description"), rs.getString("category"),
                         rs.getString("base_unit"), rs.getBoolean("lot_tracked"), rs.getString("receipt_quality"),
-                        rs.getBigDecimal("alert_threshold"), rs.getBoolean("active"), Map.of()))
+                        rs.getBigDecimal("alert_threshold"), rs.getBoolean("active"), Map.of(), rs.getString("gtin")))
                 .list();
         if (rows.isEmpty()) {
             return rows;
@@ -164,7 +199,7 @@ public class WmsCatalog {
                 });
         return rows.stream().map(p -> new Product(p.id(), p.sku(), p.name(), p.description(), p.category(),
                 p.baseUnit(), p.lotTracked(), p.receiptQuality(), p.alertThreshold(), p.active(),
-                Map.copyOf(conversions.getOrDefault(p.id(), Map.of())))).toList();
+                Map.copyOf(conversions.getOrDefault(p.id(), Map.of())), p.gtin())).toList();
     }
 
     /**

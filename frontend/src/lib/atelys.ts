@@ -28,6 +28,8 @@ export type Product = {
   alertThreshold: number | null;
   active: boolean;
   conversions: Record<string, number>;
+  /** GTIN normalised to 14 digits (leading zero for a GTIN-13), or null. */
+  gtin: string | null;
 };
 export type Site = { id: string; code: string; name: string; active: boolean; transitLocationId: string };
 export type Warehouse = { id: string; siteId: string; code: string; name: string; active: boolean };

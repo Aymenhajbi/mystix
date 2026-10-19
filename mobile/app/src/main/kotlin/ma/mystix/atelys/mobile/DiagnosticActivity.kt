@@ -88,6 +88,30 @@ class DiagnosticActivity : Activity(), ScanConsumer {
         runOnUiThread {
             resultText.text = getString(R.string.diag_last_scan, event.data, event.symbology ?: "?")
         }
+        crossCheck(event.data)
+    }
+
+    /** Asks the portal what this barcode is: product of the environment and open product reference. */
+    private fun crossCheck(code: String) {
+        if (app.sync.api.signedInAs == null || code.any { !it.isDigit() }) return
+        app.network.execute {
+            val r = app.sync.api.call("GET", "/api/v1/wms/products/by-gtin/" + java.net.URLEncoder.encode(code, "UTF-8"), null)
+            val text = when (r) {
+                is ApiResult.Ok -> {
+                    val ref = r.body.optJSONObject("reference")
+                    val product = r.body.optJSONObject("product")
+                    val match = ref?.optJSONArray("matches")?.optJSONObject(0)
+                    when {
+                        ref?.optBoolean("valid") != true -> getString(R.string.scan_invalid)
+                        product != null -> getString(R.string.scan_product, product.optString("name"), product.optString("sku"))
+                        match != null -> getString(R.string.scan_reference, match.optString("name"), match.optString("brands"), match.optString("sourceLabel"))
+                        else -> getString(R.string.scan_unknown)
+                    }
+                }
+                is ApiResult.Failure -> getString(R.string.portal_error, r.errorCode)
+            }
+            runOnUiThread { if (!isFinishing) resultText.append("\n" + text) }
+        }
     }
 
     override fun onScannerError(error: ScannerException) {

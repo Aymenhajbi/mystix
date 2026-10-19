@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { atelys } from "@/lib/atelys";
@@ -171,6 +172,7 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
               <tr>
                 <th>{S.sku}</th>
                 <th>{S.name}</th>
+                <th>GTIN</th>
                 <th>{a.common.type}</th>
                 <th>{S.baseUnit}</th>
                 <th>{S.lotTracked}</th>
@@ -184,6 +186,13 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
                 <tr key={p.id}>
                   <td className={pstyles.mono}>{p.sku}</td>
                   <td>{p.name}</td>
+                  <td className={pstyles.mono}>
+                    {p.gtin ? (
+                      <Link href={`/${lang}/atelys/references?code=${p.gtin.replace(/^0/, "")}`}>{p.gtin.replace(/^0/, "")}</Link>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td>{a.category[p.category]}</td>
                   <td>{p.baseUnit}</td>
                   <td>{p.lotTracked ? "✓" : "—"}</td>
@@ -238,6 +247,10 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
             <label>
               {S.name}
               <input name="f.name" required maxLength={200} />
+            </label>
+            <label>
+              GTIN
+              <input name="f.gtin" inputMode="numeric" maxLength={20} placeholder="6111234567890" />
             </label>
             <label>
               {a.common.type}

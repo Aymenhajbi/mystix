@@ -31,4 +31,8 @@
     <string name="portal_sign_out">تسجيل الخروج</string>
     <string name="portal_sync">مزامنة الآن</string>
     <string name="portal_connecting">الاتصال بالبوابة…</string>
+    <string name="scan_product">منتج البيئة: %1$s (%2$s)</string>
+    <string name="scan_reference">غير معروف هنا، معروف في %3$s: %1$s · %2$s</string>
+    <string name="scan_unknown">رمز صالح، غير معروف في البيئة ولا في القواعد المفتوحة</string>
+    <string name="scan_invalid">رمز ليس GTIN (رقم التحقق أو الطول)</string>
 </resources>

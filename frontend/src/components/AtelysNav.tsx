@@ -79,6 +79,12 @@ const atelysIcons = {
       <path d="M9 6h6v5H9zM9.5 14.5h1M13.5 14.5h1M9.5 17.5h1M13.5 17.5h1" />
     </svg>
   ),
+  references: (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+      <path d="M4 5v14M7 5v14M10 5v10M13 5v14M16 5v10M20 5v14" />
+      <path d="M9 18.5h4M15 18.5h0" />
+    </svg>
+  ),
   settings: (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
       <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />

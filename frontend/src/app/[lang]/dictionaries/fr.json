@@ -1130,7 +1130,8 @@
       "warehouse": "Stocks et entrepôts",
       "admin": "Administration",
       "channels": "Canaux",
-      "devices": "Terminaux"
+      "devices": "Terminaux",
+      "references": "Référentiel produits"
     },
     "common": {
       "save": "Enregistrer",
@@ -1476,7 +1477,8 @@
       "NO_COMPANY": "Aucun environnement actif.",
       "API_UNREACHABLE": "L'API Mystix ne répond pas.",
       "default": "Échec de l'opération ({code}).",
-      "DEVICE_ADAPTER_UNKNOWN": "Cette méthode de scan n'existe pas dans l'application mobile, ou ne convient pas à ce fabricant."
+      "DEVICE_ADAPTER_UNKNOWN": "Cette méthode de scan n'existe pas dans l'application mobile, ou ne convient pas à ce fabricant.",
+      "GTIN_INVALID": "Ce code-barres n'est pas un GTIN valide (longueur ou clé de contrôle)."
     },
     "devices": {
       "title": "Terminaux et intégrations",
@@ -1698,6 +1700,51 @@
           "HIGH": "Élevée"
         }
       }
+    },
+    "references": {
+      "title": "Référentiel produits",
+      "lead": "Vérifiez un code-barres : validité GS1, produit de votre environnement qui le porte, et ce qu'en disent les bases ouvertes Open Food Facts, Open Beauty Facts et Open Products Facts.",
+      "searchLabel": "Code-barres (GTIN-8, 12, 13 ou 14)",
+      "searchPlaceholder": "Scannez ou saisissez, ex. 6111035000430",
+      "search": "Vérifier",
+      "steps": [
+        "Clé de contrôle GS1",
+        "Produit de votre environnement",
+        "Bases ouvertes"
+      ],
+      "valid": "GTIN valide",
+      "invalid": "Code invalide : longueur ou clé de contrôle fausse. Rien n'est deviné ni corrigé.",
+      "prefix": {
+        "GS1_MOROCCO": "Préfixe 611 : numéro attribué par GS1 Maroc (n'indique pas le pays de fabrication)",
+        "RESTRICTED_CIRCULATION": "Préfixe 20 à 29 : numéro à circulation restreinte, usage interne ou national",
+        "OTHER": "Numéro attribué par une autre organisation GS1"
+      },
+      "local": "Dans votre environnement",
+      "localNone": "Aucun produit de cet environnement ne porte ce code.",
+      "link": "Associer ce code à un produit",
+      "linkSubmit": "Associer",
+      "choose": "Choisir un produit…",
+      "open": "Bases ouvertes",
+      "openNone": "Code inconnu des bases ouvertes importées. Cela ne veut pas dire qu'il est faux : ces bases sont collaboratives et incomplètes.",
+      "fields": {
+        "brands": "Marque",
+        "quantity": "Contenance",
+        "categories": "Catégories",
+        "countries": "Pays de vente",
+        "updated": "Mis à jour"
+      },
+      "seeSource": "Voir la fiche source",
+      "status": "État du référentiel",
+      "counts": "{n} codes",
+      "noImport": "Aucun import pour l'instant.",
+      "importsTitle": "Derniers imports",
+      "importStatus": {
+        "RUNNING": "En cours",
+        "DONE": "Terminé",
+        "FAILED": "Échec"
+      },
+      "importStats": "{read} lignes lues · {imported} codes · {bad} codes invalides ignorés",
+      "disclaimer": "Données collaboratives, sans garantie d'exactitude : elles servent à vérifier, jamais à créer ou modifier un produit automatiquement."
     }
   },
   "channels": {
