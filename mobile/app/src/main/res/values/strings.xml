@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Atelys Mobile</string>
+    <string name="diag_title">Terminal et scanner</string>
+    <string name="diag_device">Terminal</string>
+    <string name="diag_resolution">Intégration de scan</string>
+    <string name="diag_saved">Configuration validée</string>
+    <string name="diag_none">Aucune</string>
+    <string name="diag_test">Tester : %1$s</string>
+    <string name="diag_waiting">Lisez une étiquette avec le scanner (%1$d s)…</string>
+    <string name="diag_reset">Réinitialiser la configuration de ce terminal</string>
+    <string name="diag_result">Résultat du test : %1$s\n%2$s</string>
+    <string name="diag_saved_ok">Configuration enregistrée pour ce terminal.</string>
+    <string name="diag_not_saved">Configuration non enregistrée : le test n\'a pas réussi.</string>
+    <string name="diag_simulated">Lecture simulée : elle ne valide pas le terminal.</string>
+    <string name="diag_busy">Une opération est en cours : test impossible pour l\'instant.</string>
+    <string name="diag_last_scan">Dernière lecture : %1$s (%2$s)</string>
+    <string name="diag_hardware_note">Aucune intégration n\'est validée sur un vrai terminal Honeywell tant que le test ci-dessus n\'a pas réussi sur ce terminal.</string>
+</resources>

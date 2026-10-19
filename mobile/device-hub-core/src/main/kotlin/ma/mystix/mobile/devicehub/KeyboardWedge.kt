@@ -120,10 +120,29 @@ abstract class HoneywellDataIntentAdapterBase : ScannerAdapter {
             missingPrerequisites = listOf("Enable Data Intent in the scanner profile with action $ACTION"))
     }
 
+    /**
+     * Turns the extras of one broadcast into a read. [extra] reads an extra of the intent. Returns null when the read
+     * is empty, so a malformed broadcast is ignored instead of entering a business field.
+     */
+    fun toScanEvent(extra: (String) -> Any?, atMillis: Long): ScanEvent? {
+        val data = (extra(DATA_EXTRA) as? String)?.trimEnd('\r', '\n')
+        if (data.isNullOrEmpty()) return null
+        val symbology = (extra(CODE_ID_EXTRA) as? String) ?: (extra(AIM_ID_EXTRA) as? String)
+        val timestamp = extra(TIMESTAMP_EXTRA)?.toString()
+        return ScanEvent(data, symbology, id, atMillis, deliveryId = timestamp?.let { "$it|$data" })
+    }
+
     companion object {
         const val ID = "honeywell-data-intent"
 
         /** Chosen by Atelys and typed in the scanner profile; not a Honeywell constant. */
         const val ACTION = "ma.mystix.atelys.SCAN"
+
+        // Extra names seen in third-party Honeywell samples. TODO(HW-SPEC): check against Honeywell documentation and
+        // a real CK67 before the pilot; until then this adapter is experimental.
+        const val DATA_EXTRA = "data"
+        const val CODE_ID_EXTRA = "codeId"
+        const val AIM_ID_EXTRA = "aimId"
+        const val TIMESTAMP_EXTRA = "timestamp"
     }
 }

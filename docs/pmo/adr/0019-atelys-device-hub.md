@@ -1,6 +1,6 @@
 # ADR-0019 : Atelys Device Hub — détection du terminal et intégrations de scan
 
-- Statut : **proposé** (lot 12, 19/10/2026). Lot A livré dans `mobile/device-hub-core`, lots B à E prévus.
+- Statut : **proposé** (lot 12, 19/10/2026). Lot A livré dans `mobile/device-hub-core`, lot B en partie (`mobile/app`), lots C à E prévus.
 - Contexte : ADR-0018 (pilote mobile WMS), ADR-0013 (authentification), ADR-0014 (Atelys WMS).
 
 ## 1. Audit (19/10/2026, branche `feat/12-device-hub`, issue de `feat/12-mobile-receipt`)
@@ -88,10 +88,23 @@ un profil retiré est ignoré et signalé.
   chaque lecture est marquée simulée. **Ce ne sont pas des tests matériels.**
 - Non livré du lot A : la détection Android réelle et l'écran de diagnostic (SDK Android requis).
 
+## 3 bis. Lot B — livré en partie le 19/10/2026
+
+- SDK Android installé sur le poste dans `C:devandroid-sdk` (outils en ligne de commande, plateforme 36, build-tools 35
+  et 36, platform-tools), licences acceptées à la demande du fondateur. AGP 8.13.2, compileSdk/targetSdk 36,
+  minSdk 26. Aucune dépendance Android ajoutée (pas d'AndroidX).
+- `mobile/app` : `AndroidDeviceDetector` (`android.os.Build` et identifiant d'installation aléatoire),
+  `HoneywellDataIntentAdapter` (récepteur enregistré pendant la session, exporté car émis par le service scanner),
+  `KeyboardWedgeAdapter`, `PreferencesDeviceProfileRepository` (configuration validée gardée hors réseau),
+  `DiagnosticActivity` (fr, ar) : terminal, décision et raisons, test par adaptateur, réinitialisation.
+- Noms des extras Data Intent (`data`, `codeId`, `aimId`, `timestamp`) tirés d'exemples tiers :
+  `TODO(HW-SPEC)`, à vérifier sur un CK67 ; l'adaptateur reste expérimental jusque-là.
+- Vérifié : `./gradlew build` → APK debug et release (non signée), lint sans erreur, 42 tests unitaires, 0 échec.
+- Non fait : écran de réception mobile ; exécution sur émulateur ; **aucun essai sur terminal Honeywell**.
+
 ## 4. Lots suivants (prévus)
 
-- B : application Android (`mobile/app`), lecture de `Build`, adaptateurs wedge et Data Intent, écran de diagnostic,
-  écran de réception existant via `POST /wms/receipts` avec `Idempotency-Key`.
+- B (reste) : écran de réception via `POST /wms/receipts` avec `Idempotency-Key`, connexion, file d'opérations.
 - C : choix guidé, persistance locale (Room ou DataStore), cache des profils, transition contrôlée.
 - D : nouvelle migration (installations, profils, diagnostics), endpoints protégés par `Access`, audit, rubrique
   « Terminaux et intégrations » dans `atelys/settings`.
