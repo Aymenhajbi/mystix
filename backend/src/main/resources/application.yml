@@ -34,6 +34,10 @@ mystix:
     demo-enabled: false
     # Issues beyond the BOM need plus this margin require a justification (percent).
     consumption-tolerance-percent: 10
+  product-reference:
+    # Directory of the Open Food / Beauty / Products Facts exports (*.products.csv.gz) imported by an operator
+    # (POST /api/v1/admin/product-references/{OFF|OBF|OPF}/import). Empty: import disabled (ADR-0020).
+    directory: ${MYSTIX_PRODUCT_REFERENCE_DIRECTORY:}
   admin:
     # Cross-tenant operator endpoints (/api/v1/admin). Off by default; on in the dev profile only.
     # TODO(auth): operator role required once authentication exists (Lot 8).

@@ -9,7 +9,7 @@ import { hasLocale } from "@/lib/i18n";
  * One server action for the Atelys forms (ADR-0014). Hidden fields say where to send and where to go:
  * `_method`, `_path` (an Atelys API path only), `_back` (page of the form), `_next` (page after success, `{id}` replaced
  * by the created id). Body fields: `f.x` text, `n.x` number, `b.x` checkbox, `l.i.x` / `ln.i.x` text / number of
- * line i (under the key named by `_lines`), `kv.i.x` "key=value; key=value" attributes of line i, `r.x` / `rn.x` one
+ * line i (under the key named by `_lines`), `csv.x` comma-separated list, `kv.i.x` "key=value; key=value" attributes of line i, `r.x` / `rn.x` one
  * residue. `_require` drops the lines without that field. `_list` sends the lines as the whole body. The backend checks everything again.
  */
 export async function atelysAction(form: FormData) {
@@ -33,6 +33,8 @@ export async function atelysAction(form: FormData) {
     if (kind === "f" && value) body[a] = value;
     else if (kind === "n" && value) body[a] = Number(value.replace(",", "."));
     else if (kind === "b") body[a] = value === "on" || value === "true";
+    // "csv.models" = "CK67, CK65" → ["CK67", "CK65"] (always sent, an empty list included).
+    else if (kind === "csv") body[a] = value.split(",").map((v) => v.trim()).filter(Boolean);
     else if ((kind === "l" || kind === "ln" || kind === "kv" || kind === "lp") && b) {
       const line = lines.get(Number(a)) ?? {};
       if (kind === "lp" && value) {

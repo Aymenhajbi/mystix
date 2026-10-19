@@ -14,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import ma.mystix.auth.Access;
+import ma.mystix.referential.ProductReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,10 +49,12 @@ class WmsController {
     private final StockViews views;
     private final AtelysAudit audit;
     private final Access access;
+    private final ProductReference reference;
 
     WmsController(WmsCatalog catalog, Lots lots, Ledger ledger, Reservations reservations, Receipts receipts,
                   Transfers transfers, Inventories inventories, Shipments shipments, StockViews views,
-                  AtelysAudit audit, Access access) {
+                  AtelysAudit audit, Access access, ProductReference reference) {
+        this.reference = reference;
         this.catalog = catalog;
         this.lots = lots;
         this.ledger = ledger;
@@ -88,7 +91,7 @@ class WmsController {
                           String category,
                           @NotBlank @Size(max = 16) String baseUnit, Boolean lotTracked,
                           @Pattern(regexp = "^(PENDING|RELEASED)$") String receiptQuality,
-                          @DecimalMin("0") BigDecimal alertThreshold) {
+                          @DecimalMin("0") BigDecimal alertThreshold, @Size(max = 20) String gtin) {
     }
 
     @GetMapping("/products")
@@ -108,7 +111,32 @@ class WmsController {
                                                      @Valid @RequestBody ProductRequest r) {
         return ResponseEntity.status(201).body(catalog.createProduct(companyId, new WmsCatalog.NewProduct(r.sku(),
                 r.name(), r.description(), r.category(), r.baseUnit(), Boolean.TRUE.equals(r.lotTracked()),
-                r.receiptQuality() == null ? "RELEASED" : r.receiptQuality(), r.alertThreshold())));
+                r.receiptQuality() == null ? "RELEASED" : r.receiptQuality(), r.alertThreshold(), r.gtin())));
+    }
+
+    record GtinRequest(@Size(max = 20) String gtin) {
+    }
+
+    /** Sets the GTIN (empty body or blank removes it). The answer includes what the product reference knows. */
+    @PutMapping(value = "/products/{id}/gtin", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ProductScan setGtin(@RequestHeader(COMPANY) UUID companyId, @PathVariable UUID id,
+                        @RequestBody(required = false) GtinRequest r) {
+        WmsCatalog.Product p = catalog.setGtin(companyId, id, r == null ? null : r.gtin());
+        return new ProductScan(p, p.gtin() == null ? null : reference.lookup(p.gtin()));
+    }
+
+    record ProductScan(WmsCatalog.Product product, ProductReference.Lookup reference) {
+    }
+
+    /**
+     * A scanned barcode (Atelys Mobile, portal): the product of this environment carrying it, if any, and the open
+     * product reference. An invalid code answers 200 with {@code reference.valid = false}, never a guess.
+     */
+    @GetMapping("/products/by-gtin/{code}")
+    ProductScan productByGtin(@RequestHeader(COMPANY) UUID companyId, @PathVariable String code) {
+        ProductReference.Lookup ref = reference.lookup(code);
+        WmsCatalog.Product p = ref.valid() ? catalog.productByGtin(companyId, code).orElse(null) : null;
+        return new ProductScan(p, ref);
     }
 
     record ConversionRequest(@NotNull @DecimalMin(value = "0", inclusive = false) BigDecimal factor,
@@ -299,12 +327,15 @@ class WmsController {
 
     @PostMapping(value = "/receipts", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Receipts.Receipt> createReceipt(@RequestHeader(COMPANY) UUID companyId,
+                                                   @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                                    @Valid @RequestBody ReceiptRequest r, HttpServletRequest http) {
-        return ResponseEntity.status(201).body(receipts.create(companyId, new Receipts.NewReceipt(r.number(),
+        // 201 when created, 200 when the same Idempotency-Key and content had already created it.
+        Receipts.Created created = receipts.create(companyId, new Receipts.NewReceipt(r.number(),
                 r.siteId(), r.supplier(), r.sourceDocument(), r.lines().stream()
                 .map(l -> new Receipts.NewLine(l.productId(), l.quantity(), l.unit(), l.locationId(), l.lotNumber(),
                         l.supplierLot(), l.attributes()))
-                .toList()), access.actor(http)));
+                .toList()), idempotencyKey, access.actor(http));
+        return ResponseEntity.status(created.replayed() ? 200 : 201).body(created.receipt());
     }
 
     @PostMapping("/receipts/{id}/confirm")

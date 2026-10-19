@@ -53,6 +53,8 @@ export function AtelysShell({
       items: [
         { href: `${base}/traceability`, label: a.nav.traceability, icon: "traceability" },
         { href: `${base}/channels`, label: a.nav.channels, icon: "channels" },
+        { href: `${base}/devices`, label: a.nav.devices, icon: "devices" },
+        { href: `${base}/references`, label: a.nav.references, icon: "references" },
         { href: `${base}/settings`, label: a.nav.settings, icon: "settings" },
       ],
     },

@@ -293,6 +293,24 @@ public enum ErrorCode {
             new LocalizedText("Choisissez un autre code, ou ouvrez l'élément existant.",
                     "اختر رمزاً آخر أو افتح العنصر الموجود.")),
 
+    ATELYS_OPERATION_CONFLICT(HttpStatus.CONFLICT, Stage.API, false,
+            new LocalizedText("Cet identifiant d'opération a déjà servi pour un autre contenu.",
+                    "معرّف العملية هذا استُعمل لمحتوى آخر."),
+            new LocalizedText("Renvoyez exactement la même opération, ou créez-en une nouvelle avec un nouvel identifiant.",
+                    "أعد إرسال العملية نفسها تماماً، أو أنشئ عملية جديدة بمعرّف جديد.")),
+
+    DEVICE_ADAPTER_UNKNOWN(HttpStatus.BAD_REQUEST, Stage.API, false,
+            new LocalizedText("Cette méthode de scan n'existe pas dans l'application mobile.",
+                    "طريقة المسح هذه غير موجودة في التطبيق المحمول."),
+            new LocalizedText("Choisissez une méthode de la liste : clavier ou Data Intent Honeywell.",
+                    "اختر طريقة من القائمة: لوحة المفاتيح أو Data Intent من Honeywell.")),
+
+    GTIN_INVALID(HttpStatus.BAD_REQUEST, Stage.API, false,
+            new LocalizedText("Ce code-barres n'est pas un GTIN valide (longueur ou clé de contrôle).",
+                    "هذا الرمز الشريطي ليس GTIN صالحاً (الطول أو رقم التحقق)."),
+            new LocalizedText("Saisissez ou scannez le GTIN à 8, 12, 13 ou 14 chiffres imprimé sur le produit.",
+                    "أدخل أو امسح رمز GTIN المكوّن من 8 أو 12 أو 13 أو 14 رقماً المطبوع على المنتج.")),
+
     UNIT_INCOMPATIBLE(HttpStatus.BAD_REQUEST, Stage.API, false,
             new LocalizedText("Cette unité n'est pas convertible dans l'unité de stock du produit.",
                     "هذه الوحدة غير قابلة للتحويل إلى وحدة مخزون المنتج."),

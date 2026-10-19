@@ -1129,7 +1129,9 @@
       "production": "الإنتاج",
       "warehouse": "المخزون والمستودعات",
       "admin": "الإدارة",
-      "channels": "القنوات"
+      "channels": "القنوات",
+      "devices": "الأجهزة الطرفية",
+      "references": "مرجع المنتجات"
     },
     "common": {
       "save": "حفظ",
@@ -1478,7 +1480,275 @@
       "VALIDATION_FAILED": "النموذج ناقص أو غير صالح.",
       "NO_COMPANY": "لا توجد بيئة نشطة.",
       "API_UNREACHABLE": "واجهة Mystix لا تستجيب.",
-      "default": "فشلت العملية ({code})."
+      "default": "فشلت العملية ({code}).",
+      "DEVICE_ADAPTER_UNKNOWN": "طريقة المسح هذه غير موجودة في التطبيق المحمول أو لا تناسب هذا الصانع.",
+      "GTIN_INVALID": "هذا الرمز الشريطي ليس GTIN صالحاً (الطول أو رقم التحقق)."
+    },
+    "devices": {
+      "title": "الأجهزة الطرفية وطرق التكامل",
+      "lead": "أجهزة Atelys Mobile، وطريقة المسح لكل جهاز، وما تبقّى لتصبح جاهزة للعمل.",
+      "profilesLink": "ملفات التوافق",
+      "summary": {
+        "total": "الأجهزة",
+        "OK": "جاهزة",
+        "ACTION_REQUIRED": "تتطلب إجراء",
+        "ERROR": "في خطأ",
+        "OFFLINE": "غير متصلة"
+      },
+      "health": {
+        "OK": "جاهز",
+        "ACTION_REQUIRED": "يتطلب إجراء",
+        "ERROR": "في خطأ",
+        "OFFLINE": "غير متصل"
+      },
+      "healthHint": {
+        "OK": "طريقة مسح مُعتمدة بقراءة حقيقية مفعّلة.",
+        "ACTION_REQUIRED": "الجهاز ينتظر إعداداً أو اختياراً أو اختبار قراءة.",
+        "ERROR": "فشل آخر اختبار قراءة أو الماسح منذ آخر اعتماد.",
+        "OFFLINE": "لا أثر للجهاز منذ أكثر من 24 ساعة."
+      },
+      "how": {
+        "title": "كيف ينضم جهاز إلى Atelys",
+        "steps": [
+          {
+            "title": "تثبيت Atelys Mobile",
+            "text": "ثبّت التطبيق على الجهاز وسجّل الدخول بحساب من هذه البيئة."
+          },
+          {
+            "title": "كشف تلقائي",
+            "text": "عند التشغيل يسجّل Atelys الطراز وإصدار Android وطرق المسح الممكنة. دون IMEI أو رقم تسلسلي."
+          },
+          {
+            "title": "اختبار القراءة",
+            "text": "يقرأ المشغّل ملصقاً. القراءة الحقيقية وحدها تعتمد طريقة المسح."
+          },
+          {
+            "title": "جهاز جاهز",
+            "text": "تبقى الطريقة المعتمدة على الجهاز حتى دون شبكة."
+          }
+        ]
+      },
+      "empty": {
+        "title": "لم يتصل أي جهاز بعد",
+        "text": "بمجرد أن يفتح جهاز Atelys Mobile بحساب من هذه البيئة، يظهر هنا مع حالته."
+      },
+      "columns": {
+        "device": "الجهاز",
+        "android": "Android",
+        "adapter": "الطريقة المفعّلة",
+        "lastSeen": "آخر اتصال",
+        "health": "الحالة"
+      },
+      "fields": {
+        "label": "اسم الجهاز",
+        "installation": "معرّف التثبيت",
+        "manufacturer": "الصانع",
+        "brand": "العلامة",
+        "model": "الطراز",
+        "product": "المنتج",
+        "android": "إصدار Android",
+        "api": "مستوى API",
+        "build": "البناء",
+        "app": "إصدار Atelys Mobile",
+        "capabilities": "القدرات المكتشفة",
+        "lastSeen": "آخر اتصال",
+        "lastSeenBy": "الحساب المتصل",
+        "firstSeen": "أول اتصال",
+        "active": "الطريقة المفعّلة",
+        "validatedAt": "اعتُمدت في",
+        "recommended": "الطريقة التي يوصي بها الجهاز",
+        "preferred": "الطريقة المقترحة",
+        "resolution": "قرار الجهاز",
+        "reasons": "الأسباب",
+        "none": "لا شيء"
+      },
+      "journey": {
+        "label": "مسار الجهاز",
+        "steps": [
+          "مكتشف",
+          "طريقة مقترحة",
+          "قراءة مختبرة",
+          "جاهز"
+        ]
+      },
+      "actions": {
+        "title": "التحكم في هذا الجهاز",
+        "rename": "إعادة التسمية",
+        "labelPlaceholder": "مثال: رصيف الاستلام 1",
+        "prefer": "الطريقة التي يقترحها المسؤول",
+        "preferHint": "تُعرض على الجهاز ولا تُفعّل إلا بعد نجاح اختبار قراءة.",
+        "noPreference": "بدون تفضيل",
+        "savePrefer": "حفظ",
+        "requestTest": "طلب اختبار قراءة",
+        "requestTestHint": "سيقترح الجهاز الاختبار عند تشغيله القادم أو عودته إلى الشبكة.",
+        "reset": "إعادة تعيين الإعداد",
+        "resetHint": "ينسى الجهاز طريقته المعتمدة ويعيد الكشف. يُستعمل بعد تغيير إعداد الماسح.",
+        "pendingTest": "طُلب اختبار في {at}",
+        "pendingReset": "طُلبت إعادة التعيين في {at}",
+        "adminOnly": "مخصص لمسؤولي البيئة."
+      },
+      "resolution": {
+        "AUTO_SELECTED": "إعادة استعمال طريقة معتمدة",
+        "USER_SELECTION_REQUIRED": "في انتظار اختيار المشغّل",
+        "CONFIGURATION_REQUIRED": "في انتظار إعداد الماسح",
+        "DEVICE_UNSUPPORTED": "جهاز غير مدعوم",
+        "SCANNER_UNAVAILABLE": "الماسح غير متاح",
+        "DIAGNOSTIC_REQUIRED": "في انتظار اختبار قراءة"
+      },
+      "reasons": {
+        "SDK_BELOW_MINIMUM": "إصدار Android قديم جداً بالنسبة لـ Atelys Mobile",
+        "MANUFACTURER_NOT_SUPPORTED": "طريقة مخصصة لصانع آخر",
+        "SDK_NOT_BUNDLED": "حزمة الصانع غير موجودة في هذا الإصدار",
+        "CONFIGURATION_NOT_DETECTABLE": "لا يمكن التحقق من إعداد الماسح إلا بقراءة",
+        "KEYBOARD_INPUT_ONLY": "قراءة بوضع لوحة المفاتيح: الاختبار ضروري",
+        "SCANNER_SERVICE_UNAVAILABLE": "خدمة المسح لا تستجيب",
+        "SAVED_CONFIGURATION_VALID": "طريقة معتمدة مسبقاً على هذا الجهاز",
+        "SAVED_CONFIGURATION_OTHER_INSTALLATION": "تم تجاهل إعداد تثبيت آخر",
+        "SAVED_CONFIGURATION_OTHER_DEVICE": "تم تجاهل إعداد طراز آخر",
+        "SAVED_CONFIGURATION_ADAPTER_MISSING": "الطريقة المعتمدة غير موجودة في هذا الإصدار",
+        "SAVED_CONFIGURATION_INCOMPATIBLE": "الطريقة المعتمدة أصبحت غير متوافقة",
+        "PROFILE_VALIDATED": "تم تطبيق ملف معتمد",
+        "PROFILE_EXPERIMENTAL": "ملف تجريبي: لا يقرر وحده",
+        "PROFILE_RETIRED": "تم تجاهل ملف مسحوب",
+        "PROFILE_ADAPTER_UNAVAILABLE": "طريقة الملف غير قابلة للاستعمال هنا",
+        "PROFILE_RECOMMENDS_OTHER_ADAPTER": "ملف يقترح طريقة أخرى (للاختبار)",
+        "NO_PROFILE": "لا يوجد ملف لهذا الطراز",
+        "SEVERAL_CANDIDATES": "عدة طرق ممكنة",
+        "SINGLE_CANDIDATE_LOW_CONFIDENCE": "طريقة واحدة ممكنة، تحتاج تأكيداً",
+        "NO_COMPATIBLE_ADAPTER": "لا توجد طريقة متوافقة"
+      },
+      "capabilities": {
+        "input.key-events": "استقبال مفاتيح لوحة المفاتيح",
+        "honeywell.aidc.sdk-bundled": "حزمة Honeywell مدمجة"
+      },
+      "adapters": {
+        "honeywell-data-intent": {
+          "name": "Honeywell Data Intent",
+          "text": "يرسل ماسح Honeywell كل قراءة إلى Atelys. يلزم إعداد Data Intent على الجهاز.",
+          "badge": "تجريبي"
+        },
+        "keyboard-wedge": {
+          "name": "وضع لوحة المفاتيح",
+          "text": "يكتب الماسح القراءة متبوعة بـ Entrée. يعمل على معظم الأجهزة.",
+          "badge": ""
+        }
+      },
+      "diagnostics": {
+        "title": "اختبارات القراءة",
+        "empty": "لم يصل أي اختبار قراءة من هذا الجهاز.",
+        "simulated": "محاكاة",
+        "physical": "قراءة حقيقية",
+        "chars": "{n} حرفاً",
+        "outcome": {
+          "PASSED": "ناجح",
+          "MISMATCH": "ملصق غير متوقع",
+          "TIMEOUT": "لا قراءة في المهلة",
+          "OPEN_FAILED": "تعذّر فتح الماسح",
+          "ADAPTER_ERROR": "خطأ في الماسح",
+          "CANCELLED": "ملغى"
+        }
+      },
+      "audit": {
+        "title": "السجل",
+        "empty": "لا أحداث.",
+        "actions": {
+          "DEVICE_REGISTERED": "تسجيل الجهاز",
+          "DEVICE_RENAMED": "إعادة تسمية الجهاز",
+          "DEVICE_PREFERENCE": "تغيير الطريقة المقترحة",
+          "DEVICE_RESET_REQUESTED": "طلب إعادة التعيين",
+          "DEVICE_TEST_REQUESTED": "طلب اختبار قراءة",
+          "DEVICE_DIAGNOSTIC": "استلام اختبار قراءة"
+        }
+      },
+      "hardwareNote": "الاختبار الموسوم «محاكاة» ناتج عن تجربة برمجية: لا يعتمد أي جهاز.",
+      "profiles": {
+        "title": "ملفات التوافق",
+        "lead": "قواعد حسب الطراز أو الصانع أو التثبيت توجّه اختيار طريقة المسح. الملف يقترح ولا يفعّل شيئاً: كل جهاز يؤكد باختبار قراءة.",
+        "back": "الأجهزة الطرفية",
+        "new": "ملف جديد",
+        "empty": "لا توجد ملفات. بدونها يقترح كل جهاز طرقه الممكنة ويختار المشغّل.",
+        "edit": "تعديل",
+        "save": "حفظ",
+        "create": "إنشاء الملف",
+        "retire": "سحب",
+        "retiredNote": "مسحوب: لم يعد يُرسل إلى الأجهزة.",
+        "version": "الإصدار {n}",
+        "updated": "عُدّل في {at} بواسطة {by}",
+        "fields": {
+          "name": "الاسم",
+          "scope": "النطاق",
+          "manufacturer": "الصانع",
+          "models": "الطرازات (مفصولة بفواصل)",
+          "installation": "معرّف التثبيت",
+          "minSdk": "أدنى API",
+          "maxSdk": "أعلى API",
+          "adapter": "الطريقة المقترحة",
+          "prerequisites": "المتطلبات على الجهاز",
+          "confidence": "الثقة",
+          "status": "الحالة",
+          "testProcedure": "إجراء الاختبار"
+        },
+        "scope": {
+          "MODEL": "طراز",
+          "MANUFACTURER": "صانع",
+          "INSTALLATION": "تثبيت واحد"
+        },
+        "status": {
+          "VALIDATED": "معتمد",
+          "EXPERIMENTAL": "تجريبي",
+          "RETIRED": "مسحوب"
+        },
+        "confidence": {
+          "LOW": "ضعيفة",
+          "MEDIUM": "متوسطة",
+          "HIGH": "عالية"
+        }
+      }
+    },
+    "references": {
+      "title": "مرجع المنتجات",
+      "lead": "تحقّق من رمز شريطي: صلاحية GS1، والمنتج الذي يحمله في بيئتك، وما تقوله القواعد المفتوحة Open Food Facts وOpen Beauty Facts وOpen Products Facts.",
+      "searchLabel": "الرمز الشريطي (GTIN-8 أو 12 أو 13 أو 14)",
+      "searchPlaceholder": "امسح أو أدخل، مثال 6111035000430",
+      "search": "تحقّق",
+      "steps": [
+        "رقم تحقق GS1",
+        "منتج بيئتك",
+        "القواعد المفتوحة"
+      ],
+      "valid": "GTIN صالح",
+      "invalid": "رمز غير صالح: الطول أو رقم التحقق خاطئ. لا يُخمَّن ولا يُصحَّح شيء.",
+      "prefix": {
+        "GS1_MOROCCO": "البادئة 611: رقم صادر عن GS1 المغرب (لا يدل على بلد الصنع)",
+        "RESTRICTED_CIRCULATION": "البادئة 20 إلى 29: رقم محدود التداول للاستعمال الداخلي أو الوطني",
+        "OTHER": "رقم صادر عن منظمة GS1 أخرى"
+      },
+      "local": "في بيئتك",
+      "localNone": "لا يحمل أي منتج في هذه البيئة هذا الرمز.",
+      "link": "ربط هذا الرمز بمنتج",
+      "linkSubmit": "ربط",
+      "choose": "اختر منتجاً…",
+      "open": "القواعد المفتوحة",
+      "openNone": "رمز غير معروف في القواعد المفتوحة المستوردة. هذا لا يعني أنه خاطئ: هذه القواعد تشاركية وغير مكتملة.",
+      "fields": {
+        "brands": "العلامة",
+        "quantity": "الحجم",
+        "categories": "الفئات",
+        "countries": "بلدان البيع",
+        "updated": "آخر تحديث"
+      },
+      "seeSource": "عرض البطاقة المصدر",
+      "status": "حالة المرجع",
+      "counts": "{n} رمز",
+      "noImport": "لا يوجد استيراد بعد.",
+      "importsTitle": "آخر عمليات الاستيراد",
+      "importStatus": {
+        "RUNNING": "جارٍ",
+        "DONE": "منتهٍ",
+        "FAILED": "فشل"
+      },
+      "importStats": "{read} سطر مقروء · {imported} رمز · {bad} رمز غير صالح تم تجاهله",
+      "disclaimer": "بيانات تشاركية دون ضمان الدقة: تُستعمل للتحقق فقط، ولا تُنشئ أو تعدّل منتجاً تلقائياً."
     }
   },
   "channels": {

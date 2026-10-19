@@ -346,7 +346,59 @@ class AtelysApiTests {
         assertThat((Integer) dashboard.get("lotsPendingQuality")).isGreaterThanOrEqualTo(2);
     }
 
+    @Test
+    void aMobileRetryWithTheSameOperationIdCreatesOneReceipt() throws Exception {
+        UUID item = product("T-MOB-REC", "COMPONENT", "U", true, "RELEASED");
+        Map<String, Object> body = Map.of("siteId", site, "supplier", "Fournisseur fictif",
+                "lines", List.of(Map.of("productId", item, "quantity", 12, "locationId", stock, "lotNumber", "T-MOB-1")));
+        String key = UUID.randomUUID().toString();
+
+        ResponseEntity<Map> first = postWithKey("/api/v1/wms/receipts", body, key);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        // The terminal lost the answer and sends the same operation again: same receipt, nothing new.
+        ResponseEntity<Map> retry = postWithKey("/api/v1/wms/receipts", body, key);
+        assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(retry.getBody()).containsEntry("id", first.getBody().get("id"))
+                .containsEntry("number", first.getBody().get("number"));
+
+        // Same operation id, other content: refused, never applied.
+        Map<String, Object> other = Map.of("siteId", site, "lines", List.of(Map.of("productId", item,
+                "quantity", 13, "locationId", stock)));
+        ResponseEntity<Map> conflict = postWithKey("/api/v1/wms/receipts", other, key);
+        assertThat(conflict.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(conflict.getBody()).containsEntry("errorCode", "ATELYS_OPERATION_CONFLICT");
+
+        // Concurrent retries of a new operation: one receipt for all of them.
+        String raced = UUID.randomUUID().toString();
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        try {
+            List<Future<ResponseEntity<Map>>> results = new ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                results.add(pool.submit(() -> postWithKey("/api/v1/wms/receipts", body, raced)));
+            }
+            List<Object> ids = new ArrayList<>();
+            for (Future<ResponseEntity<Map>> r : results) {
+                assertThat(r.get().getStatusCode().is2xxSuccessful()).as(String.valueOf(r.get().getBody())).isTrue();
+                ids.add(r.get().getBody().get("id"));
+            }
+            assertThat(ids).containsOnly(ids.get(0));
+        } finally {
+            pool.shutdown();
+        }
+
+        // Confirming the replayed receipt records the stock once.
+        post("/api/v1/wms/receipts/" + first.getBody().get("id") + "/confirm", null);
+        post("/api/v1/wms/receipts/" + retry.getBody().get("id") + "/confirm", null);
+        assertThat(productStockAt(item, "T-MOB-1")).isEqualTo(12.0);
+    }
+
     // ---------- helpers ----------
+
+    private ResponseEntity<Map> postWithKey(String uri, Object body, String idempotencyKey) {
+        return http.post().uri(uri).header("X-Mystix-Company-Id", company.toString())
+                .header("Idempotency-Key", idempotencyKey).contentType(MediaType.APPLICATION_JSON).body(body)
+                .retrieve().toEntity(Map.class);
+    }
 
     private UUID receive(UUID product, double quantity, UUID location, String lotNumber) {
         Map<String, Object> line = new java.util.HashMap<>(Map.of("productId", product, "quantity", quantity,
