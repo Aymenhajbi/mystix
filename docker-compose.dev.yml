@@ -12,7 +12,7 @@ name: mystix-dev
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: mystix-postgres
     restart: unless-stopped
     environment:
